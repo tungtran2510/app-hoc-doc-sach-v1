@@ -826,20 +826,6 @@ export default function WoodenBookshelf({
                       onClick={() => onReadBook3D(book)}
                       title={book.title}
                     >
-                      {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setQuickPeekBook(book);
-                        }}
-                        className="absolute top-1 left-1 z-25 w-5 h-5 rounded-full bg-black/65 hover:bg-black/90 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-md border border-white/10 active:scale-90"
-                        title="Xem tóm tắt sách"
-                        aria-label={`Xem tóm tắt sách ${book.title}`}
-                      >
-                        <Info size={10} strokeWidth={2.4} />
-                      </button>
-
                       {/* RUY BĂNG TIẾN ĐỘ ĐỌC / ĐANG ĐỌC TRÊN GÓC PHẢI BÌA */}
                       {showProgress && (prog && prog.percent > 0 ? (
                         <div
@@ -882,6 +868,19 @@ export default function WoodenBookshelf({
 
                       {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
                       <div className="w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                        {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQuickPeekBook(book);
+                          }}
+                          className="absolute top-1.5 left-1.5 z-30 w-5.5 h-5.5 rounded-full bg-black/75 hover:bg-black/95 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-90"
+                          title="Xem tóm tắt sách"
+                          aria-label={`Xem tóm tắt sách ${book.title}`}
+                        >
+                          <Info size={11} strokeWidth={2.4} />
+                        </button>
                         {/* VẠCH TIẾN ĐỘ ĐỌC Ở CHÂN BÌA */}
                         {showProgress && prog && prog.percent > 0 && (
                           <div className="absolute bottom-0 inset-x-0 h-1 bg-black/75 z-15 pointer-events-none">
