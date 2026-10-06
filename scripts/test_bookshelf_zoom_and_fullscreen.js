@@ -24,14 +24,19 @@ async function testBookshelfUpgrades() {
       try {
         localStorage.setItem('qbiz_books_intro_seen', '1');
         sessionStorage.setItem('qbiz_books_intro_seen', '1');
-        localStorage.setItem('last_read_book_title', 'Hiểu Đúng Về Cột Sống');
-        localStorage.setItem('last_read_page_Hiểu Đúng Về Cột Sống', '5');
+        localStorage.setItem('last_read_book_title', 'Lắng Nghe Cơ Thể Để Tự Chữa Lành');
+        localStorage.setItem('last_read_page_Lắng Nghe Cơ Thể Để Tự Chữa Lành', '5');
       } catch {}
     });
 
     console.log('\n--- Test 1: Full-Screen Edge-to-Edge Verification ---');
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
+
+    const firstBookEl = page.locator('div[class*="group relative cursor-pointer"]').first();
+    const firstBookTitle = await firstBookEl.getAttribute('title') || 'Lắng Nghe Cơ Thể Để Tự Chữa Lành';
+    console.log(`Detected first book on shelf: "${firstBookTitle}"`);
+
 
     const shelfBox = await page.locator('div[class*="from-[#24170d]"]').first().boundingBox();
     console.log('Bookshelf bounding box:', shelfBox);
@@ -41,7 +46,7 @@ async function testBookshelfUpgrades() {
     console.log('\n--- Test 2: Reading Bookmark Ribbon on Shelf ---');
     const ribbon = page.locator('div[title*="Đang đọc dở - Trang 5"]').first();
     const isRibbonVisible = await ribbon.isVisible();
-    console.log('Bookmark ribbon on "Hiểu Đúng Về Cột Sống":', isRibbonVisible ? 'PASS' : 'FAIL');
+    console.log(`Bookmark ribbon on "${firstBookTitle}":`, isRibbonVisible ? 'PASS' : 'FAIL');
 
     console.log('\n--- Test 3: Bookshelf Zoom Controls (2 - 3 - 4 cuốn/tầng) ---');
     // Default is 3
@@ -74,7 +79,7 @@ async function testBookshelfUpgrades() {
     console.log(`Books per tier after Zoom In [+]: ${tier1AfterZoomIn} (Expected 3):`, tier1AfterZoomIn === 3 ? 'PASS' : 'FAIL');
 
     console.log('\n--- Test 4: Mobile Touch - No Stuck Hover Overlay ---');
-    const firstBook = page.locator('div[title="Hiểu Đúng Về Cột Sống"]').first();
+    const firstBook = page.locator('div[class*="group relative cursor-pointer"]').first();
     // Hover overlay should be hidden on mobile
     const hoverOverlayVisible = await page.evaluate(() => {
       const el = document.querySelector('div[class*="hidden md:flex"]');

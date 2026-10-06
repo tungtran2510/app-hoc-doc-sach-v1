@@ -56,7 +56,7 @@ async function testReaderUpgrades() {
 
     // Test 3: Open Book Reader -> Auto-hide HUD on open
     console.log('\n--- Test 3: Auto-Hide HUD On Open ---');
-    const bookOnShelf = page.locator('div[title="Hiểu Đúng Về Cột Sống"]').first();
+    const bookOnShelf = page.locator('div[class*="group relative cursor-pointer"]').first();
     await bookOnShelf.click({ force: true });
     const readerDialog = page.locator('div[role="dialog"]').first();
     await readerDialog.waitFor({ state: 'visible', timeout: 8000 });
