@@ -96,9 +96,34 @@ export default function RecommendedBooksSection({
   const [flipbookPreviewBook, setFlipbookPreviewBook] = useState<RecommendedBook | null>(null);
   const [editingSingleBook, setEditingSingleBook] = useState<RecommendedBook | null>(null);
 
+  const handleOpenAddSingleBook = () => {
+    const newBook: RecommendedBook = {
+      id: `book-${Date.now()}`,
+      title: '',
+      category: 'Chăm sóc sức khỏe',
+      badge_tag: 'SÁCH MỚI',
+      cover_url: null,
+      description: '',
+      author: 'Tủ Sách Y Khoa',
+      gallery_images: [],
+      flipbook_pages: [],
+      file_url: null,
+      pdf_url: null,
+      is_visible: true,
+    };
+    setEditingSingleBook(newBook);
+  };
+
   const handleSaveSingleBook = async (updatedBook: RecommendedBook) => {
-    const nextBooks = books.map((b) => (b.id === updatedBook.id ? updatedBook : b));
+    let nextBooks = [...books];
+    const existsIndex = nextBooks.findIndex((b) => b.id === updatedBook.id);
+    if (existsIndex >= 0) {
+      nextBooks[existsIndex] = updatedBook;
+    } else {
+      nextBooks = [updatedBook, ...nextBooks];
+    }
     setBooks(nextBooks);
+    setEditingSingleBook(null);
     if (isAdmin) {
       await saveSettingsApi({
         recommended_books: nextBooks,
@@ -306,7 +331,7 @@ export default function RecommendedBooksSection({
           onOpenWelcome={onOpenWelcome}
           onOpenAdminSettings={onOpenAdminSettings}
           onOpenEditApp={onOpenEditApp}
-          onOpenAddBookModal={() => setShowEditModal(true)}
+          onOpenAddBookModal={handleOpenAddSingleBook}
           onOpenUserSync={onOpenUserSync}
           onOpenPwaInstall={onOpenPwaInstall}
           onLogout={onLogout}
@@ -643,6 +668,7 @@ export default function RecommendedBooksSection({
         title={sideBooksModalBook?.title || 'Tài Liệu Y Khoa'}
         author={sideBooksModalBook?.author}
         pages={sideBooksModalBook ? getBookReaderPageUrls(sideBooksModalBook) : []}
+        pdfUrl={sideBooksModalBook?.pdf_url || sideBooksModalBook?.file_url}
         onClose={() => setSideBooksModalBook(null)}
       />
     </section>

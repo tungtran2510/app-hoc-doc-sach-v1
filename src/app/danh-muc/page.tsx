@@ -180,17 +180,17 @@ export default function CategoriesPage() {
       {/* 1. HEADER CHUYÊN ĐỀ / DANH MỤC SÁCH */}
       <section className="flex items-center justify-between gap-2 pt-1">
         <div className="flex flex-col">
-          <h1 className="text-xl sm:text-2xl font-black text-amber-200 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight">
             Danh Mục Sách
           </h1>
-          <p className="text-xs text-amber-100/70 mt-0.5">
+          <p className="text-xs text-[#6E4223] dark:text-amber-100/70 mt-0.5 font-medium">
             Hệ thống chuyên đề & bài học giải phẫu cơ thể
           </p>
         </div>
 
         <Link
           href="/"
-          className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs shrink-0"
+          className="px-3 py-1.5 rounded-xl bg-amber-600/15 hover:bg-amber-600/25 border border-amber-600/30 text-amber-900 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs shrink-0"
         >
           <BookOpen size={14} />
           <span>Kệ sách</span>
@@ -202,7 +202,7 @@ export default function CategoriesPage() {
         <div className="relative flex-1">
           <Search
             size={17}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400/70"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400/80"
           />
           <input
             type="text"
@@ -225,8 +225,8 @@ export default function CategoriesPage() {
       {/* 3. CHUYÊN ĐỀ NỔI BẬT */}
       {!searchQuery && (
         <section className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
-            <Flame size={15} className="fill-amber-400 text-amber-400" />
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
+            <Flame size={15} className="fill-[#8B4513] text-[#8B4513] dark:fill-amber-400 dark:text-amber-400" />
             <span>Chuyên đề nổi bật</span>
           </div>
 
@@ -237,11 +237,12 @@ export default function CategoriesPage() {
                 onClick={() => openBookFromCategory(cat)}
                 className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex items-center gap-2.5 cursor-pointer active:scale-98 transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#160e08] shrink-0 border border-white/10 shadow-inner">
+                {/* Ảnh bìa sách chuẩn khổ A4 (1:1.42) - Không bị cắt xén */}
+                <div className="w-11 sm:w-12 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] shrink-0 border border-white/15 shadow-md flex items-center justify-center p-0.5">
                   <img
                     src={cat.image}
                     alt={cat.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                     loading="lazy"
                   />
                 </div>
@@ -267,11 +268,11 @@ export default function CategoriesPage() {
       {/* 4. THEO NHÓM CHỦ ĐỀ (GRID) */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
             <LayoutGrid size={15} />
             <span>Theo nhóm chủ đề</span>
           </div>
-          <span className="text-[11px] text-amber-200/60">
+          <span className="text-[11px] text-[#6E4223] dark:text-amber-200/60 font-semibold">
             {filteredCategories.length} chủ đề
           </span>
         </div>
@@ -281,13 +282,14 @@ export default function CategoriesPage() {
             <div
               key={cat.id}
               onClick={() => openBookFromCategory(cat)}
-              className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/70 shadow-md flex flex-col items-center text-center gap-2 cursor-pointer active:scale-95 transition-all group"
+              className="p-2 sm:p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/70 shadow-md flex flex-col items-center text-center gap-2 cursor-pointer active:scale-95 transition-all group"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#160e08] border border-white/10 shadow-sm">
+              {/* Ảnh bìa sách chuẩn tỷ lệ khổ A4 đứng (1:1.42) - Không bị cắt xén nội dung */}
+              <div className="w-18 sm:w-22 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/15 shadow-md flex items-center justify-center p-0.5">
                 <img
                   src={cat.image}
                   alt={cat.title}
-                  className="w-full h-full object-cover group-hover:scale-108 transition-transform"
+                  className="w-full h-full object-contain group-hover:scale-108 transition-transform"
                   loading="lazy"
                 />
               </div>

@@ -116,7 +116,7 @@ export default function SearchPage() {
               router.push('/');
             }
           }}
-          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-amber-200 hover:text-white transition-colors cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-full bg-[#e8ded1] dark:bg-white/10 hover:bg-[#ded1c0] dark:hover:bg-white/20 border border-[#d5c3b1] dark:border-white/10 flex items-center justify-center text-[#2A160A] dark:text-amber-200 hover:text-amber-600 dark:hover:text-white transition-colors cursor-pointer shrink-0"
           aria-label="Quay lại"
         >
           <ArrowLeft size={18} />
@@ -153,7 +153,7 @@ export default function SearchPage() {
 
       {/* 2. GỢI Ý TỪ KHÓA TÌM KIẾM PHỔ BIẾN (CHIPS) */}
       <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-        <span className="text-[11px] font-bold text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
+        <span className="text-[11px] font-bold text-[#8B4513] dark:text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
           <Sparkles size={12} />
           <span>Gợi ý:</span>
         </span>
@@ -168,7 +168,7 @@ export default function SearchPage() {
             className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer border ${
               query.toLowerCase() === chip.toLowerCase()
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs'
-                : 'bg-white/5 hover:bg-white/10 text-amber-100/80 border-white/10'
+                : 'bg-[#e8ded1] dark:bg-white/5 hover:bg-[#ded1c0] dark:hover:bg-white/10 text-[#4A2612] dark:text-amber-100/80 border-[#d5c3b1] dark:border-white/10'
             }`}
           >
             {chip}
@@ -180,7 +180,7 @@ export default function SearchPage() {
       <div className="flex items-center justify-between px-1 pt-1">
         <div className="flex items-center gap-2">
           <BookOpen size={16} className="text-amber-400" />
-          <h2 className="text-xs font-black uppercase tracking-wider text-amber-200">
+          <h2 className="text-xs font-black uppercase tracking-wider text-[#8B4513] dark:text-amber-200">
             {isSearching ? `Kết quả tìm kiếm (${matchedBooks.length})` : `Tất cả đầu sách (${books.length})`}
           </h2>
         </div>

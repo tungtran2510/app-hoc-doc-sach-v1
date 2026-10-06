@@ -213,14 +213,16 @@ export default function EditSingleRecommendedBookModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-[16px] font-extrabold text-ink leading-tight truncate">
-                  Sửa tài liệu: {title || book.title}
+                  {book.title ? `Sửa tài liệu: ${title || book.title}` : 'Thêm Cuốn Sách Mới'}
                 </h3>
                 <span className="px-2 py-0.5 rounded-[6px] bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 text-[10px] font-black uppercase shrink-0">
-                  Nên đọc
+                  {book.title ? 'Chỉnh sửa' : 'Tạo mới'}
                 </span>
               </div>
               <p className="text-[11.5px] text-muted truncate">
-                Chỉnh sửa thông tin, bìa sách 3:4, video và tệp đọc thử 3D
+                {book.title
+                  ? 'Chỉnh sửa thông tin, bìa sách 3:4, video và tệp đọc thử 3D'
+                  : 'Điền thông tin và tải tệp PDF/ảnh để đưa sách lên kệ gỗ 3D ngay lập tức'}
               </p>
             </div>
           </div>
@@ -727,7 +729,7 @@ export default function EditSingleRecommendedBookModal({
             ) : (
               <>
                 <Save size={15} />
-                <span>Lưu cuốn sách này</span>
+                <span>{book.title ? 'Lưu cuốn sách này' : 'Lưu sách & Đưa vào kệ'}</span>
               </>
             )}
           </button>

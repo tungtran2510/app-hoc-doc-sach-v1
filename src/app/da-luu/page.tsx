@@ -247,18 +247,18 @@ export default function SavedBooksPage() {
     <main className="flex-1 flex flex-col px-3 sm:px-4 pt-3 pb-24 gap-4 max-w-[640px] w-full mx-auto select-none">
       {/* 1. HEADER CHÍNH: ĐÃ LƯU */}
       <section className="flex flex-col gap-1 pt-1">
-        <h1 className="text-2xl sm:text-3xl font-black text-amber-200 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight">
           Đã lưu
         </h1>
-        <p className="text-xs text-amber-100/70">
+        <p className="text-xs text-[#6E4223] dark:text-amber-100/70 font-medium">
           Lưu sách, chuyên đề và dấu trang yêu thích để đọc lại.
         </p>
       </section>
 
       {/* 2. SECTION Ở ĐẦU: ĐANG ĐỌC DỞ */}
       <section className="flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
-          <BookOpen size={15} className="text-amber-400" />
+        <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
+          <BookOpen size={15} className="text-[#8B4513] dark:text-amber-400" />
           <span>ĐANG ĐỌC DỞ</span>
         </div>
 
@@ -322,8 +322,8 @@ export default function SavedBooksPage() {
       {/* 3. SECTION: ĐÃ LƯU GẦN ĐÂY */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
-            <Bookmark size={15} className="fill-amber-400 text-amber-400" />
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
+            <Bookmark size={15} className="fill-[#8B4513] text-[#8B4513] dark:fill-amber-400 dark:text-amber-400" />
             <span>ĐÃ LƯU GẦN ĐÂY</span>
           </div>
 
@@ -409,15 +409,15 @@ export default function SavedBooksPage() {
                   </button>
                 </div>
 
-                {/* Khối giữa: Ảnh bìa + Badge số (#1, #2) */}
+                {/* Khối giữa: Ảnh bìa chuẩn A4 + Badge số (#1, #2) */}
                 <div
                   onClick={() => handleOpenItem(item)}
-                  className="relative w-full aspect-[16/11] rounded-xl overflow-hidden bg-[#160e08] border border-white/10 shadow-inner cursor-pointer"
+                  className="relative w-full aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/10 shadow-inner cursor-pointer p-0.5"
                 >
                   <img
                     src={item.coverUrl}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                     loading="lazy"
                   />
                   {item.badgeNumber && (
@@ -451,12 +451,12 @@ export default function SavedBooksPage() {
                 onClick={() => handleOpenItem(item)}
                 className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
               >
-                {/* Bên trái: Thumbnail với Badge */}
-                <div className="relative w-16 sm:w-20 aspect-[16/11] rounded-xl overflow-hidden bg-[#160e08] border border-white/10 shrink-0">
+                {/* Bên trái: Thumbnail tỷ lệ A4 chuẩn với Badge */}
+                <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/10 shrink-0 p-0.5">
                   <img
                     src={item.coverUrl}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                     loading="lazy"
                   />
                   {item.badgeNumber && (

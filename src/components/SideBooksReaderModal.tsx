@@ -27,6 +27,7 @@ export interface SideBooksReaderModalProps {
   author?: string | null;
   pages: string[];
   initialPage?: number;
+  pdfUrl?: string | null;
 }
 
 export default function SideBooksReaderModal({
@@ -36,6 +37,7 @@ export default function SideBooksReaderModal({
   author,
   pages,
   initialPage = 0,
+  pdfUrl,
 }: SideBooksReaderModalProps) {
   const readerRef = useRef<SideBooksReaderEngineRef>(null);
 
@@ -508,25 +510,35 @@ export default function SideBooksReaderModal({
         }}
         className="flex-1 flex flex-col items-center justify-center relative w-full h-[calc(100vh-84px)] overflow-hidden cursor-pointer"
       >
-        <SideBooksReaderEngine
-          ref={readerRef}
-          pageImages={pages}
-          initialPage={currentPage}
-          readingMode={readingMode}
-          readingTheme={readingTheme}
-          onPageChange={(page) => {
-            if (page !== currentPage) {
-              playPaperSound();
-            }
-            setCurrentPage(page);
-            try {
-              localStorage.setItem(`last_read_page_${title}`, page.toString());
-              localStorage.setItem(`bookmark_page_${title}`, page.toString());
-              localStorage.setItem('last_read_book_title', title);
-            } catch {}
-          }}
-          onCenterClick={toggleHud}
-        />
+        {pages.length === 0 && pdfUrl ? (
+          <div className="w-full h-full p-2 flex flex-col items-center justify-center">
+            <iframe
+              src={pdfUrl}
+              className="w-full h-full rounded-lg shadow-2xl border border-white/10"
+              title={title}
+            />
+          </div>
+        ) : (
+          <SideBooksReaderEngine
+            ref={readerRef}
+            pageImages={pages}
+            initialPage={currentPage}
+            readingMode={readingMode}
+            readingTheme={readingTheme}
+            onPageChange={(page) => {
+              if (page !== currentPage) {
+                playPaperSound();
+              }
+              setCurrentPage(page);
+              try {
+                localStorage.setItem(`last_read_page_${title}`, page.toString());
+                localStorage.setItem(`bookmark_page_${title}`, page.toString());
+                localStorage.setItem('last_read_book_title', title);
+              } catch {}
+            }}
+            onCenterClick={toggleHud}
+          />
+        )}
       </main>
 
       {/* ================= 3. THANH ĐIỀU HƯỚNG ĐÁY (TRƯỢT MƯỢT MÀ THEO SHOWHUD) ================= */}
