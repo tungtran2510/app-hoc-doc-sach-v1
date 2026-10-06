@@ -1,310 +1,534 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  ChevronLeft,
+  ArrowLeft,
   Bookmark,
+  BookOpen,
+  PlayCircle,
+  LayoutGrid,
+  List,
+  Rows,
   Trash2,
   ChevronRight,
-  BookOpen,
-  Smartphone,
   Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Compass,
+  BookMarked,
+  Check,
 } from 'lucide-react';
-import { getSavedPages, SavedPageInfo, toggleSavePage } from '../../lib/learningProgress';
-import { getUserPhone, syncUserProgress, LEARNING_PROGRESS_EVENT } from '../../lib/userSync';
-import UserSyncModal from '../../components/UserSyncModal';
 import BottomNav from '../../components/BottomNav';
+import SideBooksReaderModal from '../../components/SideBooksReaderModal';
+import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 
-const quickExploreTopics = [
+interface SavedItem {
+  id: string;
+  title: string;
+  category: string;
+  badgeType: 'video' | 'book';
+  badgeNumber?: string;
+  coverUrl: string;
+  subtitle: string;
+  pages?: string[];
+  initialPage: number;
+}
+
+const DEFAULT_CURATED_SAVED: SavedItem[] = [
   {
-    slug: 'cot-song',
-    title: 'Cá»™t sá»‘ng & ÄÄ©a Ä‘á»‡m',
-    badge: 'SPINE & BONE',
-    icon: '/images/topics/cot-song.png',
-    count: '6 bÃ i há»c',
+    id: 'curated-1',
+    title: '03. Điều trị thoát vị đĩa đệm ít xâm lấn (BV Tâm Anh)',
+    category: 'Đĩa đệm và cơ chế giảm xóc',
+    badgeType: 'video',
+    coverUrl: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+    subtitle: 'Đĩa đệm và cơ chế giảm xóc',
+    initialPage: 2,
   },
   {
-    slug: 'dinh-duong',
-    title: 'Dinh dÆ°á»¡ng ná»n táº£ng',
-    badge: 'NUTRITION',
-    icon: '/images/topics/dinh-duong.png',
-    count: '4 bÃ i há»c',
+    id: 'curated-2',
+    title: '02. Cơ chế hình thành thoát vị đĩa đệm 3D',
+    category: 'Đĩa đệm và cơ chế giảm xóc',
+    badgeType: 'video',
+    coverUrl: '/documents/covers/cover_cot-song.png',
+    subtitle: 'Đĩa đệm và cơ chế giảm xóc',
+    initialPage: 1,
   },
   {
-    slug: 'co-the-nguoi',
-    title: 'CÆ¡ thá»ƒ ngÆ°á»i 3D',
-    badge: 'ANATOMY 3D',
-    icon: '/images/topics/co-the-nguoi.png',
-    count: 'Tá»•ng quan',
+    id: 'curated-3',
+    title: 'Đĩa đệm và cơ chế giảm xóc',
+    category: 'CỘT SỐNG',
+    badgeType: 'book',
+    badgeNumber: '#2',
+    coverUrl: '/documents/covers/cover_giai_ma_cot_song.png',
+    subtitle: 'Cột sống',
+    initialPage: 1,
   },
   {
-    slug: 'tieu-hoa',
-    title: 'Há»‡ tiÃªu hÃ³a',
-    badge: 'DIGESTIVE',
-    icon: '/images/topics/tieu-hoa.png',
-    count: 'ChuyÃªn Ä‘á»',
+    id: 'curated-4',
+    title: 'Tổng quan về cột sống',
+    category: 'CỘT SỐNG',
+    badgeType: 'book',
+    badgeNumber: '#1',
+    coverUrl: '/documents/covers/cover_cam_nang_dot_song_co.png',
+    subtitle: 'Cột sống',
+    initialPage: 0,
   },
 ];
 
-export default function SavedPages() {
-  const [savedList, setSavedList] = useState<SavedPageInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showPhoneSync, setShowPhoneSync] = useState(false);
-  const [userPhone, setUserPhone] = useState<string | null>(null);
+export default function SavedBooksPage() {
+  const router = useRouter();
+  const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('grid');
+  const [userBookmarks, setUserBookmarks] = useState<SavedItem[]>([]);
+  const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>([]);
 
-  const formatPhone = (p: string) => {
-    const clean = p.replace(/[^0-9]/g, '');
-    if (clean.length === 10) {
-      return `${clean.slice(0, 4)} ${clean.slice(4, 7)} ${clean.slice(7)}`;
-    }
-    return clean;
-  };
+  // Đang học dở / Đang đọc dở state
+  const [continueBook, setContinueBook] = useState<{
+    title: string;
+    subtitle: string;
+    coverUrl: string;
+    page: number;
+    totalPages: number;
+    percent: number;
+  }>({
+    title: 'Đại tràng & Cơ chế bài tiết',
+    subtitle: 'Hệ Tiêu Hóa · 02. Căn nguyên gốc rễ của táo bón...',
+    coverUrl: '/documents/covers/cover_tieu-hoa.png',
+    page: 4,
+    totalPages: 8,
+    percent: 50,
+  });
 
-  const refreshList = () => {
+  const [activeReaderBook, setActiveReaderBook] = useState<{
+    title: string;
+    author?: string;
+    pages: string[];
+    initialPage: number;
+  } | null>(null);
+
+  // Load last read & bookmarks
+  const loadData = () => {
     try {
-      const list = getSavedPages();
-      setSavedList(list);
+      // 1. Load Last Read Book
+      const lastTitle = localStorage.getItem('last_read_book_title');
+      if (lastTitle) {
+        const lastPageStr = localStorage.getItem(`last_read_page_${lastTitle}`);
+        const pIdx = lastPageStr ? parseInt(lastPageStr, 10) : 0;
+        const bookPages = getBookReaderPageUrls({
+          id: lastTitle,
+          title: lastTitle,
+          description: '',
+          cover_url: null,
+        } as any);
+        const tPages = Math.max(1, bookPages.length);
+        const calcPercent = Math.max(10, Math.min(100, Math.round(((pIdx + 1) / tPages) * 100)));
+
+        setContinueBook({
+          title: lastTitle,
+          subtitle: `Tủ Sách Y Khoa · Trang ${pIdx + 1}/${tPages}`,
+          coverUrl: bookPages[0] || '/documents/covers/cover_tieu-hoa.png',
+          page: pIdx,
+          totalPages: tPages,
+          percent: calcPercent,
+        });
+      }
+
+      // 2. Load Bookmarks
+      const dynamicItems: SavedItem[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('bookmarks_list_')) {
+          const title = key.replace('bookmarks_list_', '');
+          const val = localStorage.getItem(key);
+          if (val) {
+            const pageIndices: number[] = JSON.parse(val);
+            const bookPages = getBookReaderPageUrls({
+              id: title,
+              title,
+              description: '',
+              cover_url: null,
+            } as any);
+            for (const pIdx of pageIndices) {
+              dynamicItems.push({
+                id: `dynamic-${title}-${pIdx}`,
+                title: `${title} - Trang ${pIdx + 1}`,
+                category: 'TỦ SÁCH Y KHOA',
+                badgeType: 'book',
+                badgeNumber: `#${pIdx + 1}`,
+                coverUrl: bookPages[pIdx] || bookPages[0] || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+                subtitle: `Đã đánh dấu tại trang ${pIdx + 1}`,
+                pages: bookPages,
+                initialPage: pIdx,
+              });
+            }
+          }
+        }
+      }
+      setUserBookmarks(dynamicItems);
     } catch {
-      setSavedList([]);
+      // fallback
     }
   };
 
   useEffect(() => {
-    refreshList();
-    setIsLoading(false);
-
-    // Náº¿u Ä‘Ã£ cÃ³ sá»‘ Ä‘iá»‡n thoáº¡i lÆ°u tá»« trÆ°á»›c, tá»± Ä‘á»™ng táº£i má»›i tá»« mÃ¡y chá»§
-    const phone = getUserPhone();
-    setUserPhone(phone);
-    if (phone) {
-      syncUserProgress(phone, 'sync').then((res) => {
-        if (res.success) {
-          refreshList();
-        }
-      });
-    }
-
-    const handleUpdate = () => {
-      refreshList();
-      setUserPhone(getUserPhone());
-    };
-
-    window.addEventListener(LEARNING_PROGRESS_EVENT, handleUpdate);
-    window.addEventListener('learning_progress_changed', handleUpdate);
-    return () => {
-      window.removeEventListener(LEARNING_PROGRESS_EVENT, handleUpdate);
-      window.removeEventListener('learning_progress_changed', handleUpdate);
-    };
+    document.title = 'Đã lưu · Qbiz Books';
+    loadData();
   }, []);
 
-  const handleRemove = (e: React.MouseEvent, page: SavedPageInfo) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleSavePage(page);
-    refreshList();
+  const allSavedItems = useMemo(() => {
+    const visibleCurated = DEFAULT_CURATED_SAVED.filter(
+      (c) => !removedCuratedIds.includes(c.id)
+    );
+    return [...userBookmarks, ...visibleCurated];
+  }, [userBookmarks, removedCuratedIds]);
+
+  const handleToggleRemove = (item: SavedItem) => {
+    if (item.id.startsWith('curated-')) {
+      setRemovedCuratedIds((prev) => [...prev, item.id]);
+    } else {
+      // Remove from user bookmark
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('bookmarks_list_')) {
+            const val = localStorage.getItem(key);
+            if (val) {
+              let pageIndices: number[] = JSON.parse(val);
+              pageIndices = pageIndices.filter((p) => p !== item.initialPage);
+              if (pageIndices.length === 0) {
+                localStorage.removeItem(key);
+              } else {
+                localStorage.setItem(key, JSON.stringify(pageIndices));
+              }
+            }
+          }
+        }
+        loadData();
+      } catch {}
+    }
+  };
+
+  const handleOpenItem = (item: SavedItem) => {
+    const bookPages =
+      item.pages && item.pages.length > 0
+        ? item.pages
+        : getBookReaderPageUrls({
+            id: item.title,
+            title: item.title,
+            description: item.subtitle,
+            cover_url: item.coverUrl,
+          } as any);
+
+    setActiveReaderBook({
+      title: item.title,
+      author: 'Tủ Sách Y Khoa',
+      pages: bookPages,
+      initialPage: item.initialPage || 0,
+    });
+  };
+
+  const handleContinueReading = () => {
+    const bookPages = getBookReaderPageUrls({
+      id: continueBook.title,
+      title: continueBook.title,
+      description: continueBook.subtitle,
+      cover_url: continueBook.coverUrl,
+    } as any);
+
+    setActiveReaderBook({
+      title: continueBook.title,
+      author: 'Tủ Sách Y Khoa',
+      pages: bookPages,
+      initialPage: continueBook.page || 0,
+    });
   };
 
   return (
-    <main className="flex-1 flex flex-col px-4 sm:px-5 pt-3 pb-28 gap-5 max-w-lg mx-auto w-full">
-      {/* 1. Header chuáº©n iOS */}
-      <header className="flex items-center justify-between h-[48px]">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-purple-700 dark:text-purple-300 text-[16px] font-extrabold pr-2 transition-opacity active:opacity-75"
-          aria-label="Quay láº¡i trang chá»§"
-        >
-          <ChevronLeft size={22} strokeWidth={2.5} />
-          <span>Trang chá»§</span>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          {/* NÃºt Ä‘á»“ng bá»™ SÄT */}
-          <button
-            type="button"
-            onClick={() => setShowPhoneSync(true)}
-            className="flex items-center gap-1.5 h-8 px-2.5 rounded-[10px] bg-white dark:bg-[#1E1342] border border-slate-200 dark:border-purple-800/40 text-slate-700 dark:text-purple-200 hover:text-purple-700 dark:hover:text-[#F8DF7B] text-[12px] font-bold shadow-2xs cursor-pointer active:scale-95 transition-all"
-            title="LÆ°u & Äá»“ng bá»™ qua Sá»‘ Ä‘iá»‡n thoáº¡i"
-          >
-            <Smartphone size={13} />
-            <span>{userPhone ? formatPhone(userPhone) : 'Äá»“ng bá»™ SÄT'}</span>
-            {userPhone && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-          </button>
-
-          <div className="flex items-center gap-1.5 ml-0.5 px-2.5 py-1 rounded-[10px] bg-amber-50 dark:bg-purple-950/60 border border-amber-300 dark:border-purple-800/40">
-            <Bookmark size={15} className="text-amber-700 dark:text-[#F8DF7B] fill-current" />
-            <span className="text-[13px] font-black text-amber-700 dark:text-[#F8DF7B]">ÄÃ£ lÆ°u</span>
-          </div>
-        </div>
-      </header>
-
-      {/* 2. TiÃªu Ä‘á» trang trá»ng */}
-      <section className="flex flex-col gap-1.5 pt-1">
-        <h1 className="text-[24px] sm:text-[26px] font-black text-slate-900 dark:text-white leading-tight">
-          BÃ i há»c Ä‘Ã£ lÆ°u
+    <main className="flex-1 flex flex-col px-3 sm:px-4 pt-3 pb-24 gap-4 max-w-[640px] w-full mx-auto select-none">
+      {/* 1. HEADER CHÍNH: ĐÃ LƯU */}
+      <section className="flex flex-col gap-1 pt-1">
+        <h1 className="text-2xl sm:text-3xl font-black text-amber-200 tracking-tight">
+          Đã lưu
         </h1>
-        <p className="text-[13px] sm:text-[13.5px] text-slate-600 dark:text-purple-200/80 leading-relaxed font-normal">
-          {savedList.length > 0
-            ? `${savedList.length} bÃ i há»c báº¡n Ä‘Ã£ Ä‘Ã¡nh dáº¥u Ä‘á»ƒ Ã´n táº­p & tra cá»©u nhanh`
-            : 'ÄÃ¡nh dáº¥u cÃ¡c bÃ i há»c quan trá»ng Ä‘á»ƒ má»Ÿ xem láº¡i báº¥t cá»© khi nÃ o báº¡n cáº§n'}
+        <p className="text-xs text-amber-100/70">
+          Lưu bài học, video, sách và danh sách phát để xem lại.
         </p>
       </section>
 
-
-      {/* 4. Danh sÃ¡ch bÃ i há»c Ä‘Ã£ lÆ°u (Giao diá»‡n tháº» ChuyÃªn nghiá»‡p) */}
-      {isLoading ? (
-        <div className="p-8 text-center bg-white dark:bg-[#160D30] rounded-[22px] border border-slate-200 dark:border-purple-800/40">
-          <p className="text-[14px] text-slate-500 dark:text-purple-300 font-medium">Äang táº£i dá»¯ liá»‡u bÃ i há»c...</p>
+      {/* 2. SECTION Ở ĐẦU: ĐANG HỌC DỞ / ĐANG ĐỌC DỞ (NHƯ ẢNH USER GỬI) */}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
+          <PlayCircle size={15} className="fill-amber-400/20 text-amber-400" />
+          <span>ĐANG HỌC DỞ</span>
         </div>
-      ) : savedList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-7 bg-white dark:bg-[#160D30] rounded-[24px] border border-slate-200/80 dark:border-purple-800/40 text-center gap-3.5 my-1 shadow-xs">
-          <div className="w-14 h-14 rounded-[18px] bg-amber-50 dark:bg-purple-950/80 text-amber-700 dark:text-[#F8DF7B] flex items-center justify-center shadow-inner-xs">
-            <Bookmark size={26} strokeWidth={2.2} />
-          </div>
-          <div className="flex flex-col gap-1 max-w-[280px]">
-            <h2 className="text-[18px] font-black text-slate-900 dark:text-white">
-              ChÆ°a cÃ³ bÃ i há»c nÃ o
-            </h2>
-            <p className="text-[13px] text-slate-500 dark:text-purple-300 leading-relaxed font-normal">
-              Khi há»c má»™t bÃ i giáº£ng, báº¡n hÃ£y báº¥m biá»ƒu tÆ°á»£ng LÆ°u á»Ÿ gÃ³c pháº£i bÃ i há»c Ä‘á»ƒ xem láº¡i nhanh táº¡i Ä‘Ã¢y.
-            </p>
-          </div>
-          <Link
-            href="/cot-song"
-            className="flex items-center justify-center gap-2 h-11 px-5 rounded-[12px] bg-gradient-to-r from-purple-700 to-indigo-700 dark:from-purple-600 dark:to-indigo-600 text-white font-black text-[13.5px] shadow-sm active:scale-95 transition-transform"
-          >
-            <BookOpen size={16} />
-            <span>KhÃ¡m phÃ¡ Cá»™t sá»‘ng ngay</span>
-          </Link>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {savedList.map((item) => {
-            const topicIcon = `/images/topics/${item.topic_slug}.png`;
 
-            return (
-              <div
-                key={item.page_id}
-                className="p-3.5 sm:p-4 rounded-[20px] bg-white dark:bg-[#160D30] border border-slate-200/90 dark:border-purple-800/40 shadow-xs hover:shadow-md transition-all flex flex-col gap-3 group"
-              >
-                {/* HÃ ng trÃªn: Logo chuyÃªn Ä‘á» + TiÃªu Ä‘á» + NÃºt xÃ³a */}
-                <div className="flex items-start gap-3">
-                  {/* Thumbnail ChuyÃªn Ä‘á» 3D */}
-                  <div className="relative w-12 h-12 rounded-[14px] bg-slate-50 dark:bg-purple-950/70 border border-slate-200 dark:border-purple-800/50 p-1 flex items-center justify-center shrink-0 shadow-2xs overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={topicIcon}
-                      alt={item.topic_title}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                        const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'flex';
-                      }}
-                    />
-                    <div className="hidden w-full h-full items-center justify-center text-purple-700 dark:text-[#F8DF7B]">
-                      <BookOpen size={18} />
-                    </div>
+        {/* Card Đang học dở lớn */}
+        <div className="p-3.5 rounded-3xl bg-[#22150c] border border-[#553622] shadow-xl flex flex-col gap-3.5 transition-all">
+          <div className="flex items-center gap-3">
+            {/* Ảnh bìa bên trái có biểu tượng play/book ở góc dưới */}
+            <div className="relative w-28 sm:w-36 aspect-[16/10] rounded-2xl overflow-hidden bg-[#160e08] shrink-0 border border-white/10 shadow-md">
+              <img
+                src={continueBook.coverUrl}
+                alt={continueBook.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+              <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-amber-300 border border-white/20">
+                <PlayCircle size={13} className="fill-amber-400 text-black" />
+              </div>
+            </div>
 
-                    {/* Sá»‘ bÃ i */}
-                    <span className="absolute bottom-0 right-0 px-1 py-0.2 rounded-tl-[6px] bg-purple-900 text-amber-300 text-[8.5px] font-black">
-                      #{item.page_number}
-                    </span>
-                  </div>
+            {/* Thông tin bài học bên phải */}
+            <div className="flex flex-col min-w-0 flex-1 gap-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 tracking-wide uppercase">
+                <PlayCircle size={11} />
+                <span>ĐANG XEM DỞ</span>
+              </div>
+              <h2 className="text-sm font-bold text-amber-100 line-clamp-2 leading-snug">
+                {continueBook.title}
+              </h2>
+              <p className="text-[11px] text-[#9e8574] truncate">
+                {continueBook.subtitle}
+              </p>
 
-                  {/* ThÃ´ng tin bÃ i há»c */}
-                  <div className="flex-1 min-w-0 pt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase text-purple-700 dark:text-[#F8DF7B] tracking-wider truncate">
-                        {item.topic_title}
-                      </span>
-                      <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-[5px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
-                        ÄÃ£ lÆ°u
-                      </span>
-                    </div>
-
-                    <h3 className="text-[15.5px] sm:text-[16.5px] font-black text-slate-900 dark:text-white leading-snug line-clamp-2 mt-0.5 group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] transition-colors">
-                      {item.page_title}
-                    </h3>
-                  </div>
-
-                  {/* NÃºt xÃ³a khá»i danh sÃ¡ch Ä‘Ã£ lÆ°u */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleRemove(e, item)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors shrink-0 cursor-pointer"
-                    aria-label="XÃ³a bÃ i há»c khá»i danh sÃ¡ch Ä‘Ã£ lÆ°u"
-                    title="Bá» lÆ°u bÃ i há»c nÃ y"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+              {/* Thanh tiến độ học / đọc dở */}
+              <div className="flex items-center gap-2 mt-1">
+                <div className="flex-1 h-1.5 bg-[#160e08] rounded-full overflow-hidden border border-white/5">
+                  <div
+                    className="h-full bg-linear-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-300"
+                    style={{ width: `${continueBook.percent}%` }}
+                  />
                 </div>
-
-                {/* HÃ ng dÆ°á»›i: NÃºt má»Ÿ bÃ i há»c rÃµ rÃ ng chuyÃªn nghiá»‡p */}
-                <Link
-                  href={`/${item.topic_slug}/${item.page_slug}`}
-                  className="w-full h-10 rounded-[12px] bg-slate-900 dark:bg-white/10 dark:border dark:border-white/15 hover:opacity-95 text-white font-bold text-[13px] flex items-center justify-center gap-1.5 active:scale-[0.99] transition-all cursor-pointer"
-                >
-                  <span>Má»Ÿ há»c bÃ i nÃ y</span>
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* 5. Khá»‘i Gá»£i Ã½ KhÃ¡m PhÃ¡ ThÃªm ChuyÃªn Äá» (XÃ³a bá» cáº£m giÃ¡c trá»‘ng tráº£i) */}
-      <section className="flex flex-col gap-2.5 pt-2 border-t border-slate-200/70 dark:border-purple-800/30">
-        <div className="flex items-center gap-1.5 text-slate-700 dark:text-purple-200 text-[12px] font-black uppercase tracking-wide">
-          <Compass size={14} className="text-amber-600 dark:text-[#F8DF7B]" />
-          <span>Gá»£i Ã½ khÃ¡m phÃ¡ thÃªm chuyÃªn Ä‘á»:</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          {quickExploreTopics.map((topic) => (
-            <Link
-              key={topic.slug}
-              href={`/${topic.slug}`}
-              className="p-3 rounded-[16px] bg-white dark:bg-[#160D30] border border-slate-200/80 dark:border-purple-800/40 hover:border-purple-500/50 dark:hover:border-[#F8DF7B]/60 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2.5 group cursor-pointer"
-            >
-              <div className="w-10 h-10 rounded-[11px] bg-slate-50 dark:bg-purple-950/70 p-1 flex items-center justify-center shrink-0 border border-slate-200/60 dark:border-purple-800/40 group-hover:scale-105 transition-transform overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={topic.icon}
-                  alt={topic.title}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[9px] font-extrabold uppercase text-purple-700 dark:text-[#F8DF7B] tracking-wider truncate">
-                  {topic.badge}
-                </span>
-                <span className="text-[12px] font-black text-slate-900 dark:text-white leading-tight truncate mt-0.5 group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] transition-colors">
-                  {topic.title}
-                </span>
-                <span className="text-[10.5px] text-slate-400 dark:text-purple-300/70 font-medium">
-                  {topic.count}
+                <span className="text-[10px] font-mono font-bold text-amber-300 shrink-0">
+                  {continueBook.percent}%
                 </span>
               </div>
-            </Link>
-          ))}
+            </div>
+          </div>
+
+          {/* Nút to Tiếp tục học / đọc tràn ngang dưới cùng của card */}
+          <button
+            type="button"
+            onClick={handleContinueReading}
+            className="w-full py-2.5 px-4 rounded-2xl bg-[#2e1d12] hover:bg-amber-500 hover:text-slate-950 border border-amber-500/40 text-amber-200 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all cursor-pointer group"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400 group-hover:bg-slate-950 transition-colors" />
+            <span>Tiếp tục học</span>
+            <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </section>
 
-      {/* 6. Thanh Ä‘iá»u hÆ°á»›ng dÆ°á»›i cÃ¹ng */}
-      <BottomNav />
+      {/* 3. SECTION: ĐÃ LƯU GẦN ĐÂY */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
+            <Bookmark size={15} className="fill-amber-400 text-amber-400" />
+            <span>ĐÃ LƯU GẦN ĐÂY</span>
+          </div>
 
-      {/* 7. Modal LÆ°u tiáº¿n Ä‘á»™ & Äá»“ng bá»™ qua SÄT */}
-      <UserSyncModal
-        isOpen={showPhoneSync}
-        onClose={() => setShowPhoneSync(false)}
-        reason="manual"
-        onSuccess={refreshList}
-      />
+          {/* Bộ chọn 3 chế độ xem (List, Compact, Grid) như ảnh user gửi */}
+          <div className="p-0.5 rounded-xl bg-[#22150c] border border-[#553622] flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Danh sách lớn"
+              aria-label="Chế độ danh sách lớn"
+            >
+              <List size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('compact')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'compact'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Danh sách thu gọn"
+              aria-label="Chế độ danh sách thu gọn"
+            >
+              <Rows size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Lưới ô vuông"
+              aria-label="Chế độ lưới ô vuông"
+            >
+              <LayoutGrid size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* NỘI DUNG DANH SÁCH ĐÃ LƯU */}
+        {allSavedItems.length === 0 ? (
+          <div className="py-12 px-4 rounded-3xl bg-[#22150c] border border-[#553622] flex flex-col items-center justify-center text-center gap-2.5">
+            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+              <Bookmark size={22} />
+            </div>
+            <h3 className="text-xs font-bold text-amber-100">Chưa có mục nào được lưu</h3>
+            <p className="text-[11px] text-amber-200/60 max-w-xs">
+              Bấm biểu tượng Dấu trang khi đọc sách để lưu lại các trang quan trọng tại đây.
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          /* ================= GIAO DIỆN LƯỚI (GRID) - ẢNH 1 ================= */
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {allSavedItems.map((item) => (
+              <div
+                key={item.id}
+                className="p-3 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex flex-col justify-between gap-2.5 transition-all group"
+              >
+                {/* Dòng trên: Badge loại (VIDEO / CỘT SỐNG) + Nút Bookmark */}
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400 tracking-wider uppercase">
+                    {item.badgeType === 'video' ? (
+                      <>
+                        <PlayCircle size={11} />
+                        <span>VIDEO</span>
+                      </>
+                    ) : (
+                      <>
+                        <BookOpen size={11} />
+                        <span className="truncate">{item.category}</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleRemove(item);
+                    }}
+                    className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:text-red-400 transition-colors cursor-pointer"
+                    title="Bỏ lưu"
+                  >
+                    <Bookmark size={12} className="fill-amber-400" />
+                  </button>
+                </div>
+
+                {/* Khối giữa: Ảnh bìa + Badge số (#1, #2) */}
+                <div
+                  onClick={() => handleOpenItem(item)}
+                  className="relative w-full aspect-[16/11] rounded-xl overflow-hidden bg-[#160e08] border border-white/10 shadow-inner cursor-pointer"
+                >
+                  <img
+                    src={item.coverUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                  {item.badgeNumber && (
+                    <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 text-white font-mono font-black text-[10px] shadow-sm">
+                      {item.badgeNumber}
+                    </div>
+                  )}
+                </div>
+
+                {/* Khối dưới: Tiêu đề + Phụ đề */}
+                <div
+                  onClick={() => handleOpenItem(item)}
+                  className="flex flex-col gap-0.5 cursor-pointer min-w-0"
+                >
+                  <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 line-clamp-2 leading-tight">
+                    {item.title}
+                  </h3>
+                  <span className="text-[10px] text-[#9e8574] truncate">
+                    {item.subtitle}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* ================= GIAO DIỆN HÀNG NGANG (COMPACT / LIST) - ẢNH 2 ================= */
+          <div className="flex flex-col gap-2">
+            {allSavedItems.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleOpenItem(item)}
+                className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
+              >
+                {/* Bên trái: Thumbnail với Badge */}
+                <div className="relative w-16 sm:w-20 aspect-[16/11] rounded-xl overflow-hidden bg-[#160e08] border border-white/10 shrink-0">
+                  <img
+                    src={item.coverUrl}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                  {item.badgeType === 'video' ? (
+                    <div className="absolute bottom-0.5 left-0.5 flex items-center gap-0.5 text-[8.5px] font-bold text-amber-300 bg-black/70 px-1 rounded-sm">
+                      <PlayCircle size={9} />
+                      <span>VIDEO</span>
+                    </div>
+                  ) : item.badgeNumber ? (
+                    <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-blue-600 text-white font-mono font-bold text-[9px]">
+                      {item.badgeNumber}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Ở giữa: Tiêu đề + Chuyên mục */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[9.5px] font-bold text-amber-400/80 uppercase tracking-wider">
+                    {item.category}
+                  </span>
+                  <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 truncate leading-snug">
+                    {item.title}
+                  </h3>
+                  <span className="text-[10px] text-[#9e8574] truncate mt-0.5">
+                    {item.subtitle}
+                  </span>
+                </div>
+
+                {/* Bên phải: Nút Mũi tên & Nút Bookmark */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <ChevronRight
+                    size={16}
+                    className="text-[#9e8574] group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleRemove(item);
+                    }}
+                    className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:text-red-400 transition-colors cursor-pointer"
+                    title="Bỏ lưu"
+                  >
+                    <Bookmark size={13} className="fill-amber-400" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* MODAL ĐỌC SÁCH 3D KHI CLICK VÀO MỤC ĐÃ LƯU */}
+      {activeReaderBook && (
+        <SideBooksReaderModal
+          isOpen={Boolean(activeReaderBook)}
+          title={activeReaderBook.title}
+          author={activeReaderBook.author}
+          pages={activeReaderBook.pages}
+          initialPage={activeReaderBook.initialPage}
+          onClose={() => setActiveReaderBook(null)}
+        />
+      )}
+
+      {/* THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}
+      <BottomNav />
     </main>
   );
 }

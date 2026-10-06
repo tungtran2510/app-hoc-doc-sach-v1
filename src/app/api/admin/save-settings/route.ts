@@ -20,11 +20,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dữ liệu cài đặt không hợp lệ' }, { status: 400 });
     }
 
+    const targetWorkspace = settings.workspace_id || process.env.APP_WORKSPACE_ID || 'book_platform';
+
     // Lấy bản ghi hiện tại để merge an toàn
     const { data: existing } = await supabase
       .from('settings')
       .select('*')
-      .eq('workspace_id', settings.workspace_id || 'default')
+      .eq('workspace_id', targetWorkspace)
       .maybeSingle();
 
     const existingBlockStyles = existing?.block_styles || {};
@@ -71,7 +73,7 @@ export async function POST(req: NextRequest) {
     };
 
     const merged = {
-      workspace_id: settings.workspace_id || existing?.workspace_id || 'default',
+      workspace_id: targetWorkspace,
       app_name: settings.app_name ?? existing?.app_name ?? 'Qbiz Books',
       logo_url: settings.logo_url !== undefined ? settings.logo_url : (existing?.logo_url ?? null),
       primary_color: settings.primary_color ?? existing?.primary_color ?? '#0C0817',

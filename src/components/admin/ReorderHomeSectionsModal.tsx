@@ -34,18 +34,6 @@ const SECTION_DEFS: Record<string, SectionMeta> = {
     desc: 'Logo, Tên ứng dụng, định vị và huy hiệu chứng nhận',
     icon: Sparkles,
   },
-  topics: {
-    key: 'topics',
-    name: 'Danh sách chuyên đề học',
-    desc: 'Lưới các chủ đề chính (Cột sống, Dinh dưỡng, Nước...)',
-    icon: FolderTree,
-  },
-  recent_activity: {
-    key: 'recent_activity',
-    name: 'Hoạt động gần đây (Đang học dở)',
-    desc: 'Thẻ bài học đang theo dõi dở dang của người dùng',
-    icon: Sparkles,
-  },
   author_profile: {
     key: 'author_profile',
     name: 'Hồ sơ Tác giả & Chuyên gia',

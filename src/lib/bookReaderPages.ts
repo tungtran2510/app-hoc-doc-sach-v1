@@ -1,0 +1,117 @@
+/**
+ * Helper trích xuất danh sách URL ảnh trang (string[]) cho SideBooksReaderEngine
+ * Hỗ trợ cả sách nạp ảnh trang tùy biến (PDF/Word/Gallery) lẫn sách y khoa chuyên sâu
+ */
+import { RecommendedBook, AuthorBook } from './types';
+
+// Danh sách các trang giải phẫu atlas y khoa sắc nét làm trang nội dung chuẩn
+const DEFAULT_ATLAS_PAGES = [
+  '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+  '/documents/covers/cover_cot-song.png',
+  '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+  '/documents/covers/cover_dinh-duong.png',
+  '/documents/covers/cover_tieu-hoa.png',
+  '/documents/covers/cover_nuoc.png',
+  '/documents/covers/cover_tu_chua_lanh_lung_co.png',
+  '/documents/covers/cover_cam_nang_dot_song_co.png',
+  '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
+];
+
+export function getBookReaderPageUrls(book?: RecommendedBook | AuthorBook | null): string[] {
+  if (!book) return DEFAULT_ATLAS_PAGES;
+
+  // 1. Nếu admin đã tải lên danh sách ảnh trang flipbook_pages
+  if (Array.isArray(book.flipbook_pages) && book.flipbook_pages.length > 0) {
+    const valid = book.flipbook_pages.filter((u) => typeof u === 'string' && u.trim().length > 0);
+    if (valid.length > 0) {
+      if (book.cover_url && !valid.includes(book.cover_url)) {
+        return [book.cover_url, ...valid];
+      }
+      return valid;
+    }
+  }
+
+  // 2. Nếu có bộ sưu tập ảnh bên trong gallery_images
+  if (Array.isArray(book.gallery_images) && book.gallery_images.length > 0) {
+    const valid = book.gallery_images.filter((u) => typeof u === 'string' && u.trim().length > 0);
+    if (valid.length > 0) {
+      if (book.cover_url && !valid.includes(book.cover_url)) {
+        return [book.cover_url, ...valid];
+      }
+      return valid;
+    }
+  }
+
+  const title = (book.title || '').toLowerCase();
+  const cover = book.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png';
+
+  // 3. Sách chuyên đề: Hiểu đúng về cột sống
+  if (title.includes('cột sống') && (title.includes('hiểu đúng') || title.includes('thoát vị'))) {
+    return [
+      cover,
+      '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      '/documents/covers/cover_cot-song.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_cam_nang_dot_song_co.png',
+      '/documents/covers/cover_giai_ma_cot_song.png',
+      '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
+    ];
+  }
+
+  // 4. Sách chuyên đề: Tự chữa lành lưng & cổ
+  if (title.includes('tự chữa lành') || title.includes('đau lưng')) {
+    return [
+      cover,
+      '/documents/covers/cover_cot-song.png',
+      '/documents/covers/cover_cam_nang_dot_song_co.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_nuoc.png',
+      '/documents/covers/back_cover_tu_chua_lanh_lung_co.png',
+    ];
+  }
+
+  // 5. Sách chuyên đề: Dinh dưỡng kháng viêm
+  if (title.includes('dinh dưỡng') || title.includes('kháng viêm')) {
+    return [
+      cover,
+      '/documents/covers/cover_dinh-duong.png',
+      '/documents/covers/cover_tieu-hoa.png',
+      '/documents/covers/cover_nuoc.png',
+      '/documents/covers/cover_gan-mat-tuy.png',
+      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
+    ];
+  }
+
+  // 6. Sách chuyên đề: Cẩm nang đốt sống cổ & vai gáy
+  if (title.includes('đốt sống cổ') || title.includes('vai gáy')) {
+    return [
+      cover,
+      '/documents/covers/cover_cam_nang_dot_song_co.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_cot-song.png',
+      '/documents/covers/back_cover_cam_nang_dot_song_co.png',
+    ];
+  }
+
+  // 7. Sách chuyên đề: Giải mã cột sống
+  if (title.includes('giải mã')) {
+    return [
+      cover,
+      '/documents/covers/cover_giai_ma_cot_song.png',
+      '/documents/covers/cover_cot-song.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/back_cover_giai_ma_cot_song.png',
+    ];
+  }
+
+  // 8. Sách chung: Đưa bìa sách lên đầu, tiếp đến các trang atlas và trang bìa sau
+  return [
+    cover,
+    '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+    '/documents/covers/cover_co-the-nguoi.png',
+    '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+    '/documents/covers/cover_cot-song.png',
+    '/documents/covers/cover_tieu-hoa.png',
+    '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
+  ];
+}

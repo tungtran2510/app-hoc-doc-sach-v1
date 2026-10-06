@@ -29,13 +29,13 @@ interface EditRecommendedBooksModalProps {
   initialTitle?: string | null;
   initialSubtitle?: string | null;
   initialBooks?: RecommendedBook[];
-  initialLayout?: 'grid' | 'lookbook' | null;
+  initialLayout?: 'bookshelf' | 'grid' | 'lookbook' | null;
   onClose: () => void;
   onSaved: (data: {
     title: string;
     subtitle: string;
     books: RecommendedBook[];
-    layout?: 'grid' | 'lookbook';
+    layout?: 'bookshelf' | 'grid' | 'lookbook';
   }) => void;
 }
 
@@ -44,7 +44,7 @@ export default function EditRecommendedBooksModal({
   initialTitle,
   initialSubtitle,
   initialBooks = [],
-  initialLayout = 'grid',
+  initialLayout = 'bookshelf',
   onClose,
   onSaved,
 }: EditRecommendedBooksModalProps) {
@@ -52,8 +52,8 @@ export default function EditRecommendedBooksModal({
   const [subtitle, setSubtitle] = useState(
     initialSubtitle || 'Tài liệu tham khảo chuyên sâu giúp bạn hiểu và chăm sóc cơ thể mỗi ngày'
   );
-  const [layout, setLayout] = useState<'grid' | 'lookbook'>(
-    initialLayout === 'lookbook' ? 'lookbook' : 'grid'
+  const [layout, setLayout] = useState<'bookshelf' | 'grid' | 'lookbook'>(
+    initialLayout === 'lookbook' ? 'lookbook' : initialLayout === 'grid' ? 'grid' : 'bookshelf'
   );
   const [books, setBooks] = useState<RecommendedBook[]>([]);
   const [uploadingBookId, setUploadingBookId] = useState<string | null>(null);
@@ -80,7 +80,13 @@ export default function EditRecommendedBooksModal({
       setSubtitle(
         initialSubtitle || 'Tài liệu tham khảo chuyên sâu giúp bạn hiểu và chăm sóc cơ thể mỗi ngày'
       );
-      setLayout(initialLayout === 'lookbook' ? 'lookbook' : 'grid');
+      setLayout(
+        initialLayout === 'lookbook'
+          ? 'lookbook'
+          : initialLayout === 'grid'
+          ? 'grid'
+          : 'bookshelf'
+      );
       setBooks(
         Array.isArray(initialBooks) && initialBooks.length > 0
           ? initialBooks.map((b) => ({
@@ -325,12 +331,26 @@ export default function EditRecommendedBooksModal({
               <div className="flex items-center gap-1 bg-surface p-0.5 rounded-[8px] border border-line">
                 <button
                   type="button"
+                  onClick={() => setLayout('bookshelf')}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[11px] font-bold transition-all cursor-pointer ${
+                    layout === 'bookshelf'
+                      ? 'bg-amber-600 text-white shadow-2xs'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                  title="Kệ sách gỗ 3D sang trọng"
+                >
+                  <BookOpen size={12} />
+                  <span>Kệ gỗ 3D</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setLayout('grid')}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[11px] font-bold transition-all cursor-pointer ${
                     layout === 'grid'
                       ? 'bg-primary text-white shadow-2xs'
                       : 'text-muted hover:text-ink'
                   }`}
+                  title="Lưới 2 cột hiện đại"
                 >
                   <LayoutGrid size={12} />
                   <span>Lưới 2 cột</span>
@@ -343,6 +363,7 @@ export default function EditRecommendedBooksModal({
                       ? 'bg-primary text-white shadow-2xs'
                       : 'text-muted hover:text-ink'
                   }`}
+                  title="Danh sách chi tiết"
                 >
                   <List size={12} />
                   <span>Danh sách</span>

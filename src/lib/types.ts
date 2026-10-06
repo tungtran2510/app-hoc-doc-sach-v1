@@ -97,7 +97,7 @@ export interface Settings {
   recommended_books_title?: string | null;
   recommended_books_subtitle?: string | null;
   recommended_books?: RecommendedBook[];
-  recommended_books_layout?: 'grid' | 'lookbook' | null;
+  recommended_books_layout?: 'bookshelf' | 'grid' | 'lookbook' | null;
   flat_books_title?: string | null;
   flat_books?: RecommendedBook[];
   home_sections_order?: string[] | null;

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SideBooks True Conical Page Curl Prototype</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1319; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; font-family: sans-serif; }
+    #canvas-container { position: relative; width: 340px; height: 480px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); border-radius: 4px; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .controls { margin-top: 20px; display: flex; gap: 12px; }
+    button { padding: 8px 16px; border-radius: 8px; border: 1px solid #444; background: #1e2530; color: #fff; font-weight: bold; cursor: pointer; }
+    button:active { background: #f59e0b; color: #000; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="bookCanvas" width="680" height="960"></canvas>
+  </div>
+  <div class="controls">
+    <button id="prevBtn">← Lật lùi</button>
+    <button id="nextBtn">Lật tiếp →</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('bookCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    const pageImages = [
+      'http://localhost:3088/documents/covers/cover_hieu_dung_ve_cot_song.png',
+      'http://localhost:3088/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      'http://localhost:3088/documents/covers/cover_cot-song.png'
+    ];
+
+    const loadedImages = [];
+    let imagesLoaded = 0;
+    let curIndex = 0;
+
+    // Animation state
+    let isAnimating = false;
+    let animDirection = 1; // 1: next, -1: prev
+    let animProgress = 0; // 0 to 1
+    let animStartTime = 0;
+    const ANIM_DURATION = 650;
+
+    // Drag state
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let dragCurX = 0, dragCurY = 0;
+    let dragCorner = 'bottom-right'; // 'bottom-right' or 'bottom-left'
+
+    pageImages.forEach((src, idx) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        imagesLoaded++;
+        if (imagesLoaded === pageImages.length) {
+          drawStatic();
+        }
+      };
+      img.src = src;
+      loadedImages[idx] = img;
+    });
+
+    function drawStatic() {
+      ctx.clearRect(0, 0, W, H);
+      const curImg = loadedImages[curIndex];
+      if (curImg) {
+        ctx.drawImage(curImg, 0, 0, W, H);
+        drawSpineGutter();
+      }
+    }
+
+    function drawSpineGutter() {
+      // Gáy sách bên trái (Left binding) chuẩn SideBooks
+      const gutterW = W * 0.04;
+      const grad = ctx.createLinearGradient(0, 0, gutterW, 0);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.45)');
+      grad.addColorStop(0.3, 'rgba(0, 0, 0, 0.2)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, gutterW, H);
+    }
+
+    // High quality Conical Page Curl Math
+    function drawCurlNext(progress, cornerY = H) {
+      const imgTop = loadedImages[curIndex];
+      const imgUnder = loadedImages[Math.min(curIndex + 1, loadedImages.length - 1)];
+
+      // 1. Draw underlying page flat on the bottom
+      ctx.clearRect(0, 0, W, H);
+      if (imgUnder) {
+        ctx.drawImage(imgUnder, 0, 0, W, H);
+      }
+
+      // Smooth progress curve (ease-in-out)
+      const p = Math.max(0.001, Math.min(0.999, progress));
+
+      // Calculate fold line
+      // Curl moves from x = W down to x = -W * 0.3
+      const foldX = W * (1 - p * 1.3);
+      const angle = 0.28 * Math.sin(p * Math.PI); // Conical diagonal tilt
+
+      ctx.save();
+      // Clip unpeeled portion of top page (left of fold line)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.max(0, foldX + Math.tan(angle) * cornerY), 0);
+      ctx.lineTo(foldX, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(imgTop, 0, 0, W, H);
+      ctx.restore();
+
+      // Draw drop shadow cast onto underlying page along the fold line
+      ctx.save();
+      const shadowW = Math.min(W * 0.25, 40 + p * 80);
+      const shadowGrad = ctx.createLinearGradient(foldX, 0, foldX + shadowW, 0);
+      shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.6)');
+      shadowGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0.3)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.beginPath();
+      ctx.moveTo(foldX, 0);
+      ctx.lineTo(foldX + shadowW, 0);
+      ctx.lineTo(foldX + shadowW, H);
+      ctx.lineTo(foldX, H);
+      ctx.closePath();
+      ctx.fillStyle = shadowGrad;
+      ctx.fill();
+      ctx.restore();
+
+      // Draw the Curled Cylinder Back of the paper
+      const curlRadius = Math.min(W * 0.35, (1 - p) * W * 0.6 + 20);
+      const curlLeft = foldX - curlRadius * 0.6;
+      const curlRight = foldX + curlRadius * 0.8;
+
+      ctx.save();
+      // Draw curled paper flap
+      ctx.beginPath();
+      ctx.moveTo(foldX, 0);
+      ctx.quadraticCurveTo(curlRight, H * 0.5, foldX, H);
+      ctx.lineTo(curlLeft, H);
+      ctx.quadraticCurveTo(curlLeft + curlRadius * 0.3, H * 0.5, curlLeft, 0);
+      ctx.closePath();
+
+      // Curled paper cylinder lighting (Ivory back + highlight gradient)
+      const curlGrad = ctx.createLinearGradient(curlLeft, 0, curlRight, 0);
+      curlGrad.addColorStop(0, '#e2ded5');
+      curlGrad.addColorStop(0.2, '#fcfaf5'); // 3D highlight peak
+      curlGrad.addColorStop(0.5, '#ece7dd');
+      curlGrad.addColorStop(0.85, '#bcb5a7'); // cylinder shadow
+      curlGrad.addColorStop(1, '#686256');
+
+      ctx.fillStyle = curlGrad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      drawSpineGutter();
+    }
+
+    function drawCurlPrev(progress) {
+      const imgUnder = loadedImages[curIndex];
+      const imgTop = loadedImages[Math.max(0, curIndex - 1)];
+
+      // 1. Draw current page flat underneath
+      ctx.clearRect(0, 0, W, H);
+      if (imgUnder) {
+        ctx.drawImage(imgUnder, 0, 0, W, H);
+      }
+
+      // Smooth progress curve: p goes from 0 (curled on left) to 1 (unrolled flat on right)
+      const p = Math.max(0.001, Math.min(0.999, progress));
+
+      // Fold moves from x = 0 across to x = W * 1.2
+      const foldX = p * W * 1.15;
+      const angle = 0.28 * Math.sin((1 - p) * Math.PI);
+
+      // 2. Draw unrolled portion of previous page (to the left of fold line)
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.min(W, foldX - Math.tan(angle) * H), 0);
+      ctx.lineTo(Math.min(W, foldX), H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(imgTop, 0, 0, W, H);
+      ctx.restore();
+
+      // 3. Draw drop shadow cast onto current page to the right of fold
+      ctx.save();
+      const shadowW = Math.min(W * 0.25, 40 + (1 - p) * 80);
+      const shadowGrad = ctx.createLinearGradient(foldX, 0, foldX + shadowW, 0);
+      shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.6)');
+      shadowGrad.addColorStop(0.3, 'rgba(0, 0, 0, 0.3)');
+      shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.beginPath();
+      ctx.moveTo(foldX, 0);
+      ctx.lineTo(foldX + shadowW, 0);
+      ctx.lineTo(foldX + shadowW, H);
+      ctx.lineTo(foldX, H);
+      ctx.closePath();
+      ctx.fillStyle = shadowGrad;
+      ctx.fill();
+      ctx.restore();
+
+      // 4. Draw the Unrolling Cylinder of the previous page
+      const curlRadius = Math.min(W * 0.35, p * W * 0.6 + 20);
+      const curlLeft = foldX - curlRadius * 0.5;
+      const curlRight = foldX + curlRadius * 0.7;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(foldX, 0);
+      ctx.quadraticCurveTo(curlRight, H * 0.5, foldX, H);
+      ctx.lineTo(curlLeft, H);
+      ctx.quadraticCurveTo(curlLeft + curlRadius * 0.3, H * 0.5, curlLeft, 0);
+      ctx.closePath();
+
+      const curlGrad = ctx.createLinearGradient(curlLeft, 0, curlRight, 0);
+      curlGrad.addColorStop(0, '#e2ded5');
+      curlGrad.addColorStop(0.25, '#fcfaf5'); // 3D highlight peak
+      curlGrad.addColorStop(0.55, '#ece7dd');
+      curlGrad.addColorStop(0.85, '#bcb5a7'); // cylinder shadow
+      curlGrad.addColorStop(1, '#686256');
+
+      ctx.fillStyle = curlGrad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      drawSpineGutter();
+    }
+
+    window.flipNext = function() {
+      if (curIndex >= pageImages.length - 1 || isAnimating) return;
+      isAnimating = true;
+      animDirection = 1;
+      animStartTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - animStartTime;
+        let t = Math.min(1, elapsed / ANIM_DURATION);
+        // easeInOutCubic
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        drawCurlNext(ease);
+
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          curIndex++;
+          isAnimating = false;
+          drawStatic();
+        }
+      }
+      requestAnimationFrame(step);
+    };
+
+    window.flipPrev = function() {
+      if (curIndex <= 0 || isAnimating) return;
+      isAnimating = true;
+      animDirection = -1;
+      animStartTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - animStartTime;
+        let t = Math.min(1, elapsed / ANIM_DURATION);
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        drawCurlPrev(ease);
+
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          curIndex--;
+          isAnimating = false;
+          drawStatic();
+        }
+      }
+      requestAnimationFrame(step);
+    };
+
+    document.getElementById('nextBtn').onclick = window.flipNext;
+    document.getElementById('prevBtn').onclick = window.flipPrev;
+
+    // Direct touch / drag on canvas
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      if (x > W * 0.7) {
+        // Drag right side to peel next
+        isDragging = true;
+        dragCorner = 'bottom-right';
+        dragStartX = x;
+      } else if (x < W * 0.3) {
+        // Drag left side to peel prev
+        isDragging = true;
+        dragCorner = 'bottom-left';
+        dragStartX = x;
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      if (dragCorner === 'bottom-right' && curIndex < pageImages.length - 1) {
+        const p = Math.max(0, Math.min(1, (W - x) / (W * 0.8)));
+        drawCurlNext(p);
+      } else if (dragCorner === 'bottom-left' && curIndex > 0) {
+        const p = Math.max(0, Math.min(1, x / (W * 0.8)));
+        drawCurlPrev(p);
+      }
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      if (dragCorner === 'bottom-right' && curIndex < pageImages.length - 1) {
+        if (x < W * 0.6) {
+          window.flipNext();
+        } else {
+          drawStatic();
+        }
+      } else if (dragCorner === 'bottom-left' && curIndex > 0) {
+        if (x > W * 0.4) {
+          window.flipPrev();
+        } else {
+          drawStatic();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

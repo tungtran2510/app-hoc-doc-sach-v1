@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Download, X, Smartphone } from 'lucide-react';
 import PwaInstallModal from './PwaInstallModal';
 
@@ -11,10 +12,14 @@ declare global {
 }
 
 export default function PwaRegistrar() {
+  const pathname = usePathname();
   const [showBanner, setShowBanner] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [isStandalone, setIsStandalone] = useState<boolean>(false);
   const [showFloatingPill, setShowFloatingPill] = useState<boolean>(false);
+
+  // Không hiển thị banner trên trang đọc sách toàn màn hình
+  const isReaderPage = pathname?.startsWith('/thu-nghiem-lat-sach') || pathname?.startsWith('/sach/');
 
   useEffect(() => {
     // 1. Đăng ký Service Worker và ép cập nhật bản mới nhất
@@ -22,7 +27,7 @@ export default function PwaRegistrar() {
       const syncThemeColor = () => {
         const stored = localStorage.getItem('giao_dien');
         const isDark = stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        const targetColor = isDark ? '#0C0817' : '#FFFFFF';
+        const targetColor = '#160e08';
         let m = document.getElementById('app-theme-color') as HTMLMetaElement | null;
         if (!m) {
           m = document.querySelector('meta[name="theme-color"]');
@@ -150,16 +155,9 @@ export default function PwaRegistrar() {
     };
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // 5. Hiển thị thông báo nhắc cài đặt sau 1 giây khi vào app (nếu chưa cài)
+    // 5. Không tự động bật banner che đỉnh kệ sách (người dùng cài đặt qua menu Cài đặt trên giá sách)
     const bannerTimer = setTimeout(() => {
-      if (!checkStandalone()) {
-        const dismissed = sessionStorage.getItem('pwa_banner_dismissed');
-        if (!dismissed) {
-          setShowBanner(true);
-        } else {
-          setShowFloatingPill(true);
-        }
-      }
+      setShowBanner(false);
     }, 1000);
 
     return () => {
@@ -196,23 +194,23 @@ export default function PwaRegistrar() {
   return (
     <>
       {/* 1. THANH THÔNG BÁO CÀI ĐẶT ỨNG DỤNG NỔI BẬT KHI VÀO TRANG */}
-      {showBanner && (
+      {showBanner && !isReaderPage && (
         <aside
           role="region"
           aria-label="Thông báo cài đặt ứng dụng"
-          className="fixed top-2.5 left-1/2 -translate-x-1/2 z-[70] w-[94%] max-w-[460px] md:max-w-[780px] p-2.5 rounded-[18px] bg-white/95 dark:bg-[#1C123D]/95 text-slate-900 dark:text-white border border-slate-300/80 dark:border-purple-400/50 shadow-[0_10px_35px_rgba(0,0,0,0.28)] backdrop-blur-md animate-in slide-in-from-top-4 duration-300 flex items-center justify-between gap-2.5"
+          className="fixed top-2.5 left-1/2 -translate-x-1/2 z-[70] w-[94%] max-w-[460px] md:max-w-[780px] p-2.5 rounded-[18px] bg-[#22150c]/95 text-[#fdf7ee] border border-[#4a2e1b] shadow-[0_10px_35px_rgba(0,0,0,0.7)] backdrop-blur-md animate-in slide-in-from-top-4 duration-300 flex items-center justify-between gap-2.5"
         >
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-10 h-10 rounded-[12px] overflow-hidden shrink-0 shadow-xs border border-slate-200 dark:border-purple-400/40 p-0.5 bg-white dark:bg-[#120A2B]">
+            <div className="w-10 h-10 rounded-[12px] overflow-hidden shrink-0 shadow-xs border border-slate-200 dark:border-purple-400/40 p-0.5 bg-[#160e08] border border-[#4a2e1b]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/app_logo.png?v=21" alt="Qbiz Books" className="w-full h-full object-cover rounded-[10px]" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[13px] sm:text-[14px] font-black text-slate-900 dark:text-white leading-tight truncate flex items-center gap-1.5">
+              <span className="text-[13px] sm:text-[14px] font-black text-[#fdf7ee] leading-tight truncate flex items-center gap-1.5">
                 <span>Cài đặt Qbiz Books</span>
                 <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-full bg-emerald-500 text-white">Nhanh</span>
               </span>
-              <span className="text-[11px] sm:text-[11.5px] text-slate-600 dark:text-purple-200/80 leading-tight truncate">
+              <span className="text-[11px] sm:text-[11.5px] text-[#d5c3b3] leading-tight truncate">
                 Mở nhanh từ màn hình, học mượt 0ms & lưu bài
               </span>
             </div>
@@ -222,7 +220,7 @@ export default function PwaRegistrar() {
             <button
               type="button"
               onClick={handleInstallClick}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-[11px] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-500 dark:from-[#F8DF7B] dark:to-amber-400 text-slate-950 font-black text-[12px] shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-[11px] bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-[#160e08] font-black text-[12px] shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <Download size={13} strokeWidth={2.8} />
               <span>Cài đặt</span>
@@ -230,7 +228,7 @@ export default function PwaRegistrar() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#9e8574] hover:text-[#fdf7ee] cursor-pointer"
               aria-label="Đóng thông báo"
             >
               <X size={15} />
@@ -240,7 +238,7 @@ export default function PwaRegistrar() {
       )}
 
       {/* 2. NÚT NỔI NHẮC CÀI APP NẾU ĐÃ TẮT BANNER (GỌN GÀNG GÓC PHẢI MÀN HÌNH) */}
-      {!showBanner && showFloatingPill && (
+      {!showBanner && showFloatingPill && !isReaderPage && (
         <button
           type="button"
           onClick={handleInstallClick}

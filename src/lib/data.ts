@@ -90,13 +90,11 @@ export function normalizeAuthorProfile(raw?: any): AuthorProfile {
 
 export const DEFAULT_HOME_SECTIONS_ORDER = [
   'brand_card',
-  'topics',
-  'recent_activity',
+  'recommended_books',
+  'flat_books',
   'author_profile',
   'author_books',
   'author_philosophy',
-  'recommended_books',
-  'flat_books',
   'author_contact',
 ];
 
@@ -195,10 +193,11 @@ export async function getSettings(): Promise<Settings> {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
+        const workspaceId = process.env.APP_WORKSPACE_ID || process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform';
         const { data } = await supabase
           .from('settings')
           .select('*')
-          .eq('workspace_id', 'default')
+          .eq('workspace_id', workspaceId)
           .single();
         if (data) {
           const authProfile = normalizeAuthorProfile(data.author_profile);

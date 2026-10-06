@@ -26,12 +26,15 @@ import ModernBookCover from './ModernBookCover';
 import BookDetailModal, { UnifiedBookItem } from './BookDetailModal';
 import ScrollReveal from './ScrollReveal';
 import FlipbookViewer from './FlipbookViewer';
+import WoodenBookshelf from './WoodenBookshelf';
+import SideBooksReaderModal from './SideBooksReaderModal';
+import { getBookReaderPageUrls } from '../lib/bookReaderPages';
 
 interface RecommendedBooksSectionProps {
   initialTitle?: string | null;
   initialSubtitle?: string | null;
   initialBooks?: RecommendedBook[];
-  initialLayout?: 'grid' | 'lookbook' | null;
+  initialLayout?: 'bookshelf' | 'grid' | 'lookbook' | null;
   sectionIndex?: number;
   totalSections?: number;
   isHidden?: boolean;
@@ -41,13 +44,21 @@ interface RecommendedBooksSectionProps {
   onOpenReorderModal?: () => void;
   hotline?: string | null;
   zaloUrl?: string | null;
+  appName?: string | null;
+  logoUrl?: string | null;
+  onOpenWelcome?: () => void;
+  onOpenAdminSettings?: () => void;
+  onOpenEditApp?: () => void;
+  onOpenUserSync?: () => void;
+  onOpenPwaInstall?: () => void;
+  onLogout?: () => void;
 }
 
 export default function RecommendedBooksSection({
   initialTitle,
   initialSubtitle,
   initialBooks = [],
-  initialLayout = 'grid',
+  initialLayout = 'bookshelf',
   sectionIndex,
   totalSections,
   isHidden = false,
@@ -57,18 +68,31 @@ export default function RecommendedBooksSection({
   onOpenReorderModal,
   hotline,
   zaloUrl,
+  appName,
+  logoUrl,
+  onOpenWelcome,
+  onOpenAdminSettings,
+  onOpenEditApp,
+  onOpenUserSync,
+  onOpenPwaInstall,
+  onLogout,
 }: RecommendedBooksSectionProps) {
   const [title, setTitle] = useState(initialTitle || 'Tài Liệu Y Khoa');
   const [subtitle, setSubtitle] = useState(
     initialSubtitle || 'Tài liệu tham khảo chuyên sâu giúp bạn hiểu và chăm sóc cơ thể mỗi ngày'
   );
   const [books, setBooks] = useState<RecommendedBook[]>(initialBooks);
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'lookbook'>(
-    initialLayout === 'lookbook' ? 'lookbook' : 'grid'
+  const [layoutMode, setLayoutMode] = useState<'bookshelf' | 'grid' | 'lookbook'>(
+    initialLayout === 'lookbook'
+      ? 'lookbook'
+      : initialLayout === 'grid'
+      ? 'grid'
+      : 'bookshelf'
   );
   const [isAdmin, setIsAdmin] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<RecommendedBook | null>(null);
+  const [sideBooksModalBook, setSideBooksModalBook] = useState<RecommendedBook | null>(null);
   const [flipbookPreviewBook, setFlipbookPreviewBook] = useState<RecommendedBook | null>(null);
   const [editingSingleBook, setEditingSingleBook] = useState<RecommendedBook | null>(null);
 
@@ -87,14 +111,22 @@ export default function RecommendedBooksSection({
     if (initialTitle) setTitle(initialTitle);
     if (initialSubtitle) setSubtitle(initialSubtitle);
     if (initialBooks && initialBooks.length > 0) setBooks(initialBooks);
-    if (initialLayout) setLayoutMode(initialLayout === 'lookbook' ? 'lookbook' : 'grid');
+    if (initialLayout) {
+      setLayoutMode(
+        initialLayout === 'lookbook'
+          ? 'lookbook'
+          : initialLayout === 'grid'
+          ? 'grid'
+          : 'bookshelf'
+      );
+    }
   }, [initialTitle, initialSubtitle, initialBooks, initialLayout]);
 
   const handleSaved = (data: {
     title: string;
     subtitle: string;
     books: RecommendedBook[];
-    layout?: 'grid' | 'lookbook';
+    layout?: 'bookshelf' | 'grid' | 'lookbook';
   }) => {
     setTitle(data.title);
     setSubtitle(data.subtitle);
@@ -104,7 +136,7 @@ export default function RecommendedBooksSection({
     }
   };
 
-  const toggleLayoutMode = async (mode: 'grid' | 'lookbook') => {
+  const toggleLayoutMode = async (mode: 'bookshelf' | 'grid' | 'lookbook') => {
     setLayoutMode(mode);
     if (isAdmin) {
       await saveSettingsApi({
@@ -195,49 +227,57 @@ export default function RecommendedBooksSection({
         />
       )}
 
-      {/* TIÊU ĐỀ MỤC & NHÓM NÚT CHUYỂN CHẾ ĐỘ XEM (BỎ BADGE SỐ TÀI LIỆU, TỰ ĐỘNG XUỐNG DÒNG KHÔNG ĐÈ NÚT) */}
-      <div className="flex flex-col gap-1.5">
-        {/* Hàng 1: Tiêu đề bên trái (tự co giãn / xuống dòng), Nút chuyển đổi Lưới / Danh sách bên phải */}
-        <div className="flex items-center justify-between gap-2.5">
-          <h2 className="text-[18px] sm:text-[19px] font-extrabold text-ink leading-tight break-words line-clamp-2 flex-1 min-w-0">
-            {title}
-          </h2>
+      {/* TIÊU ĐỀ MỤC & BỘ CHUYỂN CHẾ ĐỘ (CHỈ HIỂN THỊ KHI KHÔNG Ở CHẾ ĐỘ KỆ GỖ 3D ĐỂ TRÁNH LẶP TIÊU ĐỀ) */}
+      {layoutMode !== 'bookshelf' && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2.5">
+            <h2 className="text-[18px] sm:text-[19px] font-extrabold text-[#fdf7ee] leading-tight break-words line-clamp-2 flex-1 min-w-0">
+              {title}
+            </h2>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
-            {/* Nút chuyển đổi kiểu hiển thị: Lưới hoặc Danh sách chi tiết */}
-            <div className="inline-flex items-center bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-[10px] p-0.5 shadow-2xs">
-              <button
-                type="button"
-                onClick={() => toggleLayoutMode('grid')}
-                className={`w-7 h-7 rounded-[7px] flex items-center justify-center transition-all cursor-pointer ${
-                  layoutMode === 'grid'
-                    ? 'bg-[#1E3A8A] text-amber-300 shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
-                }`}
-                title="Xem dạng lưới 2 cột"
-                aria-label="Xem dạng lưới 2 cột"
-              >
-                <LayoutGrid size={13} strokeWidth={2.5} />
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleLayoutMode('lookbook')}
-                className={`w-7 h-7 rounded-[7px] flex items-center justify-center transition-all cursor-pointer ${
-                  layoutMode === 'lookbook'
-                    ? 'bg-[#1E3A8A] text-amber-300 shadow-xs font-bold'
-                    : 'text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
-                }`}
-                title="Xem dạng danh sách chi tiết"
-                aria-label="Xem dạng danh sách chi tiết"
-              >
-                <List size={14} strokeWidth={2.5} />
-              </button>
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <div className="inline-flex items-center bg-[#24170e] border border-[#3d2617] rounded-[10px] p-0.5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => toggleLayoutMode('bookshelf')}
+                  className="h-7 px-2 rounded-[7px] flex items-center gap-1 transition-all cursor-pointer text-[#9e8574] hover:text-amber-200"
+                  title="Kệ sách gỗ 3D sang trọng chuẩn SideBooks"
+                  aria-label="Kệ sách gỗ 3D"
+                >
+                  <BookOpen size={13} strokeWidth={2.5} />
+                  <span className="text-[11px] hidden xs:inline font-bold">Kệ 3D</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleLayoutMode('grid')}
+                  className={`w-7 h-7 rounded-[7px] flex items-center justify-center transition-all cursor-pointer ${
+                    layoutMode === 'grid'
+                      ? 'bg-amber-600 text-amber-100 shadow-xs font-bold'
+                      : 'text-[#9e8574] hover:text-amber-200'
+                  }`}
+                  title="Xem dạng lưới 2 cột"
+                  aria-label="Xem dạng lưới 2 cột"
+                >
+                  <LayoutGrid size={13} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleLayoutMode('lookbook')}
+                  className={`w-7 h-7 rounded-[7px] flex items-center justify-center transition-all cursor-pointer ${
+                    layoutMode === 'lookbook'
+                      ? 'bg-amber-600 text-amber-100 shadow-xs font-bold'
+                      : 'text-[#9e8574] hover:text-amber-200'
+                  }`}
+                  title="Xem dạng danh sách chi tiết"
+                  aria-label="Xem dạng danh sách chi tiết"
+                >
+                  <List size={14} strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Hàng 2: Đã lược bỏ mô tả sau tiêu đề theo đúng yêu cầu */}
-      </div>
+      )}
 
       {/* NỘI DUNG DANH SÁCH SÁCH */}
       {books.length === 0 && isAdmin ? (
@@ -255,6 +295,31 @@ export default function RecommendedBooksSection({
             Nhấn vào đây để thêm các đầu sách khuyên đọc với bìa 3D hiện đại và thông tin chuyên sâu.
           </p>
         </div>
+      ) : layoutMode === 'bookshelf' ? (
+        /* =================== KIỂU 0: KỆ SÁCH GỖ 3D CHUẨN SIDEBOOKS =================== */
+        <WoodenBookshelf
+          books={books}
+          isAdmin={isAdmin}
+          title={title}
+          appName={appName}
+          logoUrl={logoUrl}
+          onOpenWelcome={onOpenWelcome}
+          onOpenAdminSettings={onOpenAdminSettings}
+          onOpenEditApp={onOpenEditApp}
+          onOpenAddBookModal={() => setShowEditModal(true)}
+          onOpenUserSync={onOpenUserSync}
+          onOpenPwaInstall={onOpenPwaInstall}
+          onLogout={onLogout}
+          badgeText="SideBooks 3D"
+          layoutMode={layoutMode}
+          onToggleLayoutMode={toggleLayoutMode}
+          onSelectBook={(book) => setSelectedBook(book)}
+          onReadBook3D={(book) => setSideBooksModalBook(book)}
+          onEditSingleBook={(book) => setEditingSingleBook(book)}
+          onToggleBookVisibility={handleToggleBookVisibility}
+          onMoveBook={handleMoveBook}
+          onDeleteBook={handleDeleteBook}
+        />
       ) : layoutMode === 'lookbook' ? (
         /* =================== KIỂU 1: LOOKBOOK CHUYÊN NGHIỆP (CÂN ĐỐI, KHÔNG RỚT CHỮ) =================== */
         <div className="flex flex-col gap-3">
@@ -269,7 +334,7 @@ export default function RecommendedBooksSection({
                 delay={idx * 120}
               >
                 <div
-                  className={`p-3.5 sm:p-4 rounded-[14px] bg-white text-slate-900 border border-slate-200/80 shadow-xs hover:shadow-lg hover:shadow-blue-900/10 hover:border-[#1E3A8A]/50 dark:hover:border-[#F8DF7B]/60 dark:hover:shadow-[0_12px_28px_rgba(248,223,123,0.15)] hover:-translate-y-1.5 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex flex-row gap-3 sm:gap-4.5 group relative ${
+                  className={`p-3.5 sm:p-4 rounded-[14px] bg-[#22150c] text-[#fdf7ee] border border-[#3d2617] shadow-sm hover:border-amber-500/60 hover:shadow-[0_12px_28px_rgba(0,0,0,0.6)] hover:-translate-y-1.5 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex flex-row gap-3 sm:gap-4.5 group relative ${
                     isBookHidden ? 'opacity-70 border-dashed border-amber-300' : ''
                   }`}
                 >
@@ -314,7 +379,7 @@ export default function RecommendedBooksSection({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setFlipbookPreviewBook(book);
+                          setSideBooksModalBook(book);
                         }}
                         className="animate-bubble-float relative w-full h-[36px] sm:h-[38px] rounded-xl bg-gradient-to-r from-[#FEF08A] via-[#FACC15] to-[#EAB308] hover:from-[#FFF59D] hover:to-[#F59E0B] text-[#1E293B] font-bold text-[12px] sm:text-[12.5px] shadow-[0_2px_12px_rgba(250,204,21,0.32)] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-[#FDE047]"
                         title="Xem thử 3D"
@@ -446,7 +511,7 @@ export default function RecommendedBooksSection({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setFlipbookPreviewBook(book);
+                          setSideBooksModalBook(book);
                         }}
                         className="animate-bubble-float relative w-full h-[34px] sm:h-[36px] rounded-xl bg-gradient-to-r from-[#FEF08A] via-[#FACC15] to-[#EAB308] hover:from-[#FFF59D] hover:to-[#F59E0B] text-[#1E293B] font-bold text-[11.5px] sm:text-[12px] shadow-[0_2px_10px_rgba(250,204,21,0.28)] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer border border-[#FDE047]"
                         title="Xem thử 3D"
@@ -570,6 +635,15 @@ export default function RecommendedBooksSection({
         book={editingSingleBook}
         onClose={() => setEditingSingleBook(null)}
         onSaved={handleSaveSingleBook}
+      />
+
+      {/* TRÌNH ĐỌC SÁCH 3D CHUẨN SIDEBOOKS TOKYO INTERPLAY */}
+      <SideBooksReaderModal
+        isOpen={Boolean(sideBooksModalBook)}
+        title={sideBooksModalBook?.title || 'Tài Liệu Y Khoa'}
+        author={sideBooksModalBook?.author}
+        pages={sideBooksModalBook ? getBookReaderPageUrls(sideBooksModalBook) : []}
+        onClose={() => setSideBooksModalBook(null)}
       />
     </section>
   );

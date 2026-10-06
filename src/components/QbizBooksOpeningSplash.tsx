@@ -246,7 +246,7 @@ export default function QbizBooksOpeningSplash({
                 className="text-[9px] font-black uppercase tracking-[0.25em] mb-1"
                 style={{ color: '#92400E' }}
               >
-                PHIÊN BẢN ĐIỆN TỬ TƯƠNG TÁC
+                TỦ SÁCH Y KHOA ĐIỆN TỬ
               </span>
               <div className="w-12 h-12 rounded-[14px] bg-[#0C152B] border border-amber-400/60 p-0.5 shadow-md flex items-center justify-center mb-1.5">
                 <img
@@ -259,13 +259,13 @@ export default function QbizBooksOpeningSplash({
                 className="text-[17px] font-black tracking-tight leading-tight"
                 style={{ color: '#0F172A' }}
               >
-                CƠ THỂ NGƯỜI
+                QBIZ BOOKS
               </h3>
               <p
                 className="text-[11px] font-bold uppercase tracking-wider mt-0.5"
                 style={{ color: '#B45309' }}
               >
-                KHOA HỌC & GIẢI PHẪU 3D
+                THƯ VIỆN & TRÌNH ĐỌC 3D
               </p>
             </div>
 
@@ -282,24 +282,25 @@ export default function QbizBooksOpeningSplash({
                 className="text-[11.5px] italic leading-relaxed font-serif px-2"
                 style={{ color: '#334155' }}
               >
-                "Hiểu rõ cấu trúc là chìa khóa để bảo vệ cột sống và chăm sóc sức khỏe chủ động trọn đời."
+                "Đọc sách là chiếc cầu nối vững chắc nhất giữa tri thức y học chuẩn mực và sức khỏe chủ động của chính bạn."
               </p>
               <span
                 className="text-[10px] font-black uppercase tracking-widest mt-2"
                 style={{ color: '#64748B' }}
               >
-                — DR. TÙNG DINH DƯỠNG —
+                — TỦ SÁCH QBIZ BOOKS —
               </span>
             </div>
 
-            {/* Nút bấm Khám Phá Ngay ở đáy trang */}
+            {/* Nút bấm Mở sách & Đọc ngay ở đáy trang */}
             <div className="flex flex-col items-center relative z-10 mb-1">
               <button
                 type="button"
                 onClick={handleDismiss}
                 className="w-full py-2.5 px-3 rounded-[10px] bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-black text-[12px] tracking-wide shadow-md hover:shadow-lg active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-amber-300/40"
               >
-                <span>Mở sách & Học ngay</span>
+                <BookOpen size={14} className="stroke-[2.5]" />
+                <span>Mở sách & Đọc ngay</span>
                 <ChevronRight size={14} className="stroke-[3]" />
               </button>
             </div>
@@ -383,14 +384,14 @@ export default function QbizBooksOpeningSplash({
                   TỦ SÁCH Y KHOA ĐIỆN TỬ
                 </p>
                 <p className="text-[9px] text-slate-300/70 font-medium text-center mt-0.5">
-                  Khám Phá Cột Sống & Cơ Thể Người
+                  Thư Viện Sách Y Khoa & Sức Khỏe Chủ Động
                 </p>
               </div>
 
               {/* Phần đáy bìa */}
               <div className="flex flex-col items-center text-center mb-2 relative z-10">
                 <span className="text-[8.5px] font-black tracking-[0.2em] text-amber-300/70 uppercase">
-                  TÁC GIẢ: DR. TÙNG DINH DƯỠNG
+                  XUẤT BẢN ĐIỆN TỬ · QBIZ BOOKS
                 </span>
                 <span className="text-[7.5px] text-slate-400/60 mt-0.5">
                   CHẠM ĐỂ MỞ SÁCH • TOUCH TO OPEN
@@ -416,11 +417,11 @@ export default function QbizBooksOpeningSplash({
               </div>
               <span className="text-[13px] font-bold text-amber-200">Lời Nói Đầu</span>
               <p className="text-[11px] text-slate-300/85 italic mt-1.5 leading-relaxed px-3 font-serif">
-                "Mỗi trang sách là một bước đi thấu hiểu kỳ quan cơ thể con người."
+                "Mỗi trang sách là một bước đi thấu hiểu tri thức y học và nâng cao sức khỏe chủ động."
               </p>
               <div className="mt-3 flex items-center gap-1 text-[9px] text-amber-300/60 uppercase tracking-widest">
                 <span>✦</span>
-                <span>DR. TÙNG</span>
+                <span>QBIZ BOOKS</span>
                 <span>✦</span>
               </div>
             </div>

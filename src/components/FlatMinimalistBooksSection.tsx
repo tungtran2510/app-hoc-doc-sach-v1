@@ -275,7 +275,7 @@ export default function FlatMinimalistBooksSection({
         ) : (
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[18px] select-none">📖</span>
-            <h2 className="text-[18px] sm:text-[19px] font-black text-ink leading-tight truncate">
+            <h2 className="text-[18px] sm:text-[19px] font-black text-[#fdf7ee] leading-tight truncate">
               {title}
             </h2>
             {isAdmin && (
@@ -306,7 +306,7 @@ export default function FlatMinimalistBooksSection({
         )}
 
         {/* Nút chuyển đổi kiểu hiển thị tối giản */}
-        <div className="inline-flex items-center bg-slate-100 dark:bg-[#1E293B] rounded-[10px] p-0.5 shadow-2xs shrink-0">
+        <div className="inline-flex items-center bg-[#24170e] border border-[#3d2617] rounded-[10px] p-0.5 shadow-2xs shrink-0">
           <button
             type="button"
             onClick={() => setLayoutMode('grid')}
@@ -357,7 +357,7 @@ export default function FlatMinimalistBooksSection({
                 {/* ẢNH BÌA SÁCH PHẲNG (FLAT COVER 2D - KHÔNG DÙNG VIỀN KHUNG THÔ, BO GÓC NHẸ) */}
                 <div
                   onClick={() => setSelectedBook(book)}
-                  className="w-full aspect-[3/4] rounded-[12px] overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer relative"
+                  className="w-full aspect-[3/4] rounded-[12px] overflow-hidden bg-[#180f08] border border-[#3d2617] shadow-sm hover:shadow-md transition-all cursor-pointer relative"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -366,11 +366,6 @@ export default function FlatMinimalistBooksSection({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     loading="lazy"
                   />
-                  {book.badge_tag && (
-                    <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-[4px] bg-[#1E3A8A] text-[#FDE047] text-[8.5px] font-black uppercase tracking-wider shadow-xs">
-                      {book.badge_tag}
-                    </span>
-                  )}
                   {isBookHidden && isAdmin && (
                     <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-amber-300 text-[9px] font-bold">
                       Ẩn
@@ -497,11 +492,6 @@ export default function FlatMinimalistBooksSection({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
                   />
-                  {book.badge_tag && (
-                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-[4px] bg-[#1E3A8A] text-[#FDE047] text-[8px] font-black uppercase tracking-wider shadow-xs">
-                      {book.badge_tag}
-                    </span>
-                  )}
                   {isBookHidden && isAdmin && (
                     <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-amber-300 text-[8.5px] font-bold">
                       Ẩn

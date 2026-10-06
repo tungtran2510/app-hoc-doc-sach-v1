@@ -60,23 +60,23 @@ export default function RootLayout({
     <html lang="vi" className={`${beVietnamPro.variable} ${lora.variable} ${inter.variable} ${beVietnamPro.className}`}>
       <head>
         <meta name="referrer" content="strict-origin-when-cross-origin" />
-        <meta name="theme-color" id="app-theme-color" content="#FFFFFF" />
+        <meta name="theme-color" id="app-theme-color" content="#160e08" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=22" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=22" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png?v=22" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('giao_dien');var isDark=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var color=isDark?'#0C0817':'#FFFFFF';if(isDark){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}var m=document.getElementById('app-theme-color')||document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.id='app-theme-color';m.name='theme-color';document.head.appendChild(m)}m.setAttribute('content',color);m.removeAttribute('media');var all=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<all.length;i++){if(all[i]!==m){all[i].remove()}}}catch(e){}})();`,
+            __html: `(function(){try{document.documentElement.classList.add('dark');var color='#160e08';var m=document.getElementById('app-theme-color')||document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.id='app-theme-color';m.name='theme-color';document.head.appendChild(m)}m.setAttribute('content',color);m.removeAttribute('media');var all=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<all.length;i++){if(all[i]!==m){all[i].remove()}}}catch(e){}})();`,
           }}
         />
       </head>
-      <body className={`${beVietnamPro.className} bg-bg text-ink min-h-screen flex justify-center selection:bg-primary-soft selection:text-primary-dark`}>
+      <body className={`${beVietnamPro.className} bg-[#160e08] text-[#fdf7ee] min-h-screen flex justify-center selection:bg-amber-900 selection:text-amber-100`}>
         <PwaRegistrar />
-        <div className="w-full max-w-[480px] md:max-w-[820px] lg:max-w-[820px] min-h-screen bg-bg relative flex flex-col mx-auto shadow-2xl transition-all">
+        <div className="w-full max-w-[480px] md:max-w-[820px] lg:max-w-[820px] min-h-screen bg-[#160e08] relative flex flex-col mx-auto shadow-2xl transition-all">
           {children}
         </div>
       </body>

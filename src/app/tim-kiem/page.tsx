@@ -1,10 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search as SearchIcon, X, ArrowLeft, BookOpen, PlaySquare, Layers, ChevronRight } from 'lucide-react';
+import {
+  Search as SearchIcon,
+  X,
+  ArrowLeft,
+  BookOpen,
+  Sparkles,
+  Info,
+  ChevronRight,
+  Bookmark,
+} from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
+import SideBooksReaderModal from '../../components/SideBooksReaderModal';
+import BookDetailModal, { UnifiedBookItem } from '../../components/BookDetailModal';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,131 +28,106 @@ function removeVietnameseTones(str: string): string {
     .trim();
 }
 
-interface SearchData {
-  topics: {
-    id: string;
-    title: string;
-    slug: string;
-    description: string | null;
-    color_bg: string;
-    color_fg: string;
-    icon_url?: string;
-    cover_url?: string;
-  }[];
-  pages: {
-    id: string;
-    title: string;
-    slug: string;
-    topic_slug: string;
-    topic_title: string;
-    page_number: number;
-    summary: string | null;
-    cover_url?: string;
-    text_snippets: string[];
-  }[];
-  videos: {
-    youtube_id: string;
-    title: string;
-    description?: string;
-    topic_slug: string;
-    topic_title: string;
-    page_slug: string;
-    page_title: string;
-    page_number: number;
-    video_index: number;
-    thumbnail_url?: string;
-  }[];
+interface SearchBookItem {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  cover_url: string;
+  badge_tag: string;
+  pages_count: number;
+  pages: string[];
 }
+
+const POPULAR_SEARCHES = [
+  'Đĩa đệm',
+  'Cột sống',
+  'Thoát vị',
+  'Kháng viêm',
+  'Atlas giải phẫu',
+  'Đốt sống cổ',
+  'Tự chữa lành',
+  'Lợi khuẩn',
+  'Dinh dưỡng',
+];
 
 export default function SearchPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [allData, setAllData] = useState<SearchData | null>(null);
+  const [books, setBooks] = useState<SearchBookItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Tự động focus vào ô nhập và cập nhật tiêu đề trang
+  // Modal đọc sách 3D và chi tiết sách
+  const [readerBook, setReaderBook] = useState<SearchBookItem | null>(null);
+  const [detailBook, setDetailBook] = useState<UnifiedBookItem | null>(null);
+
   useEffect(() => {
     inputRef.current?.focus();
-    document.title = 'Tìm kiếm bài học · Học Cơ Thể';
+    document.title = 'Tìm kiếm sách · Qbiz Books';
   }, []);
 
-  // Tải dữ liệu tìm kiếm
+  // Tải danh mục sách từ API
   useEffect(() => {
     fetch('/api/search')
       .then((res) => res.json())
       .then((data) => {
-        if (!data.error) {
-          setAllData(data);
+        if (data && Array.isArray(data.books)) {
+          setBooks(data.books);
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Debounce 300ms sau khi ngừng gõ
+  // Debounce tìm kiếm
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query.trim());
-    }, 300);
+    }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 
   const cleanQuery = removeVietnameseTones(debouncedQuery);
 
-  // Lọc kết quả theo 3 nhóm: Chủ đề, Trang nội dung, Video
-  const matchedTopics = (allData?.topics || []).filter((t) => {
-    if (!cleanQuery) return false;
-    const titleMatch = removeVietnameseTones(t.title).includes(cleanQuery);
-    const descMatch = t.description && removeVietnameseTones(t.description).includes(cleanQuery);
-    return titleMatch || descMatch;
+  // Lọc kết quả tìm kiếm theo sách
+  const matchedBooks = books.filter((b) => {
+    if (!cleanQuery) return true; // Khi chưa gõ thì hiển thị toàn bộ sách nổi bật
+    const matchTitle = removeVietnameseTones(b.title).includes(cleanQuery);
+    const matchAuthor = removeVietnameseTones(b.author).includes(cleanQuery);
+    const matchDesc = removeVietnameseTones(b.description).includes(cleanQuery);
+    const matchBadge = removeVietnameseTones(b.badge_tag).includes(cleanQuery);
+    return matchTitle || matchAuthor || matchDesc || matchBadge;
   });
 
-  const matchedPages = (allData?.pages || []).filter((p) => {
-    if (!cleanQuery) return false;
-    const titleMatch = removeVietnameseTones(p.title).includes(cleanQuery);
-    const summaryMatch = p.summary && removeVietnameseTones(p.summary).includes(cleanQuery);
-    const snippetMatch = p.text_snippets.some((snip) =>
-      removeVietnameseTones(snip).includes(cleanQuery)
-    );
-    return titleMatch || summaryMatch || snippetMatch;
-  });
-
-  const matchedVideos = (allData?.videos || []).filter((v) => {
-    if (!cleanQuery) return false;
-    const titleMatch = removeVietnameseTones(v.title).includes(cleanQuery);
-    const descMatch = v.description && removeVietnameseTones(v.description).includes(cleanQuery);
-    return titleMatch || descMatch;
-  });
-
-  const totalResults = matchedTopics.length + matchedPages.length + matchedVideos.length;
+  const isSearching = debouncedQuery.length > 0;
 
   return (
-    <main className="flex-1 flex flex-col px-4 sm:px-5 pt-3 pb-28 gap-4 max-w-[640px] w-full mx-auto">
-      {/* 1. Thanh đầu trang: Nút quay lại + Ô tìm kiếm */}
+    <main className="flex-1 flex flex-col px-3 sm:px-4 pt-2.5 pb-24 gap-3.5 max-w-[640px] w-full mx-auto select-none">
+      {/* 1. THANH TÌM KIẾM ĐẦU TRANG */}
       <section className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => router.back()}
-          className="w-11 h-11 min-w-[44px] rounded-[14px] bg-white dark:bg-[#160D30] border border-slate-200 dark:border-purple-800/40 flex items-center justify-center text-slate-700 dark:text-purple-200 hover:text-purple-700 dark:hover:text-[#F8DF7B] transition-colors cursor-pointer shadow-2xs"
+          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-amber-200 hover:text-white transition-colors cursor-pointer shrink-0"
           aria-label="Quay lại"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </button>
 
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400">
-            <SearchIcon size={18} />
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-amber-400">
+            <SearchIcon size={17} />
           </div>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm bài học, đĩa đệm, cột sống..."
-            className="w-full h-[48px] pl-10 pr-10 rounded-[16px] bg-white dark:bg-[#160D30] border border-slate-200 dark:border-purple-800/40 focus:border-purple-600 dark:focus:border-[#F8DF7B] text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden shadow-2xs transition-colors"
-            aria-label="Nhập từ khóa tìm kiếm"
+            placeholder="Tìm tựa sách, đĩa đệm, cột sống..."
+            className="w-full h-[44px] pl-9 pr-9 rounded-2xl bg-[#22150c] border border-[#553622] text-[#fdf7ee] text-[13.5px] placeholder:text-[#9e8574] focus:outline-none focus:border-amber-400 shadow-inner-sm transition-colors"
+            aria-label="Nhập từ khóa tìm kiếm sách"
           />
           {query && (
             <button
@@ -151,7 +136,7 @@ export default function SearchPage() {
                 setQuery('');
                 inputRef.current?.focus();
               }}
-              className="absolute inset-y-0 right-2 my-auto w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+              className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-white cursor-pointer"
               aria-label="Xóa từ khóa"
             >
               <X size={16} />
@@ -160,220 +145,173 @@ export default function SearchPage() {
         </div>
       </section>
 
-      {/* 2. Nội dung kết quả */}
-      <section className="flex flex-col gap-5">
-        {loading ? (
-          <div className="p-8 text-center text-slate-400 text-[14px] font-medium animate-pulse">
-            Đang tải dữ liệu tìm kiếm...
-          </div>
-        ) : !cleanQuery ? (
-          /* Gợi ý khi chưa gõ */
-          <div className="flex flex-col gap-2.5 py-3 px-1">
-            <h2 className="text-[12px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-purple-300/70">
-              Gợi ý tìm kiếm phổ biến
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {['Cột sống', 'Đĩa đệm', 'Thần kinh', 'Tư thế', 'Dây chằng', 'Dinh dưỡng'].map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setQuery(tag)}
-                  className="h-8.5 px-3.5 rounded-full bg-white dark:bg-[#160D30] border border-slate-200 dark:border-purple-800/40 text-[13px] font-bold text-slate-800 dark:text-purple-200 hover:border-purple-600 hover:text-purple-700 dark:hover:text-[#F8DF7B] dark:hover:border-[#F8DF7B] cursor-pointer shadow-2xs transition-all active:scale-95"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : totalResults === 0 ? (
-          /* Không tìm thấy */
-          <div className="p-8 text-center bg-white dark:bg-[#160D30] rounded-[20px] border border-slate-200 dark:border-purple-800/40 my-4 flex flex-col gap-1.5 shadow-2xs">
-            <p className="text-[16px] text-slate-900 dark:text-white font-extrabold">
-              Không tìm thấy kết quả phù hợp
-            </p>
-            <p className="text-[13px] text-slate-500 dark:text-purple-300/70 font-normal">
-              Thử tìm với từ khóa khác như: cột sống, đĩa đệm, dinh dưỡng.
-            </p>
-          </div>
-        ) : (
-          /* Danh sách kết quả theo 3 nhóm thiết kế dạng Flycy */
-          <div className="flex flex-col gap-5">
-            {/* Nhóm 1: Chủ đề */}
-            {matchedTopics.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5 text-[12px] font-extrabold text-slate-500 dark:text-purple-300/70 uppercase tracking-wider px-1">
-                  <Layers size={14} className="text-purple-700 dark:text-[#F8DF7B]" />
-                  <span>CHUYÊN ĐỀ ({matchedTopics.length})</span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  {matchedTopics.map((t) => {
-                    const iconSrc = t.icon_url || `/images/topics/${t.slug}.png`;
-                    return (
-                      <Link
-                        key={t.id}
-                        href={`/${t.slug}`}
-                        className="p-3 rounded-[16px] bg-white dark:bg-[#160D30] border border-slate-200/90 dark:border-purple-800/40 hover:border-purple-600/50 dark:hover:border-[#F8DF7B]/60 shadow-xs hover:shadow-md transition-all flex items-center justify-between gap-3 group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Thumbnail 3D chuyên đề sắc nét */}
-                          <div className="w-12 h-12 rounded-[12px] bg-slate-50 dark:bg-purple-950/70 border border-slate-200 dark:border-purple-800/50 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={iconSrc}
-                              alt={t.title}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[10px] font-black text-purple-700 dark:text-[#F8DF7B] uppercase tracking-wider">
-                              Chuyên đề y khoa
-                            </span>
-                            <span className="text-[15px] font-black text-slate-900 dark:text-white leading-snug truncate group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] transition-colors">
-                              {t.title}
-                            </span>
-                            {t.description && (
-                              <p className="text-[12px] text-slate-500 dark:text-purple-300/70 line-clamp-1 mt-0.5">
-                                {t.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-purple-900/40 text-slate-400 group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5">
-                          <ChevronRight size={16} />
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Nhóm 2: Trang nội dung */}
-            {matchedPages.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5 text-[12px] font-extrabold text-slate-500 dark:text-purple-300/70 uppercase tracking-wider px-1">
-                  <BookOpen size={14} className="text-purple-700 dark:text-[#F8DF7B]" />
-                  <span>BÀI HỌC NỘI DUNG ({matchedPages.length})</span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  {matchedPages.map((p) => {
-                    const formattedNum = String(p.page_number).padStart(2, '0');
-                    const thumbSrc = p.cover_url || `/images/topics/${p.topic_slug}.png`;
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/${p.topic_slug}/${p.slug}`}
-                        className="p-3 rounded-[16px] bg-white dark:bg-[#160D30] border border-slate-200/90 dark:border-purple-800/40 hover:border-purple-600/50 dark:hover:border-[#F8DF7B]/60 shadow-xs hover:shadow-md transition-all flex items-center justify-between gap-3 group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Thumbnail bài học */}
-                          <div className="w-12 h-12 rounded-[12px] bg-slate-50 dark:bg-purple-950/70 border border-slate-200 dark:border-purple-800/50 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={thumbSrc}
-                              alt={p.title}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[10.5px] font-black text-slate-500 dark:text-purple-300/70 uppercase tracking-wider">
-                              {p.topic_title} · Bài {formattedNum}
-                            </span>
-                            <span className="text-[14.5px] font-black text-slate-900 dark:text-white leading-snug truncate group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] transition-colors">
-                              {p.title}
-                            </span>
-                            {p.summary && (
-                              <p className="text-[12px] text-slate-500 dark:text-purple-300/70 line-clamp-1 mt-0.5">
-                                {p.summary}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-purple-900/40 text-slate-400 group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5">
-                          <ChevronRight size={16} />
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Nhóm 3: Video */}
-            {matchedVideos.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1.5 text-[12px] font-extrabold text-slate-500 dark:text-purple-300/70 uppercase tracking-wider px-1">
-                  <PlaySquare size={14} className="text-red-500" />
-                  <span>VIDEO HƯỚNG DẪN ({matchedVideos.length})</span>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  {matchedVideos.map((v, i) => {
-                    const formattedNum = String(v.page_number).padStart(2, '0');
-                    const videoThumb = v.thumbnail_url || `https://img.youtube.com/vi/${v.youtube_id}/hqdefault.jpg`;
-                    return (
-                      <Link
-                        key={i}
-                        href={`/${v.topic_slug}/${v.page_slug}?v=${v.video_index}`}
-                        className="p-3 rounded-[16px] bg-white dark:bg-[#160D30] border border-slate-200/90 dark:border-purple-800/40 hover:border-red-400/50 dark:hover:border-red-500/60 shadow-xs hover:shadow-md transition-all flex items-center justify-between gap-3 group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Thumbnail video tỷ lệ 16:9 kèm nút Play đỏ */}
-                          <div className="w-[66px] h-[44px] rounded-[10px] bg-slate-900 border border-slate-200 dark:border-purple-800/50 shrink-0 relative overflow-hidden shadow-2xs group-hover:scale-105 transition-transform flex items-center justify-center">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={videoThumb}
-                              alt={v.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
-                              <div className="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center shadow-xs">
-                                <PlaySquare size={11} fill="white" />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-wider">
-                              {v.topic_title} · Bài {formattedNum} · Video {v.video_index}
-                            </span>
-                            <span className="text-[14.5px] font-black text-slate-900 dark:text-white leading-snug truncate group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                              {v.title}
-                            </span>
-                            {v.description && (
-                              <p className="text-[12px] text-slate-500 dark:text-purple-300/70 line-clamp-1 mt-0.5">
-                                {v.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="w-7 h-7 rounded-full bg-slate-50 dark:bg-purple-900/40 text-slate-400 group-hover:text-red-500 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-0.5">
-                          <ChevronRight size={16} />
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+      {/* 2. GỢI Ý TỪ KHÓA TÌM KIẾM PHỔ BIẾN (CHIPS) */}
+      <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[11px] font-bold text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
+          <Sparkles size={12} />
+          <span>Gợi ý:</span>
+        </span>
+        {POPULAR_SEARCHES.map((chip, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => {
+              setQuery(chip);
+              inputRef.current?.focus();
+            }}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+              query.toLowerCase() === chip.toLowerCase()
+                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs'
+                : 'bg-white/5 hover:bg-white/10 text-amber-100/80 border-white/10'
+            }`}
+          >
+            {chip}
+          </button>
+        ))}
       </section>
 
-      {/* 3. Thanh điều hướng dưới cùng */}
+      {/* 3. TIÊU ĐỀ KẾT QUẢ TÌM KIẾM */}
+      <div className="flex items-center justify-between px-1 pt-1">
+        <div className="flex items-center gap-2">
+          <BookOpen size={16} className="text-amber-400" />
+          <h2 className="text-xs font-black uppercase tracking-wider text-amber-200">
+            {isSearching ? `Kết quả tìm kiếm (${matchedBooks.length})` : `Tất cả đầu sách (${books.length})`}
+          </h2>
+        </div>
+        {isSearching && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            className="text-[11px] text-amber-400 hover:text-amber-300 cursor-pointer font-semibold"
+          >
+            Xem tất cả
+          </button>
+        )}
+      </div>
+
+      {/* 4. DANH SÁCH SÁCH TÌM THẤY (HOÀN TOÀN LÀ SÁCH - KHÔNG VIDEO, KHÔNG BÀI HỌC) */}
+      {loading ? (
+        <div className="py-12 flex flex-col items-center justify-center gap-2 text-amber-200/70">
+          <div className="w-7 h-7 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs">Đang tìm kiếm trong kho sách...</span>
+        </div>
+      ) : matchedBooks.length === 0 ? (
+        <div className="py-12 px-4 rounded-2xl bg-[#22150c] border border-[#553622] flex flex-col items-center justify-center text-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+            <SearchIcon size={22} />
+          </div>
+          <div className="flex flex-col gap-1 max-w-xs">
+            <h3 className="text-sm font-bold text-amber-100">Không tìm thấy sách phù hợp</h3>
+            <p className="text-xs text-amber-200/60 leading-relaxed">
+              Không có đầu sách nào khớp với từ khóa "{query}". Thử tìm với "cột sống", "đĩa đệm", "kháng viêm"...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {matchedBooks.map((book) => (
+            <div
+              key={book.id}
+              className="p-2.5 sm:p-3 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 text-[#fdf7ee] shadow-md flex items-center gap-3 transition-all group"
+            >
+              {/* Bìa sách 3D thu nhỏ */}
+              <div
+                onClick={() => setReaderBook(book)}
+                className="w-[72px] sm:w-[84px] aspect-[1/1.42] rounded-r-md rounded-l-xs overflow-hidden shadow-lg border-l-2 border-white/20 shrink-0 cursor-pointer group-hover:scale-105 transition-transform relative bg-[#1c1109]"
+                title="Bấm để đọc sách 3D"
+              >
+                <img
+                  src={book.cover_url}
+                  alt={book.title}
+                  className="w-full h-full object-cover block"
+                  loading="lazy"
+                />
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.2) 5%, transparent 15%)',
+                  }}
+                />
+              </div>
+
+              {/* Thông tin sách */}
+              <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {book.badge_tag}
+                    </span>
+                    <span className="text-[10px] text-amber-200/60 truncate font-mono">
+                      {book.pages_count} trang
+                    </span>
+                  </div>
+                  <h3
+                    onClick={() => setReaderBook(book)}
+                    className="text-[13.5px] sm:text-sm font-bold text-amber-100 group-hover:text-amber-300 transition-colors line-clamp-1 cursor-pointer leading-snug"
+                  >
+                    {book.title}
+                  </h3>
+                  {book.description && (
+                    <p className="text-[11px] text-[#9e8574] line-clamp-1 leading-normal mt-0.5">
+                      {book.description}
+                    </p>
+                  )}
+                  <span className="text-[10.5px] text-amber-200/70 truncate block mt-0.5">
+                    Tác giả: {book.author}
+                  </span>
+                </div>
+
+                {/* Nút hành động */}
+                <div className="flex items-center gap-2 mt-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setReaderBook(book)}
+                    className="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
+                  >
+                    <BookOpen size={12} strokeWidth={2.5} />
+                    <span>Đọc 3D</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDetailBook({
+                        id: book.id,
+                        title: book.title,
+                        author: book.author,
+                        description: book.description,
+                        cover_url: book.cover_url,
+                        type: 'recommended',
+                      })
+                    }
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Info size={12} />
+                    <span>Chi tiết</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MODAL ĐỌC SÁCH 3D KHI CHỌN SÁCH TỪ KẾT QUẢ TÌM KIẾM */}
+      <SideBooksReaderModal
+        isOpen={Boolean(readerBook)}
+        title={readerBook?.title || 'Tủ Sách Y Khoa'}
+        author={readerBook?.author}
+        pages={readerBook?.pages || []}
+        onClose={() => setReaderBook(null)}
+      />
+
+      {/* MODAL CHI TIẾT SÁCH */}
+      <BookDetailModal
+        book={detailBook}
+        onClose={() => setDetailBook(null)}
+      />
+
+      {/* THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}
       <BottomNav />
     </main>
   );

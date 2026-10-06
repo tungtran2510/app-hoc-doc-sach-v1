@@ -113,7 +113,7 @@ export function sanitizeHtml(raw: string): string {
 
 export default function TextBlock({
   displayStyle,
-  lines,
+  lines = [],
   format = 'paragraph',
   fontSizeMode = 'normal',
   blockId,

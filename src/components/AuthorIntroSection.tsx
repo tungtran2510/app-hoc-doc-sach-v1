@@ -85,7 +85,7 @@ export function AuthorBioDetailModal({ profile, onClose }: AuthorBioDetailModalP
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-[#181132] rounded-2xl shadow-2xl border border-slate-200 dark:border-white/15 p-5 sm:p-6 flex flex-col gap-4 text-slate-900 dark:text-white"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-[#22150c] text-[#fdf7ee] rounded-2xl shadow-2xl border border-[#4a2e1b] p-5 sm:p-6 flex flex-col gap-4 text-slate-900 dark:text-white"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Nút đóng modal */}
@@ -263,14 +263,14 @@ export function AuthorProfileSection({
 
       {/* THẺ MASTER SINGLE CARD (ĐÚNG 1 KHUNG DUY NHẤT, NỀN TRẮNG SẠCH ĐỒNG BỘ APP) */}
       <ScrollReveal animation="slide-left" delay={40}>
-        <div className="relative p-4 sm:p-5 rounded-[16px] bg-white text-slate-900 border border-slate-200/80 shadow-xs hover:shadow-sm dark:bg-gradient-to-br dark:from-[#0F172A] dark:via-[#1E293B] dark:to-[#0B132B] dark:border-white/15 dark:text-white overflow-hidden flex flex-col gap-3">
+        <div className="relative p-4 sm:p-5 rounded-[16px] bg-[#22150c] text-[#fdf7ee] border border-[#3d2617] shadow-sm overflow-hidden flex flex-col gap-3">
           {/* Họa tiết trang trí viền cao cấp góc phải */}
           <div className="absolute top-0 right-0 w-32 h-32 opacity-10 dark:opacity-20 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-200 dark:from-blue-400 via-transparent to-transparent" />
 
           {/* 1. Phần Tiêu Đề Tác GiẢ Ở Trên Cùng (Editorial Magazine Header) */}
           <div className="relative z-10 flex flex-col gap-0.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-[22px] sm:text-[25px] font-black tracking-tight text-slate-900 dark:text-white uppercase leading-tight">
+              <h3 className="text-[22px] sm:text-[25px] font-black tracking-tight text-[#fdf7ee] uppercase leading-tight">
                 {profile.name || 'Tùng Dinh Dưỡng'}
               </h3>
               <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-slate-950 shrink-0 shadow-2xs" title="Chuyên gia được xác thực">
@@ -781,23 +781,23 @@ export function AuthorContactSection({
       )}
 
       <ScrollReveal animation="slide-right" delay={40}>
-        <div className="p-4 sm:p-5 rounded-[16px] bg-white text-slate-900 border border-slate-200 shadow-sm dark:bg-[#111827] dark:border-white/15 dark:text-white flex flex-col gap-3.5">
+        <div className="p-4 sm:p-5 rounded-[16px] bg-[#22150c] text-[#fdf7ee] border border-[#3d2617] shadow-sm flex flex-col gap-3.5">
           <div className="flex items-center gap-2.5 min-w-0 pb-3 border-b border-slate-200 dark:border-white/10">
-            <div className="w-8 h-8 rounded-[10px] bg-slate-100 text-slate-800 dark:bg-white/10 dark:text-white flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-[10px] bg-[#2b1b10] text-amber-300 border border-[#3d2617] flex items-center justify-center shrink-0">
               <PhoneCall size={16} strokeWidth={2.2} />
             </div>
             <div className="min-w-0">
-              <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-tight truncate">
+              <h3 className="text-[16px] font-bold text-[#fdf7ee] leading-tight truncate">
                 {profile.contact_title || 'Thông tin liên hệ & Kết nối'}
               </h3>
-              <span className="text-[12.5px] text-slate-600 dark:text-slate-300 truncate block">
+              <span className="text-[12.5px] text-[#b09b8a] truncate block">
                 {profile.contact_subtitle || 'Kết nối trực tiếp cùng chuyên gia / tác giả'}
               </span>
             </div>
           </div>
 
           {profile.contact_note && (
-            <p className="text-[14px] text-slate-700 dark:text-slate-200 leading-relaxed font-normal">
+            <p className="text-[14px] text-[#e2d1c3] leading-relaxed font-normal">
               {profile.contact_note}
             </p>
           )}
@@ -824,18 +824,18 @@ export function AuthorContactSection({
             {profile.phone && (
               <a
                 href={`tel:${profile.phone.replace(/[^0-9+]/g, '')}`}
-                className="flex items-center justify-between p-3 px-3.5 rounded-[12px] bg-slate-50 border border-slate-300 text-slate-900 hover:bg-slate-100 dark:bg-[#1F2937] dark:border-white/20 dark:text-white dark:hover:bg-[#273449] gap-2 cursor-pointer transition-all active:scale-[0.98]"
+                className="flex items-center justify-between p-3 px-3.5 rounded-[12px] bg-[#2b1b10] border border-[#4a2e1b] text-[#fdf7ee] hover:bg-[#342114] gap-2 cursor-pointer transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
                     <Phone size={16} strokeWidth={2.4} />
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[12px] text-slate-600 dark:text-slate-300 font-medium leading-tight">Hotline tư vấn</span>
-                    <span className="text-[16px] font-bold tracking-wide truncate text-slate-900 dark:text-white">{profile.phone}</span>
+                    <span className="text-[12px] text-[#b09b8a] font-medium leading-tight">Hotline tư vấn</span>
+                    <span className="text-[16px] font-bold tracking-wide truncate text-[#fdf7ee]">{profile.phone}</span>
                   </div>
                 </div>
-                <span className="text-[12.5px] font-bold px-3 py-1.5 rounded-[8px] bg-slate-900 text-white dark:bg-white dark:text-slate-900 shrink-0 whitespace-nowrap">Gọi ngay</span>
+                <span className="text-[12.5px] font-bold px-3 py-1.5 rounded-[8px] bg-amber-500 text-slate-950 font-black shrink-0 whitespace-nowrap">Gọi ngay</span>
               </a>
             )}
           </div>

@@ -2,20 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   BẢNG MÀU GỖ TỰ NHIÊN CAO CẤP (LUXURY WARM DARK WALNUT WOOD & MAHOGANY LIBRARY)
+   Áp dụng đồng bộ cho toàn bộ giao diện: Không trắng gắt, không tím obsidian,
+   toàn bộ bề mặt toát lên vẻ sang trọng, ấm cúng của thư viện sách gỗ thượng hạng.
+   ============================================================================ */
 :root {
-  --color-bg: #F8FAFC;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F1F5F9;
-  --color-ink: #0F172A;
-  --color-ink-2: #1E293B;
-  --color-muted: #475569;
-  --color-line: #E2E8F0;
-  --color-line-strong: #CBD5E1;
-  --color-primary: #1E3A8A; /* Xanh Navy Hoàng Gia Lịch Lãm & Đẳng Cấp Y Khoa */
-  --color-primary-dark: #172554;
-  --color-primary-soft: #EFF6FF;
-  --color-primary-track: #DBEAFE;
-  --color-on-primary-muted: #1E40AF;
+  --color-bg: #160e08;            /* Nền gỗ gụ sẫm ấm cúng */
+  --color-surface: #22150c;       /* Mặt gỗ óc chó / da nâu thượng hạng */
+  --color-surface-2: #2b1b10;     /* Thẻ nâng tầng / bóng đổ gỗ */
+  --color-ink: #fdf7ee;           /* Chữ trắng ngà ấm (Warm Ivory) */
+  --color-ink-2: #e2d1c3;         /* Chữ phụ giấy da hoàng gia (Parchment) */
+  --color-muted: #9e8574;         /* Chữ mờ tông gỗ (Warm Muted Wood) */
+  --color-line: #3d2617;          /* Đường viền mộc tinh tế */
+  --color-line-strong: #593822;   /* Đường viền mộc đậm */
+  --color-primary: #d97706;       /* Vàng hổ phách hoàng kim (Amber Gold) */
+  --color-primary-dark: #b45309;  /* Vàng hổ phách sẫm */
+  --color-primary-soft: #2b1b10;  /* Nền đệm ấm */
+  --color-primary-track: #451a03; /* Thanh trượt hổ phách */
+  --color-on-primary-muted: #fde68a;
 }
 
 html {
@@ -30,8 +35,8 @@ body {
   padding: 0;
   background-color: var(--color-bg);
   background-image: 
-    radial-gradient(ellipse 90% 40% at 50% -10%, rgba(30, 58, 138, 0.04), transparent 70%),
-    radial-gradient(ellipse 60% 30% at 100% 50%, rgba(15, 23, 42, 0.03), transparent 60%);
+    radial-gradient(ellipse 90% 40% at 50% -10%, rgba(217, 119, 6, 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 100% 50%, rgba(0, 0, 0, 0.4), transparent 60%);
   background-repeat: no-repeat;
   color: var(--color-ink);
   min-height: 100vh;
@@ -51,13 +56,13 @@ h1, h2, h3, h4, h5, h6 {
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Tối ưu thanh cuộn và chống viền xanh thô kệch mặc định của Chrome */
+/* Tối ưu thanh cuộn với sắc màu hổ phách ấm */
 * {
-  scrollbar-color: rgba(148, 148, 160, 0.28) transparent;
+  scrollbar-color: rgba(217, 119, 6, 0.35) transparent;
   scrollbar-width: thin;
 }
 :focus, :focus-visible {
-  outline-color: #D97706; /* Vàng hổ phách sang trọng, loại bỏ hoàn toàn viền xanh lơ của trình duyệt */
+  outline-color: #d97706;
 }
 ::-webkit-scrollbar {
   width: 5px;
@@ -67,425 +72,143 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 148, 160, 0.28);
+  background: rgba(217, 119, 6, 0.35);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 148, 160, 0.45);
+  background: rgba(217, 119, 6, 0.55);
 }
 
 /* ============================================================================
-   1. CHẾ ĐỘ TỐI (DARK MODE - OBSIDIAN VIOLET MỜ TÍM THEO YÊU CẦU NGƯỜI DÙNG)
+   CHẾ ĐỘ TỐI / MẶC ĐỊNH ĐỒNG BỘ: ẤM ÁP NỀN GỖ NÂU HOÀNG GIA
    ============================================================================ */
 html.dark {
-  --color-bg: #0C0817;
-  --color-surface: #170F2F;
-  --color-surface-2: #1F143D;
-  --color-ink: #FFFFFF;
-  --color-ink-2: #DDD6FE;
-  --color-muted: #A599C2;
-  --color-line: #2D1C52;
-  --color-line-strong: #442A7A;
-  --color-primary: #8B5CF6;
-  --color-primary-dark: #6D28D9;
-  --color-primary-soft: #26164A;
-  --color-primary-track: #4C1D95;
-  --color-on-primary-muted: #DDD6FE;
+  --color-bg: #160e08;
+  --color-surface: #22150c;
+  --color-surface-2: #2b1b10;
+  --color-ink: #fdf7ee;
+  --color-ink-2: #e2d1c3;
+  --color-muted: #9e8574;
+  --color-line: #3d2617;
+  --color-line-strong: #593822;
+  --color-primary: #d97706;
+  --color-primary-dark: #b45309;
+  --color-primary-soft: #2b1b10;
+  --color-primary-track: #451a03;
+  --color-on-primary-muted: #fde68a;
 }
 
 html.dark, html.dark body, body.dark {
-  background-color: #0C0817 !important;
-  color: #FFFFFF !important;
+  background-color: #160e08 !important;
+  color: #fdf7ee !important;
 }
 
 html.dark body {
-  background-color: #0C0817 !important;
+  background-color: #160e08 !important;
   background-image: 
-    radial-gradient(ellipse 90% 40% at 50% -10%, rgba(139, 92, 246, 0.18), transparent 70%),
-    radial-gradient(ellipse 60% 30% at 100% 50%, rgba(124, 58, 237, 0.09), transparent 60%) !important;
-  color: #FFFFFF !important;
+    radial-gradient(ellipse 90% 40% at 50% -10%, rgba(217, 119, 6, 0.12), transparent 70%),
+    radial-gradient(ellipse 60% 30% at 100% 50%, rgba(0, 0, 0, 0.4), transparent 60%) !important;
+  color: #fdf7ee !important;
 }
 
+/* Đồng bộ mọi lớp bề mặt sáng về màu nâu gỗ quý */
+.bg-bg,
 html.dark .bg-bg {
-  background-color: #0C0817 !important;
+  background-color: #160e08 !important;
 }
 
+.bg-white,
+.bg-surface,
 html.dark .bg-white,
 html.dark .bg-surface {
-  background-color: #170F2F !important;
-  color: #FFFFFF !important;
+  background-color: #22150c !important;
+  color: #fdf7ee !important;
 }
 
+.bg-surface-2,
 html.dark .bg-surface-2 {
-  background-color: #1F143D !important;
-  color: #FFFFFF !important;
+  background-color: #2b1b10 !important;
+  color: #fdf7ee !important;
 }
 
+.block-styled-card,
 html.dark .block-styled-card {
-  background-color: #170F2F !important;
-  border: 1px solid #33205E !important;
+  background-color: #22150c !important;
+  border: 1px solid #3d2617 !important;
 }
 
-/* Khắc phục triệt để lỗi chữ bị đen trong chế độ tối */
-html.dark .text-ink,
-html.dark p,
-html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6,
-html.dark li,
-html.dark strong {
-  color: #F8FAFC !important;
+/* Màu chữ luôn sáng rõ rệt trên nền gỗ nâu */
+.text-ink,
+html.dark .text-ink {
+  color: #fdf7ee !important;
 }
 
-/* Bảo toàn màu chữ tối tự nhiên cho các trang giấy sách 3D, flipbook và tài liệu nền sáng trong chế độ tối */
+/* Bảo toàn màu chữ tối tự nhiên cho các trang giấy sách 3D, flipbook */
+.book-inner-page,
+.book-paper,
+.book-inner-page p,
+.book-paper p,
+.book-inner-page span,
+.book-paper span,
+.book-inner-page h1,
+.book-inner-page h2,
+.book-inner-page h3,
+.book-inner-page h4,
+.book-inner-page h5,
+.book-inner-page h6,
+.book-inner-page li,
+.book-paper li,
+.book-inner-page strong,
+.book-paper strong,
 html.dark .book-inner-page,
 html.dark .book-paper,
-html.dark .preserve-light-surface,
-html.dark #qbiz-books-3d-splash .book-inner-page {
-  background-color: #FAF7F0 !important;
-}
-
+html.dark .book-inner-page p,
+html.dark .book-paper p,
+html.dark .book-inner-page span,
+html.dark .book-paper span,
 html.dark .book-inner-page h1,
 html.dark .book-inner-page h2,
 html.dark .book-inner-page h3,
 html.dark .book-inner-page h4,
 html.dark .book-inner-page h5,
 html.dark .book-inner-page h6,
-html.dark .book-paper h1,
-html.dark .book-paper h2,
-html.dark .book-paper h3,
-html.dark .book-paper h4,
-html.dark #qbiz-books-3d-splash .book-inner-page h1,
-html.dark #qbiz-books-3d-splash .book-inner-page h2,
-html.dark #qbiz-books-3d-splash .book-inner-page h3,
-html.dark #qbiz-books-3d-splash .book-inner-page h4 {
-  color: #0F172A !important;
-}
-
-html.dark .book-inner-page p,
-html.dark .book-paper p,
-html.dark #qbiz-books-3d-splash .book-inner-page p {
-  color: #334155 !important;
-}
-
-html.dark .book-inner-page .text-amber-700,
-html.dark .book-inner-page .text-amber-800,
-html.dark #qbiz-books-3d-splash .book-inner-page .text-amber-700,
-html.dark #qbiz-books-3d-splash .book-inner-page .text-amber-800 {
-  color: #B45309 !important;
-}
-
-html.dark .book-inner-page .text-slate-700,
-html.dark #qbiz-books-3d-splash .book-inner-page .text-slate-700 {
-  color: #334155 !important;
-}
-
-html.dark .book-inner-page .text-slate-500,
-html.dark #qbiz-books-3d-splash .book-inner-page .text-slate-500 {
-  color: #64748B !important;
-}
-
-html.dark .book-inner-page span,
-html.dark #qbiz-books-3d-splash .book-inner-page span {
-  color: inherit;
-}
-
-html.dark .text-ink-2 {
-  color: #DDD6FE !important;
-}
-
-html.dark .text-muted {
-  color: #A599C2 !important;
-}
-
-html.dark .border-line,
-html.dark .border-line-strong,
-html.dark .border-line\/40,
-html.dark .border-line\/60 {
-  border-color: #2D1C52 !important;
-}
-
-html.dark input,
-html.dark textarea,
-html.dark select {
-  background-color: #170F2F !important;
-  color: #FFFFFF !important;
-  border-color: #2D1C52 !important;
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-  background: #3B256B;
+html.dark .book-inner-page li,
+html.dark .book-paper li,
+html.dark .book-inner-page strong,
+html.dark .book-paper strong {
+  color: #1E293B !important;
 }
 
 /* ============================================================================
-   2. CHẾ ĐỘ XÁM (GRAY MODE - DỊU MẮT, KHÔNG TỐI HẲN, CHỮ RÕ NÉT)
+   HIỆU ỨNG ÁNH SÁNG & CHUYỂN ĐỘNG CHO SÁCH VÀ KỆ GỖ
    ============================================================================ */
-html.gray, html.gray body, body.gray {
-  background-color: #374151 !important; /* Xám trung tính ấm dịu */
-  color: #F9FAFB !important;
-}
-
-html.gray body {
-  background-color: #374151 !important;
-  color: #F9FAFB !important;
-}
-
-html.gray .bg-bg {
-  background-color: #374151 !important;
-}
-
-html.gray .bg-white,
-html.gray .bg-surface {
-  background-color: #4B5563 !important; /* Thẻ màu xám slate */
-  color: #F9FAFB !important;
-}
-
-html.gray .bg-surface-2 {
-  background-color: #3F4958 !important;
-  color: #F9FAFB !important;
-}
-
-html.gray .block-styled-card {
-  background-color: #4B5563 !important;
-  border: 1px solid #64748B !important;
-}
-
-/* Chữ trong chế độ xám luôn sáng rõ, tương phản cao, êm mắt */
-html.gray .text-ink,
-html.gray .text-ink-2,
-html.gray p,
-html.gray h1, html.gray h2, html.gray h3, html.gray h4, html.gray h5, html.gray h6,
-html.gray li,
-html.gray strong,
-html.gray span:not([class*="bg-"]):not([class*="text-white"]):not([class*="text-emerald"]):not([class*="text-red"]) {
-  color: #F9FAFB !important;
-}
-
-html.gray .text-ink-2 {
-  color: #E5E7EB !important;
-}
-
-html.gray .text-muted {
-  color: #D1D5DB !important;
-}
-
-html.gray .border-line,
-html.gray .border-line-strong,
-html.gray .border-line\/40,
-html.gray .border-line\/60 {
-  border-color: #64748B !important;
-}
-
-html.gray input,
-html.gray textarea,
-html.gray select {
-  background-color: #4B5563 !important;
-  color: #F9FAFB !important;
-  border-color: #64748B !important;
-}
-
-html.gray ::-webkit-scrollbar-thumb {
-  background: #64748B;
-}
-
-/* ============================================================================
-   3D BOOK UTILITIES (QBIZ BOOKS LUXURY OPENING)
-   ============================================================================ */
-.backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.transform-3d {
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-}
-
-/* ============================================================================
-   MICRO-INTERACTIONS: SUBTLE BREATHE PULSE & ACCENTS (0 KB CSS)
-   ============================================================================ */
-@keyframes subtle-breathe-emerald {
+@keyframes book-glow {
   0%, 100% {
-    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25), 0 2px 8px -2px rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 15px rgba(217, 119, 6, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.5), 0 4px 14px -1px rgba(16, 185, 129, 0.3);
-    border-color: rgba(16, 185, 129, 0.9);
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.65), 0 0 45px rgba(217, 119, 6, 0.45);
   }
 }
 
-@keyframes subtle-breathe-gold {
-  0%, 100% {
-    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2), 0 2px 8px -2px rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.45), 0 4px 14px -1px rgba(245, 158, 11, 0.25);
-    border-color: rgba(245, 158, 11, 0.85);
-  }
-}
-
-.animate-breathe-emerald {
-  animation: subtle-breathe-emerald 2.6s ease-in-out infinite;
-}
-
-.animate-breathe-gold {
-  animation: subtle-breathe-gold 2.6s ease-in-out infinite;
-}
-
-/* ============================================================================
-   MICRO-INTERACTIONS TRANG CHỦ (TĂNG TỐC PHẦN CỨNG GPU, 60 FPS, KHÔNG GIẬT LAG)
-   ============================================================================ */
-
-/* 1. Hiệu ứng Bong bóng nảy so le cho các ô Chuyên đề tím (chậm & mượt mà theo yêu cầu) */
-@keyframes bubble-pop {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 22px, 0) scale(0.92);
-  }
-  65% {
-    opacity: 1;
-    transform: translate3d(0, -3px, 0) scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-.animate-bubble-pop {
-  animation: bubble-pop 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: transform, opacity;
-}
-
-/* 2. Hiệu ứng trượt ngang so le từ Trái vào cho Hồ sơ Tác giả & Sách đã làm (êm ái, chậm hơn) */
-@keyframes slide-left {
-  0% {
-    opacity: 0;
-    transform: translate3d(-36px, 0, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.animate-slide-left {
-  animation: slide-left 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-/* 3. Hiệu ứng trượt ngang so le từ Phải vào cho Triết lý phụng sự & Liên hệ (êm ái, chậm hơn) */
-@keyframes slide-right {
-  0% {
-    opacity: 0;
-    transform: translate3d(36px, 0, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.animate-slide-right {
-  animation: slide-right 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-/* 4. Hiệu ứng Rút sách từ giá 3D theo bậc thang cho Sách nên đọc (chậm rãi, sang trọng) */
-@keyframes book-cascade {
-  0% {
-    opacity: 0;
-    transform: perspective(800px) rotateY(-8deg) translate3d(0, 24px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: perspective(800px) rotateY(0deg) translate3d(0, 0, 0);
-  }
-}
-
-.animate-book-cascade {
-  animation: book-cascade 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-/* 4b. Hiệu ứng vẫy tay & nhún nhảy sinh động cho lời chào Hello */
-@keyframes wave-hand {
-  0%, 100% { transform: rotate(0deg); }
-  20%, 60% { transform: rotate(15deg); }
-  40%, 80% { transform: rotate(-10deg); }
-}
-
-.animate-wave {
-  display: inline-block;
-  transform-origin: 70% 70%;
-  animation: wave-hand 2.2s infinite ease-in-out;
+.animate-book-glow {
+  animation: book-glow 3s infinite ease-in-out;
 }
 
 @keyframes greeting-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2.5px); }
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
 }
 
 .animate-greeting-bounce {
-  display: inline-flex;
-  animation: greeting-bounce 3s infinite ease-in-out;
+  animation: greeting-bounce 2.5s ease-in-out infinite;
 }
 
-/* 5. Hiệu ứng Vệt Sáng Quét Qua (Shimmer Sweep) cho nút Xem Tiếp chuyên nghiệp */
-@keyframes shimmer-sweep {
-  0% {
-    transform: translateX(-160%) skewX(-20deg);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.75;
-  }
-  30% {
-    transform: translateX(260%) skewX(-20deg);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(260%) skewX(-20deg);
-    opacity: 0;
-  }
-}
-
-.animate-shimmer-sweep {
-  animation: shimmer-sweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
-
-/* 6. Hiệu ứng Hào Quang Nhịp Thở Sáng (Pulse Glow) chuẩn Y Khoa */
-@keyframes pulse-glow-light {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.25), 0 2px 6px rgba(0, 0, 0, 0.08);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 16px 2.5px rgba(245, 158, 11, 0.35), 0 4px 12px rgba(30, 58, 138, 0.15);
-    transform: scale(1.02);
-  }
-}
-
-@keyframes pulse-glow-dark {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(248, 223, 123, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 18px 3.5px rgba(248, 223, 123, 0.7), 0 4px 14px rgba(245, 158, 11, 0.4);
-    transform: scale(1.025);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow-light 2.6s ease-in-out infinite;
-}
-
-html.dark .animate-pulse-glow {
-  animation: pulse-glow-dark 2.6s ease-in-out infinite;
-}
-
-/* 7. Hiệu ứng Flash lấp lánh trên thẻ tag bìa sách (Flash Shimmer Tag) */
+/* Flash lấp lánh trên thẻ tag bìa sách */
 @keyframes badge-flash-sweep {
   0% {
     transform: translateX(-120%) skewX(-20deg);
@@ -508,18 +231,15 @@ html.dark .animate-pulse-glow {
   animation: badge-flash-sweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* ============================================================================
-   7.5 HIỆU ỨNG BONG BÓNG NỔI SANG TRỌNG (LUXURY BUBBLE FLOAT) CHO NÚT XEM THỬ 3D
-   Chuyển động nâng lên hạ xuống êm dịu, không chớp nháy, đổ bóng mềm mại cao cấp
-   ============================================================================ */
+/* Bong bóng nổi sang trọng cho nút xem thử 3D */
 @keyframes bubble-float {
   0%, 100% {
     transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.22), 0 1px 2px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
   }
   50% {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(250, 204, 21, 0.38), 0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -528,47 +248,26 @@ html.dark .animate-pulse-glow {
   will-change: transform, box-shadow;
 }
 
-/* ============================================================================
-   8. HIỆU ỨNG BRAND CARD: NHỊP THỞ SINH HỌC ÊM ÁI (BIO-BREATHING AURA)
-   ============================================================================ */
-@keyframes bio-breathing-light {
+/* Hiệu ứng thở nhẹ nhàng cho Brand Card */
+@keyframes bio-breathing-wood {
   0%, 100% {
-    border-color: rgba(203, 213, 225, 0.85);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    border-color: rgba(84, 54, 33, 0.85);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     transform: translateY(0);
   }
   50% {
-    border-color: rgba(245, 158, 11, 0.5);
-    box-shadow: 0 6px 20px rgba(30, 58, 138, 0.1), 0 0 16px rgba(245, 158, 11, 0.15);
-    transform: translateY(-1.5px);
-  }
-}
-
-@keyframes bio-breathing-dark {
-  0%, 100% {
-    border-color: rgba(255, 255, 255, 0.16);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-    transform: translateY(0);
-  }
-  50% {
-    border-color: rgba(248, 223, 123, 0.65);
-    box-shadow: 0 8px 28px rgba(109, 40, 217, 0.35), 0 0 18px rgba(248, 223, 123, 0.28);
+    border-color: rgba(217, 119, 6, 0.6);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 16px rgba(217, 119, 6, 0.25);
     transform: translateY(-1.5px);
   }
 }
 
 .animate-bio-breathing {
-  animation: bio-breathing-light 3.8s ease-in-out infinite;
+  animation: bio-breathing-wood 3.8s ease-in-out infinite;
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
-html.dark .animate-bio-breathing {
-  animation: bio-breathing-dark 3.8s ease-in-out infinite;
-}
-
-/* ============================================================================
-   9. HIỆU ỨNG NHỊP ĐẬP QUẢ TIM MEDICA (MEDICA HEARTBEAT MICRO-PULSE)
-   ============================================================================ */
+/* Hiệu ứng nhịp đập trái tim Medica */
 @keyframes medica-heartbeat {
   0%, 100% {
     transform: scale(1);
@@ -593,147 +292,9 @@ html.dark .animate-bio-breathing {
   animation: medica-heartbeat 3.8s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
 }
 
-/* ============================================================================
-   10. HIỆU ỨNG NỔI SÁNG THẺ CHUYÊN MỤC (TOPIC CARD LUMINOUS GLOW)
-   ============================================================================ */
-.topic-card-container {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+/* Tiêu đề thanh thoát, sắc nét */
+html h1, html h2, html h3, html h4, html h5, html h6 {
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  color: #fdf7ee;
 }
-
-.topic-card-glow {
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, box-shadow, border-color;
-}
-
-.topic-card-spine {
-  transition: all 0.28s ease;
-}
-
-.topic-card-inner-glow {
-  transition: all 0.35s ease;
-}
-
-.topic-card-badge {
-  transition: all 0.25s ease;
-}
-
-.topic-card-img {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* KHI ACTIVE (SINGLE-ACTIVE QUA REACT STATE CHO MỌI THIẾT BỊ) */
-.topic-card-container.is-active .topic-card-glow {
-  border-top-color: #FDE047 !important;
-  border-right-color: rgba(253, 224, 71, 0.9) !important;
-  border-left-color: #EAB308 !important;
-  box-shadow: 
-    0 0 0 2px #FDE047,
-    0 0 32px rgba(250, 204, 21, 0.85),
-    0 12px 38px rgba(168, 85, 247, 0.65),
-    inset 0 0 18px rgba(255, 255, 255, 0.35) !important;
-  transform: translateY(-3.5px) scale(1.025);
-}
-
-.topic-card-container.is-active .topic-card-spine {
-  filter: brightness(1.35) !important;
-  border-color: #FDE047 !important;
-  box-shadow: 0 0 16px rgba(250, 204, 21, 0.95) !important;
-}
-
-.topic-card-container.is-active .topic-card-inner-glow {
-  opacity: 1 !important;
-  transform: scale(1.4) !important;
-  background-color: rgba(250, 204, 21, 0.45) !important;
-}
-
-.topic-card-container.is-active .topic-card-badge {
-  background-color: #FEF08A !important;
-  color: #000000 !important;
-  box-shadow: 0 0 16px rgba(250, 204, 21, 0.95) !important;
-  transform: scale(1.08) !important;
-}
-
-.topic-card-container.is-active .topic-card-img {
-  transform: scale(1.14) !important;
-  filter: drop-shadow(0 10px 24px rgba(250, 204, 21, 0.55)) !important;
-}
-
-/* CHỈ DÀNH CHO PC CÓ CON TRỎ CHUỘT (CHỐNG DÍNH STICKY HOVER TRÊN MOBILE) */
-@media (hover: hover) and (pointer: fine) {
-  .topic-card-container:hover .topic-card-glow {
-    border-top-color: #FDE047 !important;
-    border-right-color: rgba(253, 224, 71, 0.9) !important;
-    border-left-color: #EAB308 !important;
-    box-shadow: 
-      0 0 0 2px #FDE047,
-      0 0 32px rgba(250, 204, 21, 0.85),
-      0 12px 38px rgba(168, 85, 247, 0.65),
-      inset 0 0 18px rgba(255, 255, 255, 0.35) !important;
-    transform: translateY(-3.5px) scale(1.025);
-  }
-
-  .topic-card-container:hover .topic-card-spine {
-    filter: brightness(1.35) !important;
-    border-color: #FDE047 !important;
-    box-shadow: 0 0 16px rgba(250, 204, 21, 0.95) !important;
-  }
-
-  .topic-card-container:hover .topic-card-inner-glow {
-    opacity: 1 !important;
-    transform: scale(1.4) !important;
-    background-color: rgba(250, 204, 21, 0.45) !important;
-  }
-
-  .topic-card-container:hover .topic-card-badge {
-    background-color: #FEF08A !important;
-    color: #000000 !important;
-    box-shadow: 0 0 16px rgba(250, 204, 21, 0.95) !important;
-    transform: scale(1.08) !important;
-  }
-
-  .topic-card-container:hover .topic-card-img {
-    transform: scale(1.14) !important;
-    filter: drop-shadow(0 10px 24px rgba(250, 204, 21, 0.55)) !important;
-  }
-}
-
-/* ============================================================================
-   11. HIỆU ỨNG PHÁT SÁNG THẺ BÀI HỌC (PAGE CARD LUMINOUS GLOW)
-   ============================================================================ */
-.page-card-container {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.page-card-container.is-active {
-  border-color: #FBBF24 !important;
-  box-shadow: 
-    0 0 0 1.5px #FBBF24,
-    0 0 24px rgba(250, 204, 21, 0.45),
-    0 6px 20px rgba(0, 0, 0, 0.25) !important;
-  transform: translateY(-2px);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .page-card-container:hover {
-    border-color: #FBBF24 !important;
-    box-shadow: 
-      0 0 0 1.5px #FBBF24,
-      0 0 24px rgba(250, 204, 21, 0.45),
-      0 6px 20px rgba(0, 0, 0, 0.25) !important;
-    transform: translateY(-2px);
-  }
-}
-
-
-
-
-
-
-/* Gi?m d? d?m ti�u d? cho d? nh�n, d?ng b? Be Vietnam Pro */
-html h1, html h2, html h3, html h4, html h5, html h6 { font-weight: 600 !important; letter-spacing: -0.01em; }
-html .font-black { font-weight: 700; }
-html .font-extrabold { font-weight: 600; }
-

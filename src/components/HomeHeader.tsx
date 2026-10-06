@@ -77,7 +77,7 @@ export default function HomeHeader({
       } else {
         document.documentElement.classList.remove('dark');
       }
-      const targetColor = darkActive ? '#0C0817' : '#FFFFFF';
+      const targetColor = '#160e08';
       let m = document.getElementById('app-theme-color') as HTMLMetaElement | null;
       if (!m) m = document.querySelector('meta[name="theme-color"]');
       if (!m) {
@@ -108,7 +108,7 @@ export default function HomeHeader({
         document.documentElement.classList.remove('dark');
         localStorage.setItem('giao_dien', 'light');
       }
-      const targetColor = nextDark ? '#0C0817' : '#FFFFFF';
+      const targetColor = '#160e08';
       let m = document.getElementById('app-theme-color') as HTMLMetaElement | null;
       if (!m) m = document.querySelector('meta[name="theme-color"]');
       if (!m) {
@@ -393,6 +393,15 @@ export default function HomeHeader({
               <BookOpen size={16} className="text-amber-500 dark:text-[#F8DF7B]" />
               <span>Xem hiệu ứng mở sách 3D</span>
             </button>
+
+            <Link
+              href="/thu-nghiem-lat-sach"
+              onClick={() => setShowMenu(false)}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] text-left text-[14px] font-bold text-amber-600 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30 cursor-pointer"
+            >
+              <BookOpen size={16} className="text-amber-500 dark:text-amber-400" />
+              <span>Trải nghiệm lật sách 3D</span>
+            </Link>
 
             <button
               type="button"
