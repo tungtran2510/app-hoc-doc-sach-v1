@@ -18,10 +18,8 @@ import {
   Download,
   Eye,
 } from 'lucide-react';
-import { extractYouTubeId } from '../lib/youtube';
 import ModernBookCover from './ModernBookCover';
 import FlipbookViewer from './FlipbookViewer';
-import YouTubeEmbed from './YouTubeEmbed';
 
 export interface UnifiedBookItem {
   id: string;
@@ -350,7 +348,7 @@ export default function BookDetailModal({
 
   if (!book) return null;
 
-  const youtubeId = book.youtube_url ? extractYouTubeId(book.youtube_url) : null;
+
 
   return (
     <>
@@ -525,93 +523,7 @@ export default function BookDetailModal({
               </div>
             )}
 
-            {/* 3. MỤC VIDEO GIỚI THIỆU & CHIA SẺ (KHOẢNG CÁCH THOÁNG ĐẸP, KHÔNG BỊ SÁT VIỀN) */}
-            <div className="flex flex-col gap-2.5 pt-2 border-t border-line/60">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-extrabold text-ink uppercase tracking-wide flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                    <Play size={10} className="fill-red-600 translate-x-0.2" />
-                  </div>
-                  <span>Video giới thiệu & chia sẻ</span>
-                </span>
-                {youtubeId ? (
-                  <span className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200/60 px-2 py-0.5 rounded-full shrink-0">
-                    YouTube HD
-                  </span>
-                ) : book.youtube_url ? (
-                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-full shrink-0">
-                    Video ngoài
-                  </span>
-                ) : null}
-              </div>
 
-              {youtubeId ? (
-                <div className="flex flex-col gap-2">
-                  <YouTubeEmbed
-                    youtubeId={youtubeId}
-                    title={`Video giới thiệu ${book.title}`}
-                    showExternalLink={true}
-                  />
-                  {book.youtube_url && (
-                    <div className="flex justify-end">
-                      <a
-                        href={book.youtube_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11.5px] font-bold text-red-600 hover:underline flex items-center gap-1"
-                      >
-                        <span>Mở trực tiếp trên YouTube</span>
-                        <ExternalLink size={11} />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ) : book.youtube_url ? (
-                <div className="p-3.5 rounded-[16px] bg-surface-2 border border-line flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                      <Play size={12} className="fill-red-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12.5px] font-bold text-ink truncate">
-                        Video giới thiệu cuốn sách
-                      </p>
-                      <p className="text-[11px] text-muted truncate">
-                        Nhấn nút để mở xem video
-                      </p>
-                    </div>
-                  </div>
-                  <a
-                    href={book.youtube_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-8 px-3.5 rounded-[8px] bg-red-600 hover:bg-red-700 text-white font-bold text-[12px] flex items-center gap-1.5 shrink-0 shadow-xs transition-transform active:scale-95"
-                  >
-                    <span>Xem video</span>
-                    <ExternalLink size={11} />
-                  </a>
-                </div>
-              ) : (
-                <div className="p-4 rounded-[16px] bg-surface-2 border border-line text-center flex flex-col items-center justify-center gap-1.5 text-muted">
-                  <Film size={22} className="text-muted/60" />
-                  <p className="text-[12.5px] font-medium">
-                    Video chia sẻ về cuốn sách này đang được biên tập.
-                  </p>
-                  {isAdmin && onEdit && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onEdit();
-                      }}
-                      className="text-[12px] font-bold text-primary hover:underline cursor-pointer"
-                    >
-                      + Nhấn vào đây để thêm link video YouTube
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
 
             {/* 4. HÌNH ẢNH (NHẤN ĐỂ PHÓNG TO) - 1 DÒNG GỌN GÀNG, BỐ CỤC CHUYÊN NGHIỆP */}
             <div className="flex flex-col gap-2.5 pt-2 border-t border-line/60">

@@ -35,9 +35,9 @@ export async function POST(req: NextRequest) {
     const ym = getYearMonth();
     const uuid = generateUuid();
     const origExt = file.name.split('.').pop()?.toLowerCase() || 'webp';
-    const isDoc = ['pdf', 'doc', 'docx'].includes(origExt);
+    const isDoc = ['pdf', 'doc', 'docx', 'epub', 'mobi', 'azw', 'azw3', 'fb2', 'cbz', 'cbr', 'txt'].includes(origExt);
     // Không cho tải SVG (có thể chứa mã script); định dạng lạ bị chuyển về webp như trước
-    const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'pdf', 'doc', 'docx'].includes(origExt) ? origExt : 'webp';
+    const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif', 'pdf', 'doc', 'docx', 'epub', 'mobi', 'azw', 'azw3', 'fb2', 'cbz', 'cbr', 'txt'].includes(origExt) ? origExt : 'webp';
     const folder = isDoc ? 'documents' : 'images';
     const filePath = `${folder}/${ym}/${uuid}.${safeExt}`;
 
@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
     let contentType = file.type;
     if (!contentType) {
       if (safeExt === 'pdf') contentType = 'application/pdf';
+      else if (safeExt === 'epub') contentType = 'application/epub+zip';
+      else if (safeExt === 'mobi') contentType = 'application/x-mobipocket-ebook';
+      else if (safeExt === 'azw' || safeExt === 'azw3') contentType = 'application/vnd.amazon.ebook';
+      else if (safeExt === 'fb2') contentType = 'application/x-fictionbook+xml';
+      else if (safeExt === 'cbz') contentType = 'application/vnd.comicbook+zip';
+      else if (safeExt === 'cbr') contentType = 'application/vnd.comicbook-rar';
+      else if (safeExt === 'txt') contentType = 'text/plain; charset=utf-8';
       else if (safeExt === 'doc') contentType = 'application/msword';
       else if (safeExt === 'docx') contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       else if (safeExt === 'webp') contentType = 'image/webp';

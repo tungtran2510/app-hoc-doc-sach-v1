@@ -669,6 +669,9 @@ export default function RecommendedBooksSection({
         author={sideBooksModalBook?.author}
         pages={sideBooksModalBook ? getBookReaderPageUrls(sideBooksModalBook) : []}
         pdfUrl={sideBooksModalBook?.pdf_url || sideBooksModalBook?.file_url}
+        fileUrl={sideBooksModalBook?.file_url || sideBooksModalBook?.pdf_url}
+        fileName={sideBooksModalBook?.file_name}
+        coverUrl={sideBooksModalBook?.cover_url}
         onClose={() => setSideBooksModalBook(null)}
       />
     </section>

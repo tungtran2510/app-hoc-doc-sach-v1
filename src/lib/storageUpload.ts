@@ -146,6 +146,13 @@ export async function uploadDocumentFile(file: File): Promise<{ url: string; fil
   let mimeType = file.type;
   if (!mimeType) {
     if (origExt === 'pdf') mimeType = 'application/pdf';
+    else if (origExt === 'epub') mimeType = 'application/epub+zip';
+    else if (origExt === 'mobi') mimeType = 'application/x-mobipocket-ebook';
+    else if (origExt === 'azw' || origExt === 'azw3') mimeType = 'application/vnd.amazon.ebook';
+    else if (origExt === 'fb2') mimeType = 'application/x-fictionbook+xml';
+    else if (origExt === 'cbz') mimeType = 'application/vnd.comicbook+zip';
+    else if (origExt === 'cbr') mimeType = 'application/vnd.comicbook-rar';
+    else if (origExt === 'txt') mimeType = 'text/plain; charset=utf-8';
     else if (origExt === 'doc') mimeType = 'application/msword';
     else if (origExt === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     else mimeType = 'application/octet-stream';
