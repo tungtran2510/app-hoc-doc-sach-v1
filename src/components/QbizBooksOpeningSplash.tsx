@@ -22,9 +22,6 @@ export default function QbizBooksOpeningSplash({
 
   useEffect(() => {
     try {
-      // Dọn dẹp khóa cũ trong localStorage nếu có để không bị khóa vĩnh viễn
-      localStorage.removeItem('qbiz_books_intro_seen');
-
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('skip_intro') === '1') {
         setIsVisible(false);
@@ -33,33 +30,41 @@ export default function QbizBooksOpeningSplash({
 
       const force = urlParams.get('intro') === '1' || forceShow;
 
-      // Nếu đang trong cùng phiên lướt trang của tab (chuyển qua lại các bài) và không ép buộc thì bỏ qua
-      if (!force && hasShownIntroInSession) {
+      // Nếu đã từng xem rồi và không ép buộc thì bỏ qua
+      const hasSeen =
+        typeof window !== 'undefined' &&
+        (sessionStorage.getItem('qbiz_books_intro_seen') === '1' ||
+          localStorage.getItem('qbiz_books_intro_seen') === '1');
+
+      if (!force && (hasSeen || hasShownIntroInSession)) {
         setIsVisible(false);
         return;
       }
 
       hasShownIntroInSession = true;
+      try {
+        sessionStorage.setItem('qbiz_books_intro_seen', '1');
+      } catch {}
       setIsVisible(true);
     } catch {
-      setIsVisible(true);
+      setIsVisible(false);
     }
 
-    // 1. Sau 650ms: Bìa sách 3D mở ra
+    // 1. Sau 400ms: Bìa sách 3D mở ra
     const tOpen = setTimeout(() => {
       setIsBookOpened(true);
-    }, 650);
+    }, 400);
 
-    // 2. Sau 3200ms: Bắt đầu tan biến dần vào trang chủ
+    // 2. Sau 1800ms: Bắt đầu tan biến dần vào trang chủ
     const tFade = setTimeout(() => {
       setIsFadingOut(true);
-    }, 3200);
+    }, 1800);
 
-    // 3. Sau 3700ms: Đóng hoàn toàn
+    // 3. Sau 2200ms: Đóng hoàn toàn
     const tFinish = setTimeout(() => {
       setIsVisible(false);
       if (onFinish) onFinish();
-    }, 3700);
+    }, 2200);
 
     return () => {
       clearTimeout(tOpen);
@@ -91,12 +96,13 @@ export default function QbizBooksOpeningSplash({
   const handleDismiss = () => {
     try {
       localStorage.setItem('qbiz_books_intro_seen', '1');
+      sessionStorage.setItem('qbiz_books_intro_seen', '1');
     } catch {}
     setIsFadingOut(true);
     setTimeout(() => {
       setIsVisible(false);
       if (onFinish) onFinish();
-    }, 400);
+    }, 200);
   };
 
   if (!isVisible) return null;
@@ -144,7 +150,7 @@ export default function QbizBooksOpeningSplash({
           <Sparkles size={12} className="text-amber-400" />
         </div>
         <h1 className="text-[26px] sm:text-[32px] font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-yellow-500 drop-shadow-[0_2px_10px_rgba(245,158,11,0.5)]">
-          QBIZ BOOKS
+          QBIZ-EBOOK
         </h1>
         <p className="text-[12px] sm:text-[13px] text-slate-300/80 font-medium tracking-wide max-w-[280px] sm:max-w-none">
           Hiểu Về Cơ Thể · Kiến Thức Đúng · Sức Khỏe Bền Vững
@@ -288,7 +294,7 @@ export default function QbizBooksOpeningSplash({
                 className="text-[10px] font-black uppercase tracking-widest mt-2"
                 style={{ color: '#64748B' }}
               >
-                — TỦ SÁCH QBIZ BOOKS —
+                — TỦ SÁCH QBIZ-EBOOK —
               </span>
             </div>
 
@@ -391,7 +397,7 @@ export default function QbizBooksOpeningSplash({
               {/* Phần đáy bìa */}
               <div className="flex flex-col items-center text-center mb-2 relative z-10">
                 <span className="text-[8.5px] font-black tracking-[0.2em] text-amber-300/70 uppercase">
-                  XUẤT BẢN ĐIỆN TỬ · QBIZ BOOKS
+                  XUẤT BẢN ĐIỆN TỬ · QBIZ-EBOOK
                 </span>
                 <span className="text-[7.5px] text-slate-400/60 mt-0.5">
                   CHẠM ĐỂ MỞ SÁCH • TOUCH TO OPEN

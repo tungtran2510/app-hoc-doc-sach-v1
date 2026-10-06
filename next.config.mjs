@@ -36,6 +36,20 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/admin',
+        destination: '/dang-nhap',
+        permanent: false,
+      },
+      {
+        source: '/admin/login',
+        destination: '/dang-nhap',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

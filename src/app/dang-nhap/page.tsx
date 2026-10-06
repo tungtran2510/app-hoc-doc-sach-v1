@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
-    document.title = 'Đăng nhập quản trị · Học Cơ Thể';
+    document.title = 'Đăng nhập quản trị · Qbiz-ebook';
     if (typeof window !== 'undefined') {
       const savedPhone = localStorage.getItem('app_user_phone');
       if (savedPhone) setPhone(savedPhone);
@@ -65,10 +65,10 @@ export default function LoginPage() {
 
         <div className="flex flex-col gap-2 text-center">
           <h1 className="text-[28px] font-extrabold text-ink leading-tight">
-            Quản trị nội dung
+            Đăng Nhập Quản Trị
           </h1>
           <p className="text-[17px] text-muted font-normal leading-relaxed">
-            Đăng nhập tài khoản quản trị để chỉnh sửa nội dung bài học, hình ảnh và tài liệu.
+            Đăng nhập tài khoản quản trị viên để quản lý tủ sách, cập nhật tài liệu và cài đặt hệ thống Qbiz-ebook.
           </p>
         </div>
 

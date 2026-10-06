@@ -25,7 +25,7 @@ interface SavedItem {
   id: string;
   title: string;
   category: string;
-  badgeType: 'video' | 'book';
+  badgeType: 'book';
   badgeNumber?: string;
   coverUrl: string;
   subtitle: string;
@@ -36,40 +36,42 @@ interface SavedItem {
 const DEFAULT_CURATED_SAVED: SavedItem[] = [
   {
     id: 'curated-1',
-    title: '03. Điều trị thoát vị đĩa đệm ít xâm lấn (BV Tâm Anh)',
-    category: 'Đĩa đệm và cơ chế giảm xóc',
-    badgeType: 'video',
+    title: 'Hiểu Đúng Về Cột Sống',
+    category: 'CỘT SỐNG',
+    badgeType: 'book',
+    badgeNumber: '#1',
     coverUrl: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
-    subtitle: 'Đĩa đệm và cơ chế giảm xóc',
-    initialPage: 2,
+    subtitle: 'Đĩa đệm và cơ chế giảm xóc sinh học',
+    initialPage: 0,
   },
   {
     id: 'curated-2',
-    title: '02. Cơ chế hình thành thoát vị đĩa đệm 3D',
-    category: 'Đĩa đệm và cơ chế giảm xóc',
-    badgeType: 'video',
-    coverUrl: '/documents/covers/cover_cot-song.png',
-    subtitle: 'Đĩa đệm và cơ chế giảm xóc',
-    initialPage: 1,
+    title: 'Dinh Dưỡng Kháng Viêm Sinh Học',
+    category: 'DINH DƯỠNG',
+    badgeType: 'book',
+    badgeNumber: '#2',
+    coverUrl: '/documents/covers/cover_dinh-duong.png',
+    subtitle: 'Dinh dưỡng phục hồi tế bào và sụn khớp',
+    initialPage: 0,
   },
   {
     id: 'curated-3',
-    title: 'Đĩa đệm và cơ chế giảm xóc',
+    title: 'Đĩa Đệm & Cơ Chế Giảm Xóc',
     category: 'CỘT SỐNG',
     badgeType: 'book',
-    badgeNumber: '#2',
+    badgeNumber: '#3',
     coverUrl: '/documents/covers/cover_giai_ma_cot_song.png',
-    subtitle: 'Cột sống',
+    subtitle: 'Giải phẫu đĩa đệm và giải phóng chèn ép',
     initialPage: 1,
   },
   {
     id: 'curated-4',
-    title: 'Tổng quan về cột sống',
-    category: 'CỘT SỐNG',
+    title: 'Atlas Y Khoa Toàn Diện',
+    category: 'GIẢI PHẪU',
     badgeType: 'book',
-    badgeNumber: '#1',
-    coverUrl: '/documents/covers/cover_cam_nang_dot_song_co.png',
-    subtitle: 'Cột sống',
+    badgeNumber: '#4',
+    coverUrl: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+    subtitle: 'Mô phỏng giải phẫu đa tầng cơ thể người',
     initialPage: 0,
   },
 ];
@@ -90,7 +92,7 @@ export default function SavedBooksPage() {
     percent: number;
   }>({
     title: 'Đại tràng & Cơ chế bài tiết',
-    subtitle: 'Hệ Tiêu Hóa · 02. Căn nguyên gốc rễ của táo bón...',
+    subtitle: 'Hệ Tiêu Hóa · Sách chuyên khảo giải phẫu Y khoa',
     coverUrl: '/documents/covers/cover_tieu-hoa.png',
     page: 4,
     totalPages: 8,
@@ -249,21 +251,21 @@ export default function SavedBooksPage() {
           Đã lưu
         </h1>
         <p className="text-xs text-amber-100/70">
-          Lưu bài học, video, sách và danh sách phát để xem lại.
+          Lưu sách, chuyên đề và dấu trang yêu thích để đọc lại.
         </p>
       </section>
 
-      {/* 2. SECTION Ở ĐẦU: ĐANG HỌC DỞ / ĐANG ĐỌC DỞ (NHƯ ẢNH USER GỬI) */}
+      {/* 2. SECTION Ở ĐẦU: ĐANG ĐỌC DỞ */}
       <section className="flex flex-col gap-2">
         <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400 uppercase tracking-wide">
-          <PlayCircle size={15} className="fill-amber-400/20 text-amber-400" />
-          <span>ĐANG HỌC DỞ</span>
+          <BookOpen size={15} className="text-amber-400" />
+          <span>ĐANG ĐỌC DỞ</span>
         </div>
 
-        {/* Card Đang học dở lớn */}
+        {/* Card Đang đọc dở lớn */}
         <div className="p-3.5 rounded-3xl bg-[#22150c] border border-[#553622] shadow-xl flex flex-col gap-3.5 transition-all">
           <div className="flex items-center gap-3">
-            {/* Ảnh bìa bên trái có biểu tượng play/book ở góc dưới */}
+            {/* Ảnh bìa bên trái có biểu tượng sách ở góc dưới */}
             <div className="relative w-28 sm:w-36 aspect-[16/10] rounded-2xl overflow-hidden bg-[#160e08] shrink-0 border border-white/10 shadow-md">
               <img
                 src={continueBook.coverUrl}
@@ -272,15 +274,15 @@ export default function SavedBooksPage() {
                 loading="eager"
               />
               <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-amber-300 border border-white/20">
-                <PlayCircle size={13} className="fill-amber-400 text-black" />
+                <BookOpen size={13} className="text-amber-400" />
               </div>
             </div>
 
-            {/* Thông tin bài học bên phải */}
+            {/* Thông tin sách bên phải */}
             <div className="flex flex-col min-w-0 flex-1 gap-1">
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 tracking-wide uppercase">
-                <PlayCircle size={11} />
-                <span>ĐANG XEM DỞ</span>
+                <BookOpen size={11} />
+                <span>ĐANG ĐỌC DỞ</span>
               </div>
               <h2 className="text-sm font-bold text-amber-100 line-clamp-2 leading-snug">
                 {continueBook.title}
@@ -289,7 +291,7 @@ export default function SavedBooksPage() {
                 {continueBook.subtitle}
               </p>
 
-              {/* Thanh tiến độ học / đọc dở */}
+              {/* Thanh tiến độ đọc dở */}
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex-1 h-1.5 bg-[#160e08] rounded-full overflow-hidden border border-white/5">
                   <div
@@ -304,14 +306,14 @@ export default function SavedBooksPage() {
             </div>
           </div>
 
-          {/* Nút to Tiếp tục học / đọc tràn ngang dưới cùng của card */}
+          {/* Nút to Tiếp tục đọc tràn ngang dưới cùng của card */}
           <button
             type="button"
             onClick={handleContinueReading}
             className="w-full py-2.5 px-4 rounded-2xl bg-[#2e1d12] hover:bg-amber-500 hover:text-slate-950 border border-amber-500/40 text-amber-200 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all cursor-pointer group"
           >
             <span className="w-2 h-2 rounded-full bg-amber-400 group-hover:bg-slate-950 transition-colors" />
-            <span>Tiếp tục học</span>
+            <span>Tiếp tục đọc</span>
             <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
@@ -388,20 +390,11 @@ export default function SavedBooksPage() {
                 key={item.id}
                 className="p-3 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex flex-col justify-between gap-2.5 transition-all group"
               >
-                {/* Dòng trên: Badge loại (VIDEO / CỘT SỐNG) + Nút Bookmark */}
+                {/* Dòng trên: Badge loại sách + Nút Bookmark */}
                 <div className="flex items-center justify-between gap-1">
                   <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400 tracking-wider uppercase">
-                    {item.badgeType === 'video' ? (
-                      <>
-                        <PlayCircle size={11} />
-                        <span>VIDEO</span>
-                      </>
-                    ) : (
-                      <>
-                        <BookOpen size={11} />
-                        <span className="truncate">{item.category}</span>
-                      </>
-                    )}
+                    <BookOpen size={11} />
+                    <span className="truncate">{item.category}</span>
                   </div>
                   <button
                     type="button"
@@ -466,16 +459,11 @@ export default function SavedBooksPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
                   />
-                  {item.badgeType === 'video' ? (
-                    <div className="absolute bottom-0.5 left-0.5 flex items-center gap-0.5 text-[8.5px] font-bold text-amber-300 bg-black/70 px-1 rounded-sm">
-                      <PlayCircle size={9} />
-                      <span>VIDEO</span>
-                    </div>
-                  ) : item.badgeNumber ? (
-                    <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-blue-600 text-white font-mono font-bold text-[9px]">
+                  {item.badgeNumber && (
+                    <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-amber-600 text-white font-mono font-bold text-[9px] shadow-xs">
                       {item.badgeNumber}
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Ở giữa: Tiêu đề + Chuyên mục */}

@@ -36,7 +36,7 @@ interface WelcomeModalProps {
 export default function WelcomeModal({
   isOpen,
   onClose,
-  appName = 'Qbiz Books',
+  appName = 'Qbiz-ebook',
   appSubtitle = '',
   logoUrl,
   hotline = '0974.248.716',
@@ -48,7 +48,7 @@ export default function WelcomeModal({
   onSaved,
 }: WelcomeModalProps) {
   const [welcomeTitle, setWelcomeTitle] = useState(
-    initialWelcomeTitle || 'Chào mừng bạn đến với Qbiz Books'
+    initialWelcomeTitle || 'Chào mừng bạn đến với Qbiz-ebook'
   );
   const [welcomeMessage, setWelcomeMessage] = useState(
     initialWelcomeMessage ||
@@ -68,6 +68,10 @@ export default function WelcomeModal({
 
   // Xử lý nút Back của điện thoại / trình duyệt để đóng Modal thay vì bị lùi trang
   const isBackAction = useRef(false);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -79,7 +83,7 @@ export default function WelcomeModal({
 
     const handlePopState = () => {
       isBackAction.current = true;
-      onClose();
+      onCloseRef.current?.();
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -91,7 +95,7 @@ export default function WelcomeModal({
         }
       } catch {}
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -144,7 +148,7 @@ export default function WelcomeModal({
             <div className="w-9 h-9 rounded-[12px] bg-[#0C152B] p-0.5 border border-amber-400/60 shadow-sm shrink-0 overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={logoUrl || '/app_logo.png'}
+                src={logoUrl || '/logo.png'}
                 alt={appName}
                 className="w-full h-full object-cover rounded-[9px]"
               />
@@ -156,7 +160,7 @@ export default function WelcomeModal({
                 </span>
               </div>
               <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-white leading-tight truncate mt-0.5">
-                {appName} · Medica Learn
+                {appName} · Tủ Sách Y Khoa
               </h3>
             </div>
           </div>

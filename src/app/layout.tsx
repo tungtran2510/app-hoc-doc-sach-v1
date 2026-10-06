@@ -49,7 +49,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#120a05',
+  themeColor: '#160e08',
 };
 
 export default function RootLayout({
@@ -61,17 +61,16 @@ export default function RootLayout({
     <html lang="vi" className={`${beVietnamPro.variable} ${lora.variable} ${inter.variable} ${beVietnamPro.className}`}>
       <head>
         <meta name="referrer" content="strict-origin-when-cross-origin" />
-        <meta name="theme-color" id="app-theme-color" content="#160e08" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=22" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=22" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png?v=22" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=25" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=25" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png?v=25" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{document.documentElement.classList.add('dark');var color='#160e08';var m=document.getElementById('app-theme-color')||document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.id='app-theme-color';m.name='theme-color';document.head.appendChild(m)}m.setAttribute('content',color);m.removeAttribute('media');var all=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<all.length;i++){if(all[i]!==m){all[i].remove()}}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('giao_dien');if(t==='light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`,
           }}
         />
       </head>

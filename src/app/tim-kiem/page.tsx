@@ -109,7 +109,13 @@ export default function SearchPage() {
       <section className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/');
+            }
+          }}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-amber-200 hover:text-white transition-colors cursor-pointer shrink-0"
           aria-label="Quay lại"
         >

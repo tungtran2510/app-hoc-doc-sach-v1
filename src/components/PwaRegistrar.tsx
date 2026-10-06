@@ -25,27 +25,13 @@ export default function PwaRegistrar() {
     // 1. Đăng ký Service Worker và ép cập nhật bản mới nhất
     if (typeof window !== 'undefined') {
       const syncThemeColor = () => {
-        const stored = localStorage.getItem('giao_dien');
-        const isDark = stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        const targetColor = '#160e08';
-        let m = document.getElementById('app-theme-color') as HTMLMetaElement | null;
-        if (!m) {
-          m = document.querySelector('meta[name="theme-color"]');
-        }
-        if (!m) {
-          m = document.createElement('meta');
-          m.id = 'app-theme-color';
-          m.name = 'theme-color';
-          document.head.appendChild(m);
-        }
-        m.setAttribute('content', targetColor);
-        m.removeAttribute('media');
-
-        // Dọn dẹp tất cả các thẻ theme-color thừa/xung đột
-        const all = document.querySelectorAll('meta[name="theme-color"]');
-        all.forEach((el) => {
-          if (el !== m) el.remove();
-        });
+        try {
+          const targetColor = '#160e08';
+          const m = document.querySelector('meta[name="theme-color"]');
+          if (m) {
+            m.setAttribute('content', targetColor);
+          }
+        } catch {}
       };
       syncThemeColor();
       window.addEventListener('giao_dien_changed', syncThemeColor);
@@ -95,14 +81,11 @@ export default function PwaRegistrar() {
     const runIdlePrefetch = () => {
       const routesToPrefetch = [
         '/',
-        '/tro-ly-ai',
+        '/danh-muc',
         '/da-luu',
         '/tim-kiem',
-        '/cot-song',
-        '/cot-song/tong-quan-ve-cot-song',
-        '/cot-song/tu-the-va-van-dong',
-        '/dinh-duong',
-        '/co-the-nguoi',
+        '/tro-ly-ai',
+        '/dang-nhap',
       ];
 
       routesToPrefetch.forEach((route) => {

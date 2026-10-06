@@ -875,7 +875,7 @@ export default function WoodenBookshelf({
                 </>
               ) : (
                 <Link
-                  href="/admin/login"
+                  href="/dang-nhap"
                   onClick={() => setShowSettingsMenu(false)}
                   className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-200 cursor-pointer whitespace-nowrap"
                 >
