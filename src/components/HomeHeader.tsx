@@ -247,12 +247,12 @@ export default function HomeHeader({
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1 h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-[8px] bg-red-500/25 hover:bg-red-500/40 text-red-200 transition-all cursor-pointer shrink-0 text-[12px] font-bold shadow-2xs"
+              className="flex items-center gap-1.5 h-7.5 sm:h-8 px-2.5 sm:px-3 rounded-[8px] bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-all cursor-pointer shrink-0 text-[12px] sm:text-[12.5px] font-bold shadow-2xs active:scale-95"
               title="Đăng xuất khỏi chế độ Quản trị"
               aria-label="Đăng xuất"
             >
               <LogOut size={13} strokeWidth={2.4} />
-              <span className="hidden xs:inline">Thoát</span>
+              <span>Đăng xuất</span>
             </button>
           </div>
         </div>

@@ -608,9 +608,11 @@ export default function WoodenBookshelf({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="px-2 py-0.5 rounded bg-red-500/30 hover:bg-red-500/50 text-red-200 font-semibold transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-red-600/80 hover:bg-red-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
+                  title="Đăng xuất khỏi quyền Quản trị viên"
                 >
-                  Thoát
+                  <LogOut size={12} strokeWidth={2.5} />
+                  <span>Đăng xuất</span>
                 </button>
               )}
             </div>
