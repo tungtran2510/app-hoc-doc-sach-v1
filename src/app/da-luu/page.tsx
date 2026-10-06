@@ -78,11 +78,11 @@ const DEFAULT_CURATED_SAVED: SavedItem[] = [
 
 export default function SavedBooksPage() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('compact');
   const [userBookmarks, setUserBookmarks] = useState<SavedItem[]>([]);
   const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>([]);
 
-  // Đang học dở / Đang đọc dở state
+  // Đang học dở / Đang đọc dở state (Mặc định chuẩn theo ảnh người dùng)
   const [continueBook, setContinueBook] = useState<{
     title: string;
     subtitle: string;
@@ -91,12 +91,12 @@ export default function SavedBooksPage() {
     totalPages: number;
     percent: number;
   }>({
-    title: 'Đại tràng & Cơ chế bài tiết',
-    subtitle: 'Hệ Tiêu Hóa · Sách chuyên khảo giải phẫu Y khoa',
-    coverUrl: '/documents/covers/cover_tieu-hoa.png',
-    page: 4,
-    totalPages: 8,
-    percent: 50,
+    title: 'Atlas Y Khoa Toàn Diện',
+    subtitle: 'Tủ Sách Y Khoa · Trang 2/6',
+    coverUrl: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+    page: 1,
+    totalPages: 6,
+    percent: 33,
   });
 
   const [activeReaderBook, setActiveReaderBook] = useState<{
@@ -164,10 +164,21 @@ export default function SavedBooksPage() {
           }
         }
       }
+      const savedMode = localStorage.getItem('saved_books_view_mode');
+      if (savedMode && ['grid', 'compact', 'list'].includes(savedMode)) {
+        setViewMode(savedMode as any);
+      }
       setUserBookmarks(dynamicItems);
     } catch {
       // fallback
     }
+  };
+
+  const handleViewModeChange = (mode: 'grid' | 'compact' | 'list') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('saved_books_view_mode', mode);
+    } catch {}
   };
 
   useEffect(() => {
@@ -331,7 +342,7 @@ export default function SavedBooksPage() {
           <div className="p-0.5 rounded-xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-0.5 shadow-2xs">
             <button
               type="button"
-              onClick={() => setViewMode('list')}
+              onClick={() => handleViewModeChange('list')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'
@@ -344,7 +355,7 @@ export default function SavedBooksPage() {
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('compact')}
+              onClick={() => handleViewModeChange('compact')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'compact'
                   ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'
@@ -357,7 +368,7 @@ export default function SavedBooksPage() {
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('grid')}
+              onClick={() => handleViewModeChange('grid')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'grid'
                   ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'

@@ -23,6 +23,8 @@ public/*.html
 public/screenshots/
 screenshots_*/
 scripts/qa_screenshots/
+scripts/qa_screenshots_v2/
+scripts/production_screenshots/
 scripts/test_*.png
 
 .vercel
