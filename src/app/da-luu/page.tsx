@@ -263,14 +263,14 @@ export default function SavedBooksPage() {
         </div>
 
         {/* Card Đang đọc dở lớn */}
-        <div className="p-3.5 rounded-3xl bg-[#22150c] border border-[#553622] shadow-xl flex flex-col gap-3.5 transition-all">
+        <div className="p-3.5 rounded-3xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm dark:shadow-xl flex flex-col gap-3.5 transition-all">
           <div className="flex items-center gap-3">
-            {/* Ảnh bìa bên trái có biểu tượng sách ở góc dưới */}
-            <div className="relative w-28 sm:w-36 aspect-[16/10] rounded-2xl overflow-hidden bg-[#160e08] shrink-0 border border-white/10 shadow-md">
+            {/* Ảnh bìa bên trái chuẩn A4 đứng (không bị xén ngang) có biểu tượng sách ở góc dưới */}
+            <div className="relative w-20 sm:w-24 aspect-[1/1.42] rounded-xl overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] shrink-0 border border-amber-900/10 dark:border-white/10 shadow-sm p-0.5 flex items-center justify-center">
               <img
                 src={continueBook.coverUrl}
                 alt={continueBook.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 loading="eager"
               />
               <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-amber-300 border border-white/20">
@@ -280,26 +280,26 @@ export default function SavedBooksPage() {
 
             {/* Thông tin sách bên phải */}
             <div className="flex flex-col min-w-0 flex-1 gap-1">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 tracking-wide uppercase">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wide uppercase">
                 <BookOpen size={11} />
                 <span>ĐANG ĐỌC DỞ</span>
               </div>
-              <h2 className="text-sm font-bold text-amber-100 line-clamp-2 leading-snug">
+              <h2 className="text-sm font-bold text-[#2A160A] dark:text-amber-100 line-clamp-2 leading-snug">
                 {continueBook.title}
               </h2>
-              <p className="text-[11px] text-[#9e8574] truncate">
+              <p className="text-[11px] text-[#6E4223] dark:text-[#9e8574] truncate">
                 {continueBook.subtitle}
               </p>
 
               {/* Thanh tiến độ đọc dở */}
               <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 h-1.5 bg-[#160e08] rounded-full overflow-hidden border border-white/5">
+                <div className="flex-1 h-1.5 bg-[#ECE5D8] dark:bg-[#160e08] rounded-full overflow-hidden border border-amber-900/5 dark:border-white/5">
                   <div
                     className="h-full bg-linear-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-300"
                     style={{ width: `${continueBook.percent}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-mono font-bold text-amber-300 shrink-0">
+                <span className="text-[10px] font-mono font-bold text-amber-800 dark:text-amber-300 shrink-0">
                   {continueBook.percent}%
                 </span>
               </div>
@@ -310,9 +310,9 @@ export default function SavedBooksPage() {
           <button
             type="button"
             onClick={handleContinueReading}
-            className="w-full py-2.5 px-4 rounded-2xl bg-[#2e1d12] hover:bg-amber-500 hover:text-slate-950 border border-amber-500/40 text-amber-200 font-extrabold text-xs flex items-center justify-center gap-2 shadow-md active:scale-98 transition-all cursor-pointer group"
+            className="w-full py-2.5 px-4 rounded-2xl bg-[#F5EFE6] dark:bg-[#2e1d12] hover:bg-amber-500 hover:text-slate-950 border border-amber-900/15 dark:border-amber-500/40 text-[#4A2612] dark:text-amber-200 font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs dark:shadow-md active:scale-98 transition-all cursor-pointer group"
           >
-            <span className="w-2 h-2 rounded-full bg-amber-400 group-hover:bg-slate-950 transition-colors" />
+            <span className="w-2 h-2 rounded-full bg-amber-600 dark:bg-amber-400 group-hover:bg-slate-950 transition-colors" />
             <span>Tiếp tục đọc</span>
             <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </button>
@@ -328,14 +328,14 @@ export default function SavedBooksPage() {
           </div>
 
           {/* Bộ chọn 3 chế độ xem (List, Compact, Grid) như ảnh user gửi */}
-          <div className="p-0.5 rounded-xl bg-[#22150c] border border-[#553622] flex items-center gap-0.5">
+          <div className="p-0.5 rounded-xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-0.5 shadow-2xs">
             <button
               type="button"
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'list'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'
+                  : 'text-[#7A583E] dark:text-slate-400 hover:text-[#2A160A] dark:hover:text-white'
               }`}
               title="Danh sách lớn"
               aria-label="Chế độ danh sách lớn"
@@ -347,8 +347,8 @@ export default function SavedBooksPage() {
               onClick={() => setViewMode('compact')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'compact'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'
+                  : 'text-[#7A583E] dark:text-slate-400 hover:text-[#2A160A] dark:hover:text-white'
               }`}
               title="Danh sách thu gọn"
               aria-label="Chế độ danh sách thu gọn"
@@ -360,8 +360,8 @@ export default function SavedBooksPage() {
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-500/50'
+                  : 'text-[#7A583E] dark:text-slate-400 hover:text-[#2A160A] dark:hover:text-white'
               }`}
               title="Lưới ô vuông"
               aria-label="Chế độ lưới ô vuông"
@@ -373,12 +373,12 @@ export default function SavedBooksPage() {
 
         {/* NỘI DUNG DANH SÁCH ĐÃ LƯU */}
         {allSavedItems.length === 0 ? (
-          <div className="py-12 px-4 rounded-3xl bg-[#22150c] border border-[#553622] flex flex-col items-center justify-center text-center gap-2.5">
-            <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+          <div className="py-12 px-4 rounded-3xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex flex-col items-center justify-center text-center gap-2.5 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 dark:bg-white/5 border border-amber-500/20 dark:border-white/10 flex items-center justify-center text-amber-700 dark:text-amber-400">
               <Bookmark size={22} />
             </div>
-            <h3 className="text-xs font-bold text-amber-100">Chưa có mục nào được lưu</h3>
-            <p className="text-[11px] text-amber-200/60 max-w-xs">
+            <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100">Chưa có mục nào được lưu</h3>
+            <p className="text-[11px] text-[#6E4223] dark:text-amber-200/60 max-w-xs">
               Bấm biểu tượng Dấu trang khi đọc sách để lưu lại các trang quan trọng tại đây.
             </p>
           </div>
@@ -388,11 +388,11 @@ export default function SavedBooksPage() {
             {allSavedItems.map((item) => (
               <div
                 key={item.id}
-                className="p-3 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex flex-col justify-between gap-2.5 transition-all group"
+                className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex flex-col justify-between gap-2.5 transition-all group"
               >
                 {/* Dòng trên: Badge loại sách + Nút Bookmark */}
                 <div className="flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400 tracking-wider uppercase">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 tracking-wider uppercase">
                     <BookOpen size={11} />
                     <span className="truncate">{item.category}</span>
                   </div>
@@ -402,17 +402,17 @@ export default function SavedBooksPage() {
                       e.stopPropagation();
                       handleToggleRemove(item);
                     }}
-                    className="w-6 h-6 rounded-md bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:text-red-400 transition-colors cursor-pointer"
+                    className="w-6 h-6 rounded-md bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400 hover:text-red-500 transition-colors cursor-pointer"
                     title="Bỏ lưu"
                   >
-                    <Bookmark size={12} className="fill-amber-400" />
+                    <Bookmark size={12} className="fill-amber-700 dark:fill-amber-400" />
                   </button>
                 </div>
 
                 {/* Khối giữa: Ảnh bìa chuẩn A4 + Badge số (#1, #2) */}
                 <div
                   onClick={() => handleOpenItem(item)}
-                  className="relative w-full aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/10 shadow-inner cursor-pointer p-0.5"
+                  className="relative w-full aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shadow-xs cursor-pointer p-0.5 flex items-center justify-center"
                 >
                   <img
                     src={item.coverUrl}
@@ -432,10 +432,10 @@ export default function SavedBooksPage() {
                   onClick={() => handleOpenItem(item)}
                   className="flex flex-col gap-0.5 cursor-pointer min-w-0"
                 >
-                  <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 line-clamp-2 leading-tight">
+                  <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 line-clamp-2 leading-tight">
                     {item.title}
                   </h3>
-                  <span className="text-[10px] text-[#9e8574] truncate">
+                  <span className="text-[10px] text-[#6E4223] dark:text-[#9e8574] truncate">
                     {item.subtitle}
                   </span>
                 </div>
@@ -449,10 +449,10 @@ export default function SavedBooksPage() {
               <div
                 key={item.id}
                 onClick={() => handleOpenItem(item)}
-                className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
+                className="p-2.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
               >
                 {/* Bên trái: Thumbnail tỷ lệ A4 chuẩn với Badge */}
-                <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/10 shrink-0 p-0.5">
+                <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shrink-0 p-0.5 flex items-center justify-center">
                   <img
                     src={item.coverUrl}
                     alt={item.title}
@@ -468,13 +468,13 @@ export default function SavedBooksPage() {
 
                 {/* Ở giữa: Tiêu đề + Chuyên mục */}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[9.5px] font-bold text-amber-400/80 uppercase tracking-wider">
+                  <span className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400/80 uppercase tracking-wider">
                     {item.category}
                   </span>
-                  <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 truncate leading-snug">
+                  <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate leading-snug">
                     {item.title}
                   </h3>
-                  <span className="text-[10px] text-[#9e8574] truncate mt-0.5">
+                  <span className="text-[10px] text-[#6E4223] dark:text-[#9e8574] truncate mt-0.5">
                     {item.subtitle}
                   </span>
                 </div>
@@ -483,7 +483,7 @@ export default function SavedBooksPage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <ChevronRight
                     size={16}
-                    className="text-[#9e8574] group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all"
+                    className="text-[#7A583E] dark:text-[#9e8574] group-hover:text-amber-700 dark:group-hover:text-amber-300 group-hover:translate-x-0.5 transition-all"
                   />
                   <button
                     type="button"
@@ -491,10 +491,10 @@ export default function SavedBooksPage() {
                       e.stopPropagation();
                       handleToggleRemove(item);
                     }}
-                    className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:text-red-400 transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 dark:border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400 hover:text-red-500 transition-colors cursor-pointer"
                     title="Bỏ lưu"
                   >
-                    <Bookmark size={13} className="fill-amber-400" />
+                    <Bookmark size={13} className="fill-amber-700 dark:fill-amber-400" />
                   </button>
                 </div>
               </div>

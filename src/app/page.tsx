@@ -20,7 +20,7 @@ export default async function HomePage() {
   const settings = await getSettings();
 
   return (
-    <main className="flex-1 flex flex-col px-0 sm:px-4 pt-0 sm:pt-2.5 pb-20 sm:pb-24 gap-3 max-w-[480px] md:max-w-[768px] lg:max-w-[880px] mx-auto w-full min-h-screen bg-[#1c1109]">
+    <main className="flex-1 flex flex-col px-0 sm:px-4 pt-0 sm:pt-2.5 pb-20 sm:pb-24 gap-3 max-w-[480px] md:max-w-[768px] lg:max-w-[880px] mx-auto w-full min-h-screen bg-[#F8F5F0] dark:bg-[#1c1109] transition-colors duration-200">
       {/* Hiệu ứng 3D mở sách Qbiz Books khi vào trang chủ */}
       <QbizBooksOpeningSplash />
 

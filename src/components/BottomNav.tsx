@@ -15,7 +15,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 flex justify-center bg-[#160e08]/95 backdrop-blur-md border-t border-[#3a2314] shadow-[0_-8px_20px_rgba(0,0,0,0.6)] select-none"
+      className="fixed bottom-0 left-0 right-0 z-30 flex justify-center bg-[#FAF6F0]/95 dark:bg-[#160e08]/95 backdrop-blur-md border-t border-[#e2d5c3] dark:border-[#3a2314] shadow-[0_-4px_15px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_20px_rgba(0,0,0,0.6)] select-none transition-colors duration-200"
       style={{ transform: 'translateZ(0)' }}
       aria-label="Điều hướng chính"
     >
@@ -26,8 +26,8 @@ export default function BottomNav() {
           prefetch={true}
           className={`flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 cursor-pointer ${
             isHome
-              ? 'text-amber-400 font-extrabold'
-              : 'text-[#9e8574] font-semibold hover:text-amber-200'
+              ? 'text-amber-700 dark:text-amber-400 font-extrabold'
+              : 'text-[#7A583E] dark:text-[#9e8574] font-semibold hover:text-[#4A2612] dark:hover:text-amber-200'
           }`}
           aria-label="Kệ sách"
         >
@@ -41,8 +41,8 @@ export default function BottomNav() {
           prefetch={true}
           className={`flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 cursor-pointer ${
             isCategories
-              ? 'text-amber-400 font-extrabold'
-              : 'text-[#9e8574] font-semibold hover:text-amber-200'
+              ? 'text-amber-700 dark:text-amber-400 font-extrabold'
+              : 'text-[#7A583E] dark:text-[#9e8574] font-semibold hover:text-[#4A2612] dark:hover:text-amber-200'
           }`}
           aria-label="Danh mục sách"
         >
@@ -56,15 +56,15 @@ export default function BottomNav() {
           prefetch={true}
           className={`flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 cursor-pointer ${
             isSaved
-              ? 'text-amber-400 font-extrabold'
-              : 'text-[#9e8574] font-semibold hover:text-amber-200'
+              ? 'text-amber-700 dark:text-amber-400 font-extrabold'
+              : 'text-[#7A583E] dark:text-[#9e8574] font-semibold hover:text-[#4A2612] dark:hover:text-amber-200'
           }`}
           aria-label="Sách & Dấu trang đã lưu"
         >
           <Bookmark
             size={19}
             strokeWidth={isSaved ? 2.5 : 2}
-            className={isSaved ? 'fill-amber-400' : ''}
+            className={isSaved ? 'fill-amber-700 dark:fill-amber-400' : ''}
           />
           <span className="text-[10px] leading-tight truncate">Đã lưu</span>
         </Link>
@@ -75,8 +75,8 @@ export default function BottomNav() {
           prefetch={true}
           className={`flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95 cursor-pointer ${
             isSearch
-              ? 'text-amber-400 font-extrabold'
-              : 'text-[#9e8574] font-semibold hover:text-amber-200'
+              ? 'text-amber-700 dark:text-amber-400 font-extrabold'
+              : 'text-[#7A583E] dark:text-[#9e8574] font-semibold hover:text-[#4A2612] dark:hover:text-amber-200'
           }`}
           aria-label="Tìm kiếm sách"
         >

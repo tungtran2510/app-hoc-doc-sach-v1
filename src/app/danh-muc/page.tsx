@@ -202,20 +202,20 @@ export default function CategoriesPage() {
         <div className="relative flex-1">
           <Search
             size={17}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-400/80"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400/80"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm danh mục, chuyên đề..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-[#22150c] border border-[#553622] text-[#fdf7ee] text-xs placeholder:text-amber-100/40 focus:outline-hidden focus:border-amber-500/70 shadow-xs"
+            className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] text-[#2A160A] dark:text-[#fdf7ee] text-xs placeholder:text-[#9e8574] dark:placeholder:text-amber-100/40 focus:outline-hidden focus:border-amber-500/70 shadow-2xs dark:shadow-xs transition-colors"
           />
         </div>
         <button
           type="button"
           onClick={() => setSearchQuery('')}
-          className="w-10 h-10 rounded-2xl bg-[#22150c] border border-[#553622] flex items-center justify-center text-amber-300 hover:text-white transition-colors cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center justify-center text-[#6E4223] dark:text-amber-300 hover:text-[#2A160A] dark:hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs"
           title="Bộ lọc"
         >
           <SlidersHorizontal size={16} />
@@ -235,10 +235,10 @@ export default function CategoriesPage() {
               <div
                 key={cat.id}
                 onClick={() => openBookFromCategory(cat)}
-                className="p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 shadow-md flex items-center gap-2.5 cursor-pointer active:scale-98 transition-all group"
+                className="p-2.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex items-center gap-2.5 cursor-pointer active:scale-98 transition-all group"
               >
                 {/* Ảnh bìa sách chuẩn khổ A4 (1:1.42) - Không bị cắt xén */}
-                <div className="w-11 sm:w-12 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] shrink-0 border border-white/15 shadow-md flex items-center justify-center p-0.5">
+                <div className="w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] shrink-0 border border-amber-900/10 dark:border-white/15 shadow-xs flex items-center justify-center p-0.5">
                   <img
                     src={cat.image}
                     alt={cat.title}
@@ -247,17 +247,17 @@ export default function CategoriesPage() {
                   />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 truncate">
+                  <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate">
                     {cat.title}
                   </h3>
-                  <div className="flex items-center gap-1 text-[10.5px] text-amber-300/80 mt-0.5">
+                  <div className="flex items-center gap-1 text-[10.5px] text-[#8B4513] dark:text-amber-300/80 mt-0.5 font-medium">
                     <BookOpen size={11} />
                     <span className="truncate">{cat.countText}</span>
                   </div>
                 </div>
                 <ChevronRight
                   size={15}
-                  className="text-amber-400/50 group-hover:text-amber-400 shrink-0 group-hover:translate-x-0.5 transition-all"
+                  className="text-[#8B4513]/60 dark:text-amber-400/50 group-hover:text-amber-700 dark:group-hover:text-amber-400 shrink-0 group-hover:translate-x-0.5 transition-all"
                 />
               </div>
             ))}
@@ -282,22 +282,22 @@ export default function CategoriesPage() {
             <div
               key={cat.id}
               onClick={() => openBookFromCategory(cat)}
-              className="p-2 sm:p-2.5 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/70 shadow-md flex flex-col items-center text-center gap-2 cursor-pointer active:scale-95 transition-all group"
+              className="p-2 sm:p-2.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/70 shadow-sm dark:shadow-md flex flex-col items-center text-center gap-2 cursor-pointer active:scale-95 transition-all group"
             >
               {/* Ảnh bìa sách chuẩn tỷ lệ khổ A4 đứng (1:1.42) - Không bị cắt xén nội dung */}
-              <div className="w-18 sm:w-22 aspect-[1/1.42] rounded-md overflow-hidden bg-[#160e08] border border-white/15 shadow-md flex items-center justify-center p-0.5">
+              <div className="w-full max-w-[100px] aspect-[1/1.42] rounded-lg overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/15 shadow-xs flex items-center justify-center p-1">
                 <img
                   src={cat.image}
                   alt={cat.title}
-                  className="w-full h-full object-contain group-hover:scale-108 transition-transform"
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform"
                   loading="lazy"
                 />
               </div>
               <div className="flex flex-col items-center w-full min-w-0">
-                <h3 className="text-xs font-bold text-amber-100 group-hover:text-amber-300 truncate w-full">
+                <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate w-full">
                   {cat.title}
                 </h3>
-                <span className="text-[10px] text-amber-300/70 truncate mt-0.5 font-medium">
+                <span className="text-[10px] text-[#8B4513] dark:text-amber-300/70 truncate mt-0.5 font-medium">
                   {cat.countText}
                 </span>
               </div>
@@ -307,22 +307,22 @@ export default function CategoriesPage() {
       </section>
 
       {/* 5. VẤN ĐỀ THƯỜNG GẶP (FAQ ACCORDIONS) */}
-      <section className="mt-1 p-3.5 rounded-2xl bg-[#22150c] border border-[#553622] shadow-md flex flex-col gap-3">
+      <section className="mt-1 p-3.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm dark:shadow-md flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400">
               <HelpCircle size={15} />
             </div>
             <div>
-              <h2 className="text-xs font-bold text-amber-200 uppercase tracking-wide">
+              <h2 className="text-xs font-bold text-[#2A160A] dark:text-amber-200 uppercase tracking-wide">
                 Vấn đề thường gặp
               </h2>
-              <p className="text-[10px] text-amber-100/60">
+              <p className="text-[10px] text-[#6E4223] dark:text-amber-100/60">
                 Chọn chủ đề để xem câu hỏi và hướng học phù hợp
               </p>
             </div>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-amber-300">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-white/10 text-amber-800 dark:text-amber-300">
             {filteredFaqs.length} câu hỏi
           </span>
         </div>
@@ -337,7 +337,7 @@ export default function CategoriesPage() {
               className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
                 selectedFaqCat === catName
                   ? 'bg-amber-500 text-slate-950 shadow-xs'
-                  : 'bg-white/5 hover:bg-white/10 text-amber-100/80 border border-white/5'
+                  : 'bg-[#F5EFE6] dark:bg-white/5 hover:bg-[#ebe3d7] dark:hover:bg-white/10 text-[#5C381E] dark:text-amber-100/80 border border-amber-900/10 dark:border-white/5'
               }`}
             >
               {catName}
@@ -352,30 +352,30 @@ export default function CategoriesPage() {
             return (
               <div
                 key={faq.id}
-                className="rounded-xl bg-[#1c1109] border border-white/5 overflow-hidden transition-all"
+                className="rounded-xl bg-[#FAF6F0] dark:bg-[#1c1109] border border-[#e6dcce] dark:border-white/5 overflow-hidden transition-all"
               >
                 <button
                   type="button"
                   onClick={() => setExpandedFaqId(isExpanded ? null : faq.id)}
-                  className="w-full p-2.5 text-left flex items-center justify-between gap-2 cursor-pointer hover:bg-white/5 transition-colors"
+                  className="w-full p-2.5 text-left flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-500/5 dark:hover:bg-white/5 transition-colors"
                 >
                   <div className="flex flex-col min-w-0">
-                    <span className="text-[9.5px] uppercase font-bold text-amber-400/80 tracking-wider">
+                    <span className="text-[9.5px] uppercase font-bold text-amber-700 dark:text-amber-400/80 tracking-wider">
                       {faq.category}
                     </span>
-                    <span className="text-xs font-bold text-amber-100 leading-snug mt-0.5">
+                    <span className="text-xs font-bold text-[#2A160A] dark:text-amber-100 leading-snug mt-0.5">
                       {faq.question}
                     </span>
                   </div>
                   <ChevronDown
                     size={15}
-                    className={`text-amber-400 shrink-0 transition-transform ${
+                    className={`text-amber-600 dark:text-amber-400 shrink-0 transition-transform ${
                       isExpanded ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
                 {isExpanded && (
-                  <div className="px-3 pb-3 pt-1 text-xs text-amber-100/80 leading-relaxed border-t border-white/5">
+                  <div className="px-3 pb-3 pt-1 text-xs text-[#5C381E] dark:text-amber-100/80 leading-relaxed border-t border-[#e6dcce] dark:border-white/5">
                     {faq.answer}
                   </div>
                 )}

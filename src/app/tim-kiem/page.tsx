@@ -132,7 +132,7 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm tựa sách, đĩa đệm, cột sống..."
-            className="w-full h-[44px] pl-9 pr-9 rounded-2xl bg-[#22150c] border border-[#553622] text-[#fdf7ee] text-[13.5px] placeholder:text-[#9e8574] focus:outline-none focus:border-amber-400 shadow-inner-sm transition-colors"
+            className="w-full h-[44px] pl-9 pr-9 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] text-[#2A160A] dark:text-[#fdf7ee] text-[13.5px] placeholder:text-[#9e8574] focus:outline-none focus:border-amber-500 shadow-2xs dark:shadow-inner-sm transition-colors"
             aria-label="Nhập từ khóa tìm kiếm sách"
           />
           {query && (
@@ -142,7 +142,7 @@ export default function SearchPage() {
                 setQuery('');
                 inputRef.current?.focus();
               }}
-              className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-white cursor-pointer"
+              className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
               aria-label="Xóa từ khóa"
             >
               <X size={16} />
@@ -179,7 +179,7 @@ export default function SearchPage() {
       {/* 3. TIÊU ĐỀ KẾT QUẢ TÌM KIẾM */}
       <div className="flex items-center justify-between px-1 pt-1">
         <div className="flex items-center gap-2">
-          <BookOpen size={16} className="text-amber-400" />
+          <BookOpen size={16} className="text-amber-500 dark:text-amber-400" />
           <h2 className="text-xs font-black uppercase tracking-wider text-[#8B4513] dark:text-amber-200">
             {isSearching ? `Kết quả tìm kiếm (${matchedBooks.length})` : `Tất cả đầu sách (${books.length})`}
           </h2>
@@ -188,7 +188,7 @@ export default function SearchPage() {
           <button
             type="button"
             onClick={() => setQuery('')}
-            className="text-[11px] text-amber-400 hover:text-amber-300 cursor-pointer font-semibold"
+            className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 cursor-pointer font-semibold"
           >
             Xem tất cả
           </button>
@@ -197,18 +197,18 @@ export default function SearchPage() {
 
       {/* 4. DANH SÁCH SÁCH TÌM THẤY (HOÀN TOÀN LÀ SÁCH - KHÔNG VIDEO, KHÔNG BÀI HỌC) */}
       {loading ? (
-        <div className="py-12 flex flex-col items-center justify-center gap-2 text-amber-200/70">
-          <div className="w-7 h-7 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#8B4513] dark:text-amber-200/70">
+          <div className="w-7 h-7 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs">Đang tìm kiếm trong kho sách...</span>
         </div>
       ) : matchedBooks.length === 0 ? (
-        <div className="py-12 px-4 rounded-2xl bg-[#22150c] border border-[#553622] flex flex-col items-center justify-center text-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-400">
+        <div className="py-12 px-4 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex flex-col items-center justify-center text-center gap-3 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 dark:bg-white/5 border border-amber-500/20 dark:border-white/10 flex items-center justify-center text-amber-700 dark:text-amber-400">
             <SearchIcon size={22} />
           </div>
           <div className="flex flex-col gap-1 max-w-xs">
-            <h3 className="text-sm font-bold text-amber-100">Không tìm thấy sách phù hợp</h3>
-            <p className="text-xs text-amber-200/60 leading-relaxed">
+            <h3 className="text-sm font-bold text-[#2A160A] dark:text-amber-100">Không tìm thấy sách phù hợp</h3>
+            <p className="text-xs text-[#6E4223] dark:text-amber-200/60 leading-relaxed">
               Không có đầu sách nào khớp với từ khóa "{query}". Thử tìm với "cột sống", "đĩa đệm", "kháng viêm"...
             </p>
           </div>
@@ -218,26 +218,19 @@ export default function SearchPage() {
           {matchedBooks.map((book) => (
             <div
               key={book.id}
-              className="p-2.5 sm:p-3 rounded-2xl bg-[#22150c] border border-[#553622] hover:border-amber-500/60 text-[#fdf7ee] shadow-md flex items-center gap-3 transition-all group"
+              className="p-2.5 sm:p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 text-[#2A160A] dark:text-[#fdf7ee] shadow-sm dark:shadow-md flex items-center gap-3 transition-all group"
             >
               {/* Bìa sách 3D thu nhỏ */}
               <div
                 onClick={() => setReaderBook(book)}
-                className="w-[72px] sm:w-[84px] aspect-[1/1.42] rounded-r-md rounded-l-xs overflow-hidden shadow-lg border-l-2 border-white/20 shrink-0 cursor-pointer group-hover:scale-105 transition-transform relative bg-[#1c1109]"
+                className="w-[72px] sm:w-[84px] aspect-[1/1.42] rounded-r-md rounded-l-xs overflow-hidden shadow-md border-l-2 border-amber-900/10 dark:border-white/20 shrink-0 cursor-pointer group-hover:scale-105 transition-transform relative bg-[#F5EFE6] dark:bg-[#1c1109] p-0.5 flex items-center justify-center"
                 title="Bấm để đọc sách 3D"
               >
                 <img
                   src={book.cover_url}
                   alt={book.title}
-                  className="w-full h-full object-cover block"
+                  className="w-full h-full object-contain block"
                   loading="lazy"
-                />
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background:
-                      'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.2) 5%, transparent 15%)',
-                  }}
                 />
               </div>
 
@@ -245,25 +238,25 @@ export default function SearchPage() {
               <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5">
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30">
                       {book.badge_tag}
                     </span>
-                    <span className="text-[10px] text-amber-200/60 truncate font-mono">
+                    <span className="text-[10px] text-[#6E4223] dark:text-amber-200/60 truncate font-mono">
                       {book.pages_count} trang
                     </span>
                   </div>
                   <h3
                     onClick={() => setReaderBook(book)}
-                    className="text-[13.5px] sm:text-sm font-bold text-amber-100 group-hover:text-amber-300 transition-colors line-clamp-1 cursor-pointer leading-snug"
+                    className="text-[13.5px] sm:text-sm font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors line-clamp-1 cursor-pointer leading-snug"
                   >
                     {book.title}
                   </h3>
                   {book.description && (
-                    <p className="text-[11px] text-[#9e8574] line-clamp-1 leading-normal mt-0.5">
+                    <p className="text-[11px] text-[#6E4223] dark:text-[#9e8574] line-clamp-1 leading-normal mt-0.5">
                       {book.description}
                     </p>
                   )}
-                  <span className="text-[10.5px] text-amber-200/70 truncate block mt-0.5">
+                  <span className="text-[10.5px] text-[#8B4513] dark:text-amber-200/70 truncate block mt-0.5">
                     Tác giả: {book.author}
                   </span>
                 </div>
@@ -290,7 +283,7 @@ export default function SearchPage() {
                         type: 'recommended',
                       })
                     }
-                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-[#F5EFE6] hover:bg-[#ebe3d7] text-[#4A2612] border border-amber-900/15 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white dark:border-transparent font-bold text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
                   >
                     <Info size={12} />
                     <span>Chi tiết</span>
