@@ -53,19 +53,19 @@ export default function HomeSectionsClient({
   welcomeVideoUrl: initialWelcomeVideoUrl,
 }: HomeSectionsClientProps) {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [appName, setAppName] = useState(initialAppName || 'Qbiz Books');
+  const [appName, setAppName] = useState(initialAppName || 'Qbiz-ebook');
   const [appSubtitle, setAppSubtitle] = useState(initialAppSubtitle ?? '');
   const [brandTagline, setBrandTagline] = useState(
     initialBrandTagline !== undefined && initialBrandTagline !== null
       ? initialBrandTagline
       : 'EMPOWERING MEDICAL KNOWLEDGE'
   );
-  const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl || null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl || '/logo.png');
   const [hotline, setHotline] = useState(initialHotline || '');
   const [zaloUrl, setZaloUrl] = useState(initialZaloUrl || '');
 
   const [welcomeTitle, setWelcomeTitle] = useState(
-    initialWelcomeTitle || 'Chào mừng bạn đến với Qbiz Books'
+    initialWelcomeTitle || 'Chào mừng bạn đến với Qbiz-ebook'
   );
   const [welcomeMessage, setWelcomeMessage] = useState(
     initialWelcomeMessage ||

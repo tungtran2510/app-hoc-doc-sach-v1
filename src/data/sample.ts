@@ -216,10 +216,10 @@ Dấu hiệu cảnh báo đỏ (Red Flags) cần đi viện ngay: Đau nhói d�
 
 export const sampleSettings: Settings = {
   workspace_id: 'default',
-  app_name: 'Qbiz Books',
+  app_name: 'Qbiz-ebook',
   app_subtitle: 'Kiến thức đúng · Sức khỏe bền vững',
   brand_tagline: 'EMPOWERING MEDICAL KNOWLEDGE',
-  logo_url: null,
+  logo_url: '/logo.png',
   primary_color: '#0C0817',
   access_mode: 'OPEN',
   block_styles: {},

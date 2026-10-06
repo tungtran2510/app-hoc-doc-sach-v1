@@ -11,8 +11,8 @@ export const revalidate = 60;
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
   return {
-    title: `${settings?.app_name || 'Qbiz Books'} · Tủ Sách Y Khoa`,
-    description: 'Thư viện sách y khoa điện tử và cẩm nang chăm sóc sức khỏe chủ động',
+    title: `${settings?.app_name || 'Qbiz-ebook'} · Tủ Sách Điện Tử & Y Khoa`,
+    description: 'Nền tảng đọc sách điện tử 3D và tra cứu tài liệu chuyên sâu',
   };
 }
 

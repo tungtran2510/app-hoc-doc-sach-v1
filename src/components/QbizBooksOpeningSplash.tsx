@@ -206,7 +206,7 @@ export default function QbizBooksOpeningSplash({
               className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-200/90 [writing-mode:vertical-rl] rotate-180"
               style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
             >
-              QBIZ BOOKS
+              QBIZ-EBOOK
             </div>
             <div className="w-4 h-[2px] bg-amber-400/70" />
           </div>
@@ -250,8 +250,8 @@ export default function QbizBooksOpeningSplash({
               </span>
               <div className="w-12 h-12 rounded-[14px] bg-[#0C152B] border border-amber-400/60 p-0.5 shadow-md flex items-center justify-center mb-1.5">
                 <img
-                  src="/app_logo.png"
-                  alt="Qbiz Books"
+                  src="/logo.png"
+                  alt="Qbiz-ebook"
                   className="w-full h-full object-cover rounded-[11px]"
                 />
               </div>
@@ -259,7 +259,7 @@ export default function QbizBooksOpeningSplash({
                 className="text-[17px] font-black tracking-tight leading-tight"
                 style={{ color: '#0F172A' }}
               >
-                QBIZ BOOKS
+                QBIZ-EBOOK
               </h3>
               <p
                 className="text-[11px] font-bold uppercase tracking-wider mt-0.5"
@@ -357,13 +357,13 @@ export default function QbizBooksOpeningSplash({
                 {/* Huy hiệu 3D vàng kim cực sắc nét */}
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-[22px] p-[2.5px] bg-gradient-to-b from-amber-200 via-amber-400 to-yellow-600 shadow-[0_8px_25px_rgba(245,158,11,0.5)] mb-3 relative overflow-hidden">
                   <img
-                    src="/app_logo.png"
-                    alt="Qbiz Books"
+                    src="/logo.png"
+                    alt="Qbiz-ebook"
                     className="w-full h-full object-cover rounded-[19px]"
                   />
                 </div>
 
-                {/* Chữ QBIZ BOOKS mạ vàng nổi 3D */}
+                {/* Chữ QBIZ-EBOOK mạ vàng nổi 3D */}
                 <h2
                   className="text-[24px] sm:text-[27px] font-black tracking-tight leading-none text-transparent bg-clip-text"
                   style={{
@@ -371,7 +371,7 @@ export default function QbizBooksOpeningSplash({
                     filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.8))',
                   }}
                 >
-                  QBIZ BOOKS
+                  QBIZ-EBOOK
                 </h2>
 
                 <div className="flex items-center gap-2 my-1.5">

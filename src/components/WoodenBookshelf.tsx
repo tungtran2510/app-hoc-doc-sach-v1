@@ -63,7 +63,7 @@ export default function WoodenBookshelf({
   onMoveBook,
   onDeleteBook,
   title = 'GIAN TRƯNG BÀY SÁCH Y KHOA',
-  appName = 'QBIZ BOOKS',
+  appName = 'Qbiz-ebook',
   logoUrl,
   onOpenWelcome,
   onOpenAdminSettings,
@@ -204,9 +204,12 @@ export default function WoodenBookshelf({
     }
   }
 
-  const nameParts = appName ? appName.split(' ') : ['QBIZ', 'BOOKS'];
-  const firstWord = nameParts[0] || 'QBIZ';
-  const restWords = nameParts.slice(1).join(' ') || 'BOOKS';
+  const currentAppTitle = appName || 'Qbiz-ebook';
+  const [firstWord, restWords] = currentAppTitle.includes('-')
+    ? [currentAppTitle.split('-')[0], `-${currentAppTitle.split('-').slice(1).join('-')}`]
+    : currentAppTitle.includes(' ')
+    ? [currentAppTitle.split(' ')[0], currentAppTitle.split(' ').slice(1).join(' ')]
+    : [currentAppTitle, ''];
 
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#24170d] via-[#1c1109] to-[#130a04] p-3 sm:p-5 border border-[#3d2817] shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] select-none">
@@ -228,8 +231,8 @@ export default function WoodenBookshelf({
             title="Xem lời ngỏ & video giới thiệu"
           >
             <img
-              src={logoUrl || '/app_logo.png'}
-              alt="Logo Qbiz Books"
+              src={logoUrl || '/logo.png'}
+              alt="Logo Qbiz-ebook"
               className="w-full h-full object-cover rounded-[9px]"
             />
           </div>

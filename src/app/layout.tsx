@@ -25,23 +25,23 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Qbiz Books · Tủ Sách Y Khoa & Khám Phá Cơ Thể',
-  description: 'Ứng dụng học hiểu kiến thức về cơ thể theo lộ trình tương tác',
+  title: 'Qbiz-ebook · Tủ Sách Điện Tử & Y Khoa',
+  description: 'Nền tảng đọc sách điện tử 3D và tra cứu tài liệu chuyên sâu',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
-      { url: '/icon-192.png?v=22', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=22', sizes: '512x512', type: 'image/png' },
-      { url: '/favicon.ico?v=22' },
+      { url: '/icon-192.png?v=25', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=25', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico?v=25' },
     ],
     apple: [
-      { url: '/apple-icon.png?v=22', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-icon.png?v=25', sizes: '180x180', type: 'image/png' },
     ],
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'Qbiz Books',
+    statusBarStyle: 'black-translucent',
+    title: 'Qbiz-ebook',
   },
 };
 
@@ -49,6 +49,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  themeColor: '#120a05',
 };
 
 export default function RootLayout({
