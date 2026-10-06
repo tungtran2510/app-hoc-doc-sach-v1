@@ -13,6 +13,8 @@ import {
   ZoomIn,
   ZoomOut,
   X,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
@@ -44,8 +46,86 @@ export default function SideBooksReaderModal({
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
   const [showTocModal, setShowTocModal] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const totalPages = pages.length;
+
+  // Xử lý bật / tắt Toàn màn hình thực thụ (Immersive Native Fullscreen API)
+  const toggleFullscreen = async () => {
+    try {
+      const isCurrentlyFs =
+        Boolean(document.fullscreenElement) ||
+        Boolean((document as any).webkitFullscreenElement);
+
+      if (!isCurrentlyFs) {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if ((el as any).webkitRequestFullscreen) {
+          await (el as any).webkitRequestFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Fullscreen request error:', err);
+    }
+  };
+
+  // Đồng bộ trạng thái toàn màn hình khi người dùng bấm ESC hoặc phím cứng thiết bị
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs =
+        Boolean(document.fullscreenElement) ||
+        Boolean((document as any).webkitFullscreenElement);
+      setIsFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  // Hỗ trợ phím tắt bàn phím (Phím mũi tên, PageUp/Down, Space, F, ESC)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        readerRef.current?.flipNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        if (currentPage <= 0) {
+          setShowExitConfirm(true);
+        } else {
+          readerRef.current?.flipPrev();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowExitConfirm(true);
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, currentPage]);
 
   // Chống nháy lặp khi sự kiện click chạm từ canvas lan ra vùng bao quanh
   const lastToggleHudRef = useRef<number>(0);
@@ -337,6 +417,21 @@ export default function SideBooksReaderModal({
             <Bookmark size={16} strokeWidth={2.4} className={isBookmarked ? 'fill-current' : ''} />
           </button>
 
+          {/* Nút Toàn màn hình thực thụ (Immersive Native Fullscreen) */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+              isFullscreen
+                ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+            }`}
+            title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình (F)'}
+            aria-label="Toàn màn hình"
+          >
+            {isFullscreen ? <Minimize size={16} strokeWidth={2.4} /> : <Maximize size={16} strokeWidth={2.4} />}
+          </button>
+
           {/* 3 Tông màu đọc sách (Sepia, Đêm, Sáng) - TO RÕ ĐỒNG BỘ */}
           <div className="flex items-center gap-1 bg-black/45 p-1 rounded-lg border border-white/15">
             <button
@@ -391,9 +486,26 @@ export default function SideBooksReaderModal({
         </div>
       </header>
 
-      {/* ================= 2. KHUNG ĐỌC SÁCH TRUNG TÂM (MAX TẦNG CAO CANVAS) ================= */}
+      {/* ================= 2. KHUNG ĐỌC SÁCH TRUNG TÂM (MAX TẦNG CAO CANVAS + CHẠM MÉP ĐỔI TRANG) ================= */}
       <main
-        onClick={toggleHud}
+        onClick={(e) => {
+          // Nếu chạm vào mép ngoài canvas
+          if ((e.target as HTMLElement)?.tagName !== 'CANVAS') {
+            const w = window.innerWidth;
+            const x = e.clientX;
+            if (x < w * 0.18) {
+              if (currentPage <= 0) {
+                setShowExitConfirm(true);
+              } else {
+                readerRef.current?.flipPrev();
+              }
+            } else if (x > w * 0.82) {
+              readerRef.current?.flipNext();
+            } else {
+              toggleHud();
+            }
+          }
+        }}
         className="flex-1 flex flex-col items-center justify-center relative w-full h-[calc(100vh-84px)] overflow-hidden cursor-pointer"
       >
         <SideBooksReaderEngine

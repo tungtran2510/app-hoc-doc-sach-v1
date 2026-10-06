@@ -29,6 +29,10 @@ import {
   ZoomIn,
   ZoomOut,
   Type,
+  Maximize,
+  Minimize,
+  ArrowUpDown,
+  CheckCircle2,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
 
@@ -99,6 +103,13 @@ export default function WoodenBookshelf({
   const [lastReadBookTitle, setLastReadBookTitle] = useState<string | null>(null);
   const [lastReadPage, setLastReadPage] = useState<number>(1);
   const [showBookTitles, setShowBookTitles] = useState<boolean>(true);
+  const [showProgress, setShowProgress] = useState<boolean>(true);
+  const [bookProgressMap, setBookProgressMap] = useState<
+    Record<string, { page: number; total: number; percent: number }>
+  >({});
+  const [sortBy, setSortBy] = useState<'default' | 'recent' | 'az' | 'category'>('default');
+  const [quickPeekBook, setQuickPeekBook] = useState<RecommendedBook | null>(null);
+  const [isBookshelfFullscreen, setIsBookshelfFullscreen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const touchStartDistRef = React.useRef<number | null>(null);
 
@@ -111,6 +122,68 @@ export default function WoodenBookshelf({
       showToast(next ? 'Đã bật: Hiện tên sách dưới chân kệ' : 'Đã tắt: Chỉ hiện bìa nghệ thuật');
       return next;
     });
+  };
+
+  const handleToggleShowProgress = () => {
+    setShowProgress((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('bookshelf_show_progress', String(next));
+      } catch {}
+      showToast(next ? 'Đã bật: Hiện tiến độ đọc trên bìa' : 'Đã tắt: Ẩn tiến độ đọc trên bìa');
+      return next;
+    });
+  };
+
+  const cycleSortOrder = () => {
+    setSortBy((prev) => {
+      const next =
+        prev === 'default'
+          ? 'recent'
+          : prev === 'recent'
+          ? 'az'
+          : prev === 'az'
+          ? 'category'
+          : 'default';
+      try {
+        localStorage.setItem('bookshelf_sort_by', next);
+      } catch {}
+      const labels: Record<string, string> = {
+        default: 'Sắp xếp: Mặc định',
+        recent: 'Sắp xếp: Đọc gần đây nhất',
+        az: 'Sắp xếp: Theo bảng chữ cái A-Z',
+        category: 'Sắp xếp: Theo chuyên mục',
+      };
+      showToast(labels[next] || next);
+      return next;
+    });
+  };
+
+  const toggleBookshelfFullscreen = async () => {
+    try {
+      const isCurrentlyFs =
+        Boolean(document.fullscreenElement) ||
+        Boolean((document as any).webkitFullscreenElement);
+
+      if (!isCurrentlyFs) {
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if ((el as any).webkitRequestFullscreen) {
+          await (el as any).webkitRequestFullscreen();
+        }
+        setIsBookshelfFullscreen(true);
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        }
+        setIsBookshelfFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Bookshelf fullscreen error:', err);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -227,6 +300,32 @@ export default function WoodenBookshelf({
       if (savedShowTitles !== null) {
         setShowBookTitles(savedShowTitles !== 'false');
       }
+      const savedShowProgress = localStorage.getItem('bookshelf_show_progress');
+      if (savedShowProgress !== null) {
+        setShowProgress(savedShowProgress !== 'false');
+      }
+      const savedSort = localStorage.getItem('bookshelf_sort_by');
+      if (savedSort && ['default', 'recent', 'az', 'category'].includes(savedSort)) {
+        setSortBy(savedSort as any);
+      }
+
+      // Nạp tiến độ đọc của từng cuốn sách từ bộ nhớ
+      const pMap: Record<string, { page: number; total: number; percent: number }> = {};
+      books.forEach((b) => {
+        const saved =
+          localStorage.getItem(`last_read_page_${b.title}`) ||
+          localStorage.getItem(`bookmark_page_${b.title}`);
+        const total = (b.gallery_images && b.gallery_images.length > 0) ? b.gallery_images.length : 7;
+        if (saved !== null) {
+          const p = parseInt(saved, 10);
+          if (!isNaN(p) && p >= 0) {
+            const percent = Math.min(100, Math.round(((p + 1) / total) * 100));
+            pMap[b.title] = { page: p + 1, total, percent };
+          }
+        }
+      });
+      setBookProgressMap(pMap);
+
       const lastTitle = localStorage.getItem('last_read_book_title');
       if (lastTitle) {
         setLastReadBookTitle(lastTitle);
@@ -234,6 +333,23 @@ export default function WoodenBookshelf({
         if (p) setLastReadPage(parseInt(p, 10) || 1);
       }
     } catch {}
+  }, [books]);
+
+  // Đồng bộ trạng thái toàn màn hình khi người dùng bấm ESC hoặc phím điều hướng hệ thống
+  useEffect(() => {
+    const handleFsChange = () => {
+      const isFs =
+        Boolean(document.fullscreenElement) ||
+        Boolean((document as any).webkitFullscreenElement);
+      setIsBookshelfFullscreen(isFs);
+    };
+
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
   }, []);
 
   const handleSaveName = (newName: string) => {
@@ -300,9 +416,26 @@ export default function WoodenBookshelf({
   }, [books]);
 
   const activeBooks = React.useMemo(() => {
-    if (selectedCategory === 'all') return books;
-    return books.filter((b) => (b.category || b.tag) === selectedCategory);
-  }, [books, selectedCategory]);
+    let list =
+      selectedCategory === 'all'
+        ? [...books]
+        : books.filter((b) => (b.category || b.tag) === selectedCategory);
+
+    if (sortBy === 'recent') {
+      list.sort((a, b) => {
+        const progA = bookProgressMap[a.title]?.page || (lastReadBookTitle === a.title ? 999 : 0);
+        const progB = bookProgressMap[b.title]?.page || (lastReadBookTitle === b.title ? 999 : 0);
+        return progB - progA;
+      });
+    } else if (sortBy === 'az') {
+      list.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+    } else if (sortBy === 'category') {
+      list.sort((a, b) =>
+        (a.category || a.tag || '').localeCompare(b.category || b.tag || '', 'vi')
+      );
+    }
+    return list;
+  }, [books, selectedCategory, sortBy, bookProgressMap, lastReadBookTitle]);
 
   const visibleBooks = activeBooks.filter((b) => isAdmin || b.is_visible !== false);
 
@@ -417,6 +550,25 @@ export default function WoodenBookshelf({
               aria-label="Sáng / Tối"
             >
               {isDark ? <Sun size={15} strokeWidth={2.4} /> : <Moon size={15} strokeWidth={2.4} />}
+            </button>
+
+            {/* Toàn màn hình kệ sách (Immersive Native Fullscreen) */}
+            <button
+              type="button"
+              onClick={toggleBookshelfFullscreen}
+              className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                isBookshelfFullscreen
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 hover:text-white border-white/10'
+              }`}
+              title={isBookshelfFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}
+              aria-label="Toàn màn hình"
+            >
+              {isBookshelfFullscreen ? (
+                <Minimize size={14} strokeWidth={2.4} />
+              ) : (
+                <Maximize size={14} strokeWidth={2.4} />
+              )}
             </button>
 
             {/* Nút Cài đặt / Quản trị */}
@@ -571,39 +723,69 @@ export default function WoodenBookshelf({
         </div>
       </div>
 
-      {/* BỘ LỌC CHUYÊN ĐỀ NHANH NGAY TRÊN KỆ GỖ */}
-      {categories.length > 0 && (
-        <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-3 px-1 sm:px-2 select-none -mt-1 mb-2">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('all')}
-            className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer ${
-              selectedCategory === 'all'
-                ? 'bg-amber-500 text-slate-950 shadow-xs'
-                : 'bg-black/40 text-amber-200/70 border border-white/5 hover:text-amber-100'
-            }`}
-          >
-            Tất cả ({books.length})
-          </button>
-          {categories.map((cat) => {
-            const count = books.filter((b) => (b.category || b.tag) === cat).length;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-amber-500 text-slate-950 shadow-xs'
-                    : 'bg-black/40 text-amber-200/70 border border-white/5 hover:text-amber-100'
-                }`}
-              >
-                {cat} ({count})
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* BỘ LỌC CHUYÊN ĐỀ NHANH & SẮP XẾP SÁCH NGAY TRÊN KỆ GỖ */}
+      <div className="relative z-10 flex items-center justify-between gap-1.5 pb-2.5 px-1 sm:px-2 select-none -mt-1 mb-2">
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedCategory === 'all'
+                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  : 'bg-black/40 text-amber-200/70 border border-white/5 hover:text-amber-100'
+              }`}
+            >
+              Tất cả ({books.length})
+            </button>
+            {categories.map((cat) => {
+              const count = books.filter((b) => (b.category || b.tag) === cat).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    selectedCategory === cat
+                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      : 'bg-black/40 text-amber-200/70 border border-white/5 hover:text-amber-100'
+                  }`}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Nút Đổi Sắp Xếp Sách */}
+        <button
+          type="button"
+          onClick={cycleSortOrder}
+          className="shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-black/45 hover:bg-black/70 border border-amber-900/50 text-amber-300 flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+          title={`Sắp xếp: ${
+            sortBy === 'default'
+              ? 'Mặc định'
+              : sortBy === 'recent'
+              ? 'Đọc gần đây'
+              : sortBy === 'az'
+              ? 'Tên A-Z'
+              : 'Chuyên mục'
+          } (Bấm để đổi)`}
+          aria-label="Đổi thứ tự sắp xếp sách"
+        >
+          <ArrowUpDown size={11} strokeWidth={2.4} />
+          <span className="hidden xs:inline">
+            {sortBy === 'default'
+              ? 'Mặc định'
+              : sortBy === 'recent'
+              ? 'Gần đây'
+              : sortBy === 'az'
+              ? 'A-Z'
+              : 'Chuyên mục'}
+          </span>
+        </button>
+      </div>
 
       {/* CÁC TẦNG KỆ SÁCH (SÁCH ĐỨNG TRỰC TIẾP TRÊN MẶT GỖ - ZERO FLOATING) */}
       <div className="relative z-10 flex flex-col gap-7 sm:gap-9">
@@ -631,6 +813,7 @@ export default function WoodenBookshelf({
                   const originalIndex = books.findIndex((b) => b.id === book.id);
                   const isHidden = book.is_visible === false;
                   if (isHidden && !isAdmin) return null;
+                  const prog = bookProgressMap[book.title];
 
                   return (
                     <div
@@ -643,8 +826,49 @@ export default function WoodenBookshelf({
                       onClick={() => onReadBook3D(book)}
                       title={book.title}
                     >
-                      {/* RUY BĂNG DẤU TRANG VÀNG SANG TRỌNG ĐÁNH DẤU CUỐN ĐANG ĐỌC */}
-                      {lastReadBookTitle === book.title && (
+                      {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuickPeekBook(book);
+                        }}
+                        className="absolute top-1 left-1 z-25 w-5 h-5 rounded-full bg-black/65 hover:bg-black/90 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-md border border-white/10 active:scale-90"
+                        title="Xem tóm tắt sách"
+                        aria-label={`Xem tóm tắt sách ${book.title}`}
+                      >
+                        <Info size={10} strokeWidth={2.4} />
+                      </button>
+
+                      {/* RUY BĂNG TIẾN ĐỘ ĐỌC / ĐANG ĐỌC TRÊN GÓC PHẢI BÌA */}
+                      {showProgress && (prog && prog.percent > 0 ? (
+                        <div
+                          className={`absolute -top-1.5 right-1.5 z-20 flex flex-col items-center pointer-events-none ${
+                            lastReadBookTitle === book.title ? 'animate-pulse' : ''
+                          }`}
+                          title={`Tiến độ đọc: Trang ${prog.page}/${prog.total} (${prog.percent}%)`}
+                        >
+                          <div
+                            className={`px-1.5 py-0.5 rounded-b-sm ${
+                              prog.percent === 100
+                                ? 'bg-gradient-to-b from-emerald-500 to-green-600 text-white'
+                                : 'bg-gradient-to-b from-amber-400 to-amber-600 text-slate-950'
+                            } font-black text-[7.5px] sm:text-[8px] shadow-md flex items-center gap-0.5 border-x border-b border-amber-300`}
+                          >
+                            {prog.percent === 100 ? (
+                              <>
+                                <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                                <span>Xong</span>
+                              </>
+                            ) : (
+                              <>
+                                <Bookmark className="w-2.5 h-2.5 fill-slate-950" />
+                                <span>{prog.percent}%</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : lastReadBookTitle === book.title ? (
                         <div
                           className="absolute -top-1.5 right-1.5 z-20 flex flex-col items-center pointer-events-none animate-pulse"
                           title={`Đang đọc dở - Trang ${lastReadPage}`}
@@ -654,10 +878,23 @@ export default function WoodenBookshelf({
                             <span>Trang {lastReadPage}</span>
                           </div>
                         </div>
-                      )}
+                      ) : null)}
 
                       {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
                       <div className="w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                        {/* VẠCH TIẾN ĐỘ ĐỌC Ở CHÂN BÌA */}
+                        {showProgress && prog && prog.percent > 0 && (
+                          <div className="absolute bottom-0 inset-x-0 h-1 bg-black/75 z-15 pointer-events-none">
+                            <div
+                              className={`h-full ${
+                                prog.percent === 100
+                                  ? 'bg-gradient-to-r from-emerald-400 to-green-500'
+                                  : 'bg-gradient-to-r from-amber-500 to-amber-300'
+                              }`}
+                              style={{ width: `${prog.percent}%` }}
+                            />
+                          </div>
+                        )}
                         {/* Ảnh bìa sách */}
                         {book.cover_url ? (
                           <img
@@ -795,11 +1032,18 @@ export default function WoodenBookshelf({
                           <p className="text-[10px] sm:text-[11px] font-bold text-amber-100/95 leading-tight line-clamp-2 drop-shadow-md group-hover:text-amber-300 transition-colors">
                             {book.title}
                           </p>
-                          {book.author && (
-                            <p className="text-[8.5px] sm:text-[9px] text-amber-300/70 line-clamp-1 mt-0.5">
-                              {book.author}
-                            </p>
-                          )}
+                          <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                            {book.author && (
+                              <p className="text-[8.5px] sm:text-[9px] text-amber-300/70 line-clamp-1">
+                                {book.author}
+                              </p>
+                            )}
+                            {showProgress && prog && prog.percent > 0 && (
+                              <span className="text-[8px] sm:text-[8.5px] text-amber-400 font-mono font-bold">
+                                • {prog.percent}%
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1097,6 +1341,24 @@ export default function WoodenBookshelf({
                 </button>
               </div>
 
+              {/* 6. HIỆN TIẾN ĐỘ ĐỌC TRÊN BÌA (1 dòng tinh gọn có công tắc) */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <BookmarkCheck size={16} className="text-amber-400" />
+                  <span className="text-amber-100/90 font-medium">Hiện tiến độ đọc trên bìa</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleShowProgress}
+                  className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                    showProgress ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+                  }`}
+                  aria-label="Bật tắt hiện tiến độ đọc trên bìa"
+                >
+                  <span className="w-4 h-4 rounded-full bg-white shadow-md" />
+                </button>
+              </div>
+
               {/* 5. DẤU TRANG & SÁCH ĐÃ LƯU (1 dòng) */}
               <Link
                 href="/da-luu"
@@ -1229,6 +1491,95 @@ export default function WoodenBookshelf({
                   <span className="text-[11px] text-amber-400 font-bold">Khóa</span>
                 </Link>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL XEM NHANH THÔNG TIN SÁCH (QUICK PEEK MODAL) */}
+      {quickPeekBook && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
+          onClick={() => setQuickPeekBook(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#25170e] to-[#170e08] border border-amber-900/60 p-4 sm:p-5 text-amber-100 shadow-2xl relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Nút Đóng */}
+            <button
+              type="button"
+              onClick={() => setQuickPeekBook(null)}
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              aria-label="Đóng tóm tắt sách"
+            >
+              <X size={15} />
+            </button>
+
+            {/* Thông tin đầu sách */}
+            <div className="flex gap-3.5 items-start">
+              <div className="w-20 shrink-0 aspect-[1/1.42] rounded-md overflow-hidden shadow-lg border border-amber-500/30">
+                <img
+                  src={quickPeekBook.cover_url || '/logo.png'}
+                  alt={quickPeekBook.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0 pr-6">
+                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-1">
+                  {quickPeekBook.category || quickPeekBook.tag || 'Tài liệu y khoa'}
+                </span>
+                <h4 className="text-sm sm:text-base font-black text-amber-100 leading-snug line-clamp-2">
+                  {quickPeekBook.title}
+                </h4>
+                <p className="text-[11px] text-amber-300/80 mt-0.5">
+                  Tác giả: {quickPeekBook.author || 'Dr. Tùng'}
+                </p>
+                {bookProgressMap[quickPeekBook.title] && (
+                  <p className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                    <CheckCircle2 size={11} />
+                    <span>
+                      Tiến độ: Trang {bookProgressMap[quickPeekBook.title].page}/
+                      {bookProgressMap[quickPeekBook.title].total} (
+                      {bookProgressMap[quickPeekBook.title].percent}%)
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Mô tả tóm tắt nội dung */}
+            <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs text-amber-200/90 leading-relaxed max-h-36 overflow-y-auto">
+              <p className="font-semibold text-amber-300 mb-1">✦ Giới thiệu chuyên sâu:</p>
+              <p>
+                {quickPeekBook.description ||
+                  'Tài liệu y khoa chuyên sâu được biên soạn công phu dành cho việc học tập và tự chăm sóc cơ thể chủ động.'}
+              </p>
+            </div>
+
+            {/* Nút hành động */}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const b = quickPeekBook;
+                  setQuickPeekBook(null);
+                  onReadBook3D(b);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all cursor-pointer"
+              >
+                <BookOpen size={14} strokeWidth={2.5} />
+                <span>Mở đọc ngay (3D)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuickPeekBook(null)}
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
