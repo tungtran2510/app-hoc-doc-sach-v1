@@ -531,17 +531,6 @@ export default function WoodenBookshelf({
 
           {/* BÊN PHẢI: CỤM CÀI ĐẶT & TIỆN ÍCH DỒN HẾT VÀO KHUNG NÀY */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Kính lúp tìm kiếm */}
-            <Link
-              href="/tim-kiem"
-              prefetch={true}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-amber-200 hover:text-white transition-all cursor-pointer shadow-xs"
-              title="Tìm kiếm sách y khoa"
-              aria-label="Tìm kiếm"
-            >
-              <Search size={15} strokeWidth={2.4} />
-            </Link>
-
             {/* Chuyển chế độ Sáng / Tối */}
             <button
               type="button"

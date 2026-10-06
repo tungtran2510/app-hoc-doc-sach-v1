@@ -36,7 +36,7 @@ const config: Config = {
         inter: ["var(--font-inter)", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         vietnam: ["var(--font-be-vietnam-pro)", "sans-serif"],
         heading: ["var(--font-be-vietnam-pro)", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
-        serif: ["var(--font-be-vietnam-pro)", "var(--font-lora)", "Georgia", "serif"],
+        serif: ["var(--font-lora)", "var(--font-be-vietnam-pro)", "'Times New Roman'", "serif"],
       },
     },
   },

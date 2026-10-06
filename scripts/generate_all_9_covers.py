@@ -11,8 +11,8 @@ def draw_cover(template_path, out_path, cat_text, title_lines, subtitle, author=
     w, h = im.size
     
     font_cat = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 16)
-    font_title = ImageFont.truetype('C:/Windows/Fonts/georgiab.ttf', 38)
-    font_sub = ImageFont.truetype('C:/Windows/Fonts/georgia.ttf', 20)
+    font_title = ImageFont.truetype('C:/Windows/Fonts/timesbd.ttf', 38)
+    font_sub = ImageFont.truetype('C:/Windows/Fonts/timesi.ttf', 20)
     font_author = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 18)
     font_footer = ImageFont.truetype('C:/Windows/Fonts/arial.ttf', 14)
     

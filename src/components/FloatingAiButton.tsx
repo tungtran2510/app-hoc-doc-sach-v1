@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, X, Send, BookOpen, Loader2, Move } from 'lucide-react';
+import { Sparkles, X, Send, BookOpen, Loader2, Move, Mic, MicOff } from 'lucide-react';
+import { playTapSound } from '../lib/audioFeedback';
 
 export default function FloatingAiButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +30,129 @@ export default function FloatingAiButton() {
   const startPointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasMovedSignificantlyRef = useRef<boolean>(false);
+
+  // Micro nghe liên tục (Speech Recognition)
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState('');
+  const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef(false);
+  const baseTextRef = useRef('');
+  const currentQueryRef = useRef(query);
+
+  useEffect(() => {
+    currentQueryRef.current = query;
+  }, [query]);
+
+  const stopListening = () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+  };
+
+  const startListening = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechError('Trình duyệt chưa hỗ trợ nhận diện giọng nói.');
+      setTimeout(() => setSpeechError(''), 4000);
+      return;
+    }
+
+    try {
+      playTapSound();
+      setSpeechError('');
+      baseTextRef.current = currentQueryRef.current;
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'vi-VN';
+
+      recognition.onstart = () => {
+        isListeningRef.current = true;
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = 0; i < event.results.length; ++i) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript;
+          } else {
+            interimTranscript += result[0].transcript;
+          }
+        }
+
+        const sessionTranscript = (finalTranscript + ' ' + interimTranscript).trim();
+        const base = baseTextRef.current ? (baseTextRef.current.trim() + ' ') : '';
+        setQuery(base + sessionTranscript);
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          isListeningRef.current = false;
+          setIsListening(false);
+          setSpeechError('Vui lòng cấp quyền Micro trên trình duyệt.');
+          setTimeout(() => setSpeechError(''), 4000);
+        }
+      };
+
+      recognition.onend = () => {
+        if (isListeningRef.current) {
+          try {
+            baseTextRef.current = currentQueryRef.current;
+            recognition.start();
+          } catch {
+            setTimeout(() => {
+              if (isListeningRef.current) {
+                try {
+                  baseTextRef.current = currentQueryRef.current;
+                  recognition.start();
+                } catch {
+                  isListeningRef.current = false;
+                  setIsListening(false);
+                }
+              }
+            }, 300);
+          }
+        } else {
+          setIsListening(false);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      isListeningRef.current = true;
+      setIsListening(true);
+    } catch {
+      isListeningRef.current = false;
+      setIsListening(false);
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      playTapSound();
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
 
   // Nạp vị trí đã lưu từ localStorage
   useEffect(() => {
@@ -150,6 +274,9 @@ export default function FloatingAiButton() {
   };
 
   const handleSend = async (textToSend?: string) => {
+    if (isListeningRef.current) {
+      stopListening();
+    }
     const q = (textToSend || query).trim();
     if (!q || isLoading) return;
 
@@ -318,7 +445,7 @@ export default function FloatingAiButton() {
             </div>
 
             {/* Input Bar */}
-            <div className="p-2.5 border-t border-white/10 bg-[#24160d] flex items-center gap-2">
+            <div className="p-2.5 border-t border-white/10 bg-[#24160d] flex items-center gap-1.5">
               <input
                 type="text"
                 value={query}
@@ -326,9 +453,27 @@ export default function FloatingAiButton() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSend();
                 }}
-                placeholder="Nhập câu hỏi hoặc nội dung cần tra trong sách..."
-                className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-amber-500/30 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                placeholder={isListening ? "Đang nghe bạn nói liên tục..." : "Nhập câu hỏi hoặc nội dung cần tra trong sách..."}
+                className={`flex-1 px-3 py-2 rounded-xl bg-black/40 border ${
+                  isListening
+                    ? 'border-red-500 ring-2 ring-red-400/40'
+                    : 'border-amber-500/30'
+                } text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400`}
               />
+              {/* Nút Micro Nghe liên tục ngay cạnh nút Gửi */}
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 ${
+                  isListening
+                    ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/40 ring-2 ring-red-400'
+                    : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+                }`}
+                title={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
+                aria-label={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
+              >
+                {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+              </button>
               <button
                 type="button"
                 onClick={() => handleSend()}
