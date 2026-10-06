@@ -21,9 +21,9 @@ async function testReaderUpgrades() {
         sessionStorage.setItem('qbiz_books_intro_seen', '1');
       } catch {}
     });
-
-    console.log('1. Loading http://localhost:3088...');
-    await page.goto('http://localhost:3088', { waitUntil: 'domcontentloaded' });
+    const baseUrl = process.argv[2] || 'http://localhost:3088';
+    console.log(`1. Loading ${baseUrl}...`);
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(1000);
 
     // Test 1: Viewport phích cứng (user-scalable=no, maximum-scale=1)

@@ -116,6 +116,10 @@ async function testLive() {
       await readerDialog.waitFor({ state: 'visible', timeout: 8000 });
       console.log('3D Reader dialog open: PASS');
 
+      // Reveal auto-hidden HUD by tapping screen center
+      await page.mouse.click(206, 450);
+      await page.waitForTimeout(500);
+
       // Reader mode switches
       await page.locator('button[aria-label="Trượt 3D"]').first().click({ force: true });
       await page.waitForTimeout(300);
