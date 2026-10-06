@@ -49,17 +49,7 @@ export default function PwaRegistrar() {
         navigator.serviceWorker
           .register('/sw.js')
           .then((reg) => {
-            reg.update();
-            reg.addEventListener('updatefound', () => {
-              const installing = reg.installing;
-              if (installing) {
-                installing.addEventListener('statechange', () => {
-                  if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                    window.location.reload();
-                  }
-                });
-              }
-            });
+            reg.update().catch(() => {});
           })
           .catch(() => {});
       }

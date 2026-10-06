@@ -89,6 +89,11 @@ async function testInteractive() {
   await readerDialog.waitFor({ state: 'visible', timeout: 6000 });
   console.log('3D Reader dialog open: PASS');
 
+  // Tap center of reader canvas/main to reveal toolbars (since reader opens with HUD auto-hidden)
+  const readerMain = page.locator('div[role="dialog"] main').first();
+  await readerMain.click({ position: { x: 180, y: 350 }, force: true });
+  await page.waitForTimeout(600);
+
   // Reader mode switches
   await page.locator('button[aria-label="Trượt 3D"]').first().click({ force: true });
   await page.waitForTimeout(300);

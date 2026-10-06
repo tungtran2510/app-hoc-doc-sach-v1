@@ -858,8 +858,25 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           setPanOffset({ x: 0, y: 0 });
           return 1;
         }
-        return 1.85;
+        return 1.6;
       });
+    }, []);
+
+    const zoomIn = useCallback(() => {
+      setZoomScale((prev) => Math.min(3.0, Number((prev + 0.3).toFixed(2))));
+    }, []);
+
+    const zoomOut = useCallback(() => {
+      setZoomScale((prev) => {
+        const next = Math.max(0.75, Number((prev - 0.3).toFixed(2)));
+        if (next <= 1) setPanOffset({ x: 0, y: 0 });
+        return next;
+      });
+    }, []);
+
+    const resetZoom = useCallback(() => {
+      setZoomScale(1);
+      setPanOffset({ x: 0, y: 0 });
     }, []);
 
     useImperativeHandle(ref, () => ({
@@ -867,17 +884,9 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       flipPrev,
       goToPage,
       toggleZoom,
-      zoomIn: () => setZoomScale((prev) => Math.min(2.5, prev + 0.35)),
-      zoomOut: () =>
-        setZoomScale((prev) => {
-          const next = Math.max(1, prev - 0.35);
-          if (next <= 1) setPanOffset({ x: 0, y: 0 });
-          return next;
-        }),
-      resetZoom: () => {
-        setZoomScale(1);
-        setPanOffset({ x: 0, y: 0 });
-      },
+      zoomIn,
+      zoomOut,
+      resetZoom,
       getZoomScale: () => zoomScale,
     }));
 
@@ -977,6 +986,57 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         if (animReqRef.current) cancelAnimationFrame(animReqRef.current);
       };
     }, [pageImages, readingMode, drawStaticPage]);
+
+    // Xử lý cử chỉ 2 ngón tay chụm / xòe để Thu Phóng sách (Pinch-to-zoom chuẩn SideBooks)
+    const pinchDistRef = useRef<{ dist: number; scale: number } | null>(null);
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const onTouchStart = (e: TouchEvent) => {
+        if (e.touches.length === 2) {
+          e.preventDefault();
+          const d = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          pinchDistRef.current = { dist: d, scale: zoomScale };
+        }
+      };
+
+      const onTouchMove = (e: TouchEvent) => {
+        if (e.touches.length === 2 && pinchDistRef.current) {
+          e.preventDefault();
+          const d = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          if (pinchDistRef.current.dist > 15) {
+            const ratio = d / pinchDistRef.current.dist;
+            const newScale = Math.min(3.0, Math.max(0.75, pinchDistRef.current.scale * ratio));
+            setZoomScale(Number(newScale.toFixed(2)));
+          }
+        }
+      };
+
+      const onTouchEnd = (e: TouchEvent) => {
+        if (e.touches.length < 2) {
+          pinchDistRef.current = null;
+        }
+      };
+
+      canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+      canvas.addEventListener('touchend', onTouchEnd);
+      canvas.addEventListener('touchcancel', onTouchEnd);
+
+      return () => {
+        canvas.removeEventListener('touchstart', onTouchStart);
+        canvas.removeEventListener('touchmove', onTouchMove);
+        canvas.removeEventListener('touchend', onTouchEnd);
+        canvas.removeEventListener('touchcancel', onTouchEnd);
+      };
+    }, [zoomScale]);
 
     // ================= XỬ LÝ CỬ CHỈ CHẠM VUỐT CHUẨN XÁC VÀ NHẠY BÉN =================
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {

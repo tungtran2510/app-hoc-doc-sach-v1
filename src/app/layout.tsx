@@ -48,7 +48,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
   themeColor: '#160e08',
 };
 
@@ -64,19 +66,15 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=25" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png?v=25" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png?v=25" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('giao_dien');if(t==='light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}}catch(e){document.documentElement.classList.add('dark');}})();`,
           }}
         />
       </head>
-      <body className={`${beVietnamPro.className} bg-[#160e08] text-[#fdf7ee] min-h-screen flex justify-center selection:bg-amber-900 selection:text-amber-100`}>
+      <body className={`${beVietnamPro.className} bg-[#f8f5f0] dark:bg-[#160e08] text-[#29180c] dark:text-[#fdf7ee] min-h-screen flex justify-center selection:bg-amber-900 selection:text-amber-100 transition-colors duration-200`}>
         <PwaRegistrar />
-        <div className="w-full max-w-[480px] md:max-w-[820px] lg:max-w-[820px] min-h-screen bg-[#160e08] relative flex flex-col mx-auto shadow-2xl transition-all">
+        <div className="w-full max-w-[480px] md:max-w-[820px] lg:max-w-[820px] min-h-screen bg-[#f8f5f0] dark:bg-[#160e08] text-[#29180c] dark:text-[#fdf7ee] relative flex flex-col mx-auto shadow-2xl transition-colors duration-200">
           {children}
         </div>
       </body>
