@@ -21,3 +21,6 @@ yarn-error.log*
 public/*.png
 public/*.html
 public/screenshots/
+
+.vercel
+.env*
