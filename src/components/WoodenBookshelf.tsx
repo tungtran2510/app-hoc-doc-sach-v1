@@ -26,6 +26,8 @@ import {
   BookmarkCheck,
   Bookmark,
   ChevronRight,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
 
@@ -90,6 +92,79 @@ export default function WoodenBookshelf({
   const [readerSoundEnabled, setReaderSoundEnabled] = useState<boolean>(true);
   const [readerAutoResume, setReaderAutoResume] = useState<boolean>(true);
 
+  // Kích thước đầu sách trên kệ gỗ: 2 (Lớn), 3 (Chuẩn), 4 (Gọn)
+  const [bookCols, setBookCols] = useState<2 | 3 | 4>(3);
+  const [zoomToast, setZoomToast] = useState<string | null>(null);
+  const [lastReadBookTitle, setLastReadBookTitle] = useState<string | null>(null);
+  const [lastReadPage, setLastReadPage] = useState<number>(1);
+  const touchStartDistRef = React.useRef<number | null>(null);
+
+  const showToast = (msg: string) => {
+    setZoomToast(msg);
+    setTimeout(() => {
+      setZoomToast((prev) => (prev === msg ? null : prev));
+    }, 1800);
+  };
+
+  const zoomInBooks = () => {
+    setBookCols((prev) => {
+      const next = prev === 4 ? 3 : prev === 3 ? 2 : 2;
+      if (next !== prev) {
+        try { localStorage.setItem('bookshelf_book_cols', String(next)); } catch {}
+        showToast(next === 2 ? 'Cỡ sách: Lớn (2 cuốn/tầng)' : 'Cỡ sách: Chuẩn (3 cuốn/tầng)');
+      }
+      return next;
+    });
+  };
+
+  const zoomOutBooks = () => {
+    setBookCols((prev) => {
+      const next = prev === 2 ? 3 : prev === 3 ? 4 : 4;
+      if (next !== prev) {
+        try { localStorage.setItem('bookshelf_book_cols', String(next)); } catch {}
+        showToast(next === 4 ? 'Cỡ sách: Gọn (4 cuốn/tầng)' : 'Cỡ sách: Chuẩn (3 cuốn/tầng)');
+      }
+      return next;
+    });
+  };
+
+  const setColsExplicit = (cols: 2 | 3 | 4) => {
+    setBookCols(cols);
+    try { localStorage.setItem('bookshelf_book_cols', String(cols)); } catch {}
+    showToast(cols === 2 ? 'Cỡ sách: Lớn (2 cuốn/tầng)' : cols === 3 ? 'Cỡ sách: Chuẩn (3 cuốn/tầng)' : 'Cỡ sách: Gọn (4 cuốn/tầng)');
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartDistRef.current = Math.hypot(dx, dy);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartDistRef.current !== null && e.touches.length < 2) {
+      touchStartDistRef.current = null;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const currentDist = Math.hypot(dx, dy);
+      const diff = currentDist - touchStartDistRef.current;
+
+      if (diff > 45) {
+        touchStartDistRef.current = currentDist;
+        zoomInBooks();
+      } else if (diff < -45) {
+        touchStartDistRef.current = currentDist;
+        zoomOutBooks();
+      }
+    }
+  };
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('user_display_name');
@@ -129,6 +204,16 @@ export default function WoodenBookshelf({
       const savedResume = localStorage.getItem('reader_autoresume_pref');
       if (savedResume !== null) {
         setReaderAutoResume(savedResume !== 'false');
+      }
+      const savedCols = localStorage.getItem('bookshelf_book_cols');
+      if (savedCols && ['2', '3', '4'].includes(savedCols)) {
+        setBookCols(Number(savedCols) as 2 | 3 | 4);
+      }
+      const lastTitle = localStorage.getItem('last_read_book_title');
+      if (lastTitle) {
+        setLastReadBookTitle(lastTitle);
+        const p = localStorage.getItem(`last_read_page_${lastTitle}`) || localStorage.getItem(`bookmark_page_${lastTitle}`);
+        if (p) setLastReadPage(parseInt(p, 10) || 1);
       }
     } catch {}
   }, []);
@@ -193,8 +278,8 @@ export default function WoodenBookshelf({
     return null;
   }
 
-  // Chia danh sách sách thành các tầng kệ (mỗi tầng 3 cuốn sách chuẩn vật lý)
-  const chunkSize = 3;
+  // Chia danh sách sách thành các tầng kệ linh hoạt theo bookCols (2, 3, hoặc 4 cuốn / tầng)
+  const chunkSize = bookCols;
   const tiers: RecommendedBook[][] = [];
   for (let i = 0; i < books.length; i += chunkSize) {
     const chunk = books.slice(i, i + chunkSize);
@@ -212,7 +297,19 @@ export default function WoodenBookshelf({
     : [currentAppTitle, ''];
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#24170d] via-[#1c1109] to-[#130a04] p-3 sm:p-5 border border-[#3d2817] shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] select-none">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="relative w-full rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-b from-[#24170d] via-[#1c1109] to-[#130a04] px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-6 sm:py-5 border-x-0 border-t-0 sm:border border-[#3d2817] shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] select-none transition-all duration-200"
+    >
+      {/* Toast thông báo thay đổi kích cỡ sách khi vuốt / bấm */}
+      {zoomToast && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-xs shadow-2xl border border-amber-200 pointer-events-none animate-bounce">
+          {zoomToast}
+        </div>
+      )}
+
       {/* Đèn rọi kệ sách ấm cúng trên đỉnh (Overhead Ambient Spotlight) */}
       <div
         className="absolute top-0 left-[10%] right-[10%] h-[180px] pointer-events-none z-0"
@@ -343,23 +440,74 @@ export default function WoodenBookshelf({
         )}
       </div>
 
-      {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH (TỐI GIẢN - KHÔNG TỪ THỪA) */}
-      <div className="relative z-10 flex items-center justify-between mb-5 px-1 sm:px-2">
-        <div className="flex items-center gap-2">
-          <span className="text-base select-none">📚</span>
-          <h2 className="text-[13.5px] sm:text-[15px] font-black tracking-wide text-amber-200 uppercase drop-shadow-sm">
+      {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN TO / NHỎ ĐẦU SÁCH */}
+      <div className="relative z-10 flex items-center justify-between mb-4 sm:mb-5 px-1 sm:px-2 gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <span className="text-base select-none shrink-0">📚</span>
+          <h2 className="text-[12.5px] sm:text-[15px] font-black tracking-wide text-amber-200 uppercase drop-shadow-sm truncate">
             {title}
           </h2>
+        </div>
+
+        {/* CỤM NÚT TO / NHỎ ĐẦU SÁCH TRÊN KỆ GỖ (2 - 3 - 4 CUỐN/TẦNG & ZOOM +/-) */}
+        <div className="flex items-center gap-1 bg-[#1a0f08]/90 border border-amber-900/60 rounded-xl p-1 shadow-inner shrink-0">
+          <button
+            type="button"
+            onClick={zoomOutBooks}
+            disabled={bookCols === 4}
+            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-amber-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+            title="Thu nhỏ đầu sách (Nhiều sách hơn trên mỗi tầng)"
+            aria-label="Thu nhỏ sách"
+          >
+            <ZoomOut size={13} strokeWidth={2.4} />
+          </button>
+
+          {/* Nút chuyển trực tiếp: 2 (Lớn) · 3 (Chuẩn) · 4 (Gọn) */}
+          <div className="flex items-center gap-0.5 px-0.5">
+            {([2, 3, 4] as const).map((col) => (
+              <button
+                key={col}
+                type="button"
+                onClick={() => setColsExplicit(col)}
+                className={`h-5.5 px-1.5 rounded-md text-[10px] font-black transition-all cursor-pointer ${
+                  bookCols === col
+                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                    : 'text-amber-200/70 hover:text-amber-100 hover:bg-white/5'
+                }`}
+                title={col === 2 ? 'Cỡ lớn: 2 cuốn / tầng' : col === 3 ? 'Cỡ chuẩn: 3 cuốn / tầng' : 'Cỡ gọn: 4 cuốn / tầng'}
+              >
+                {col === 2 ? 'Lớn' : col === 3 ? 'Chuẩn' : 'Gọn'}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={zoomInBooks}
+            disabled={bookCols === 2}
+            className="w-6.5 h-6.5 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center text-amber-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+            title="Phóng to đầu sách (Xem bìa sách lớn hơn)"
+            aria-label="Phóng to sách"
+          >
+            <ZoomIn size={13} strokeWidth={2.4} />
+          </button>
         </div>
       </div>
 
       {/* CÁC TẦNG KỆ SÁCH (SÁCH ĐỨNG TRỰC TIẾP TRÊN MẶT GỖ - ZERO FLOATING) */}
       <div className="relative z-10 flex flex-col gap-7 sm:gap-9">
         {tiers.map((tierBooks, tierIdx) => {
+          const cardMaxWidthClass =
+            bookCols === 2
+              ? 'max-w-[170px] sm:max-w-[210px]'
+              : bookCols === 4
+              ? 'max-w-[86px] sm:max-w-[110px]'
+              : 'max-w-[122px] sm:max-w-[150px]';
+
           return (
             <div key={`tier-${tierIdx}`} className="relative">
               {/* Dãy sách đứng vững trên mặt gỗ */}
-              <div className="flex items-end justify-around gap-2.5 sm:gap-4 px-1.5 sm:px-3 relative z-10">
+              <div className="flex items-end justify-around gap-2 sm:gap-4 px-1 sm:px-3 relative z-10">
                 {tierBooks.map((book) => {
                   const originalIndex = books.findIndex((b) => b.id === book.id);
                   const isHidden = book.is_visible === false;
@@ -368,12 +516,25 @@ export default function WoodenBookshelf({
                   return (
                     <div
                       key={book.id || originalIndex}
-                      className={`flex-1 max-w-[122px] sm:max-w-[150px] flex flex-col items-center group relative cursor-pointer ${
+                      className={`flex-1 ${cardMaxWidthClass} flex flex-col items-center group relative cursor-pointer ${
                         isHidden ? 'opacity-65' : ''
                       }`}
                       onClick={() => onReadBook3D(book)}
                       title={book.title}
                     >
+                      {/* RUY BĂNG DẤU TRANG VÀNG SANG TRỌNG ĐÁNH DẤU CUỐN ĐANG ĐỌC */}
+                      {lastReadBookTitle === book.title && (
+                        <div
+                          className="absolute -top-1.5 right-1.5 z-20 flex flex-col items-center pointer-events-none animate-pulse"
+                          title={`Đang đọc dở - Trang ${lastReadPage}`}
+                        >
+                          <div className="px-1.5 py-0.5 rounded-b-sm bg-gradient-to-b from-amber-400 to-amber-600 text-slate-950 font-black text-[7.5px] sm:text-[8px] shadow-md flex items-center gap-0.5 border-x border-b border-amber-300">
+                            <Bookmark className="w-2.5 h-2.5 fill-slate-950" />
+                            <span>Trang {lastReadPage}</span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
                       <div className="w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
                         {/* Ảnh bìa sách */}
@@ -410,13 +571,9 @@ export default function WoodenBookshelf({
                           </span>
                         )}
 
-                        {/* Nút hành động nổi lên khi hover / chạm: Đọc 3D & Chi tiết */}
+                        {/* Nút hành động nổi lên khi hover chuột trên Desktop: Đọc 3D & Chi tiết (ẨN TRÊN DI ĐỘNG ĐỂ TRÁNH DÍNH MÀN HÌNH CẢM ỨNG) */}
                         <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onReadBook3D(book);
-                          }}
-                          className="absolute inset-0 bg-black/45 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 flex flex-col items-center justify-center gap-1.5 p-2"
+                          className="hidden md:flex absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 flex-col items-center justify-center gap-1.5 p-2"
                         >
                           <button
                             type="button"

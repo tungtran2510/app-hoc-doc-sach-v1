@@ -104,14 +104,61 @@ export function getBookReaderPageUrls(book?: RecommendedBook | AuthorBook | null
     ];
   }
 
-  // 8. Sách chung: Đưa bìa sách lên đầu, tiếp đến các trang atlas và trang bìa sau
+  // 8. Sách chuyên đề: Tiêu hóa & đường ruột
+  if (title.includes('tiêu hóa') || title.includes('đường ruột')) {
+    return [
+      cover,
+      '/documents/covers/cover_tieu-hoa.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_dinh-duong.png',
+      '/documents/covers/cover_gan-mat-tuy.png',
+      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
+    ];
+  }
+
+  // 9. Sách chuyên đề: Nước & khoáng chất tế bào
+  if (title.includes('nước') || title.includes('khoáng chất') || title.includes('hydro')) {
+    return [
+      cover,
+      '/documents/covers/cover_nuoc.png',
+      '/documents/covers/cover_co-the-nguoi.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_dinh-duong.png',
+      '/documents/covers/back_cover_lang_nghe_co_the.png',
+    ];
+  }
+
+  // 10. Sách chuyên đề: Lợi khuẩn & vi sinh vật
+  if (title.includes('lợi khuẩn') || title.includes('vi sinh')) {
+    return [
+      cover,
+      '/documents/covers/cover_loi_khuan_duong_ruot.png',
+      '/documents/covers/cover_tieu-hoa.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_mien-dich.png',
+      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
+    ];
+  }
+
+  // 11. Sách chuyên đề: Hệ miễn dịch tự nhiên
+  if (title.includes('miễn dịch') || title.includes('đề kháng')) {
+    return [
+      cover,
+      '/documents/covers/cover_mien-dich.png',
+      '/documents/covers/cover_co-the-nguoi.png',
+      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
+      '/documents/covers/cover_loi_khuan_duong_ruot.png',
+      '/documents/covers/back_cover_lang_nghe_co_the.png',
+    ];
+  }
+
+  // 12. Sách chung: Đưa bìa sách lên đầu, tiếp đến các trang atlas và trang bìa sau
   return [
     cover,
     '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
     '/documents/covers/cover_co-the-nguoi.png',
     '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
     '/documents/covers/cover_cot-song.png',
-    '/documents/covers/cover_tieu-hoa.png',
     '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
   ];
 }
