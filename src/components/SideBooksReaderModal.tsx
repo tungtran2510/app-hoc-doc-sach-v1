@@ -152,22 +152,23 @@ export default function SideBooksReaderModal({
         setReadingMode(savedMode as any);
       }
 
-      // Tự động ghi nhớ trang đọc dở (nếu bật)
-      const autoResume = localStorage.getItem('reader_autoresume_pref') !== 'false';
-      if (autoResume && title) {
-        const savedPage =
-          localStorage.getItem(`last_read_page_${title}`) ||
-          localStorage.getItem(`bookmark_page_${title}`);
-        if (savedPage !== null) {
-          const p = parseInt(savedPage, 10);
-          if (!isNaN(p) && p >= 0 && p < pages.length) {
-            setCurrentPage(p);
-          }
-        } else if (initialPage > 0) {
-          setCurrentPage(initialPage);
-        }
-      } else if (initialPage > 0) {
+      // Nếu có truyền initialPage cụ thể (ví dụ kết quả tìm kiếm theo trang), ưu tiên mở đúng trang đó
+      if (typeof initialPage === 'number' && initialPage > 0 && initialPage < pages.length) {
         setCurrentPage(initialPage);
+      } else {
+        // Tự động ghi nhớ trang đọc dở (nếu bật)
+        const autoResume = localStorage.getItem('reader_autoresume_pref') !== 'false';
+        if (autoResume && title) {
+          const savedPage =
+            localStorage.getItem(`last_read_page_${title}`) ||
+            localStorage.getItem(`bookmark_page_${title}`);
+          if (savedPage !== null) {
+            const p = parseInt(savedPage, 10);
+            if (!isNaN(p) && p >= 0 && p < pages.length) {
+              setCurrentPage(p);
+            }
+          }
+        }
       }
     } catch {}
   }, [isOpen, title, pages.length, initialPage]);

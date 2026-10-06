@@ -254,6 +254,23 @@ export default function AiAssistantPage() {
     });
   }, []);
 
+  // Tự động nhận câu hỏi từ trang Tìm Kiếm hoặc từ liên kết bên ngoài qua param ?q= hoặc ?question=
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const queryParam = params.get('q') || params.get('question');
+      if (queryParam && queryParam.trim()) {
+        const decoded = queryParam.trim();
+        setInput(decoded);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 300);
+        window.history.replaceState({}, '', '/tro-ly-ai');
+      }
+    } catch {}
+  }, []);
+
   // Load lịch sử chat từ localStorage
   useEffect(() => {
     try {

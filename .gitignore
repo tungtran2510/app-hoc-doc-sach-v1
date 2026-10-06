@@ -26,6 +26,7 @@ scripts/qa_screenshots/
 scripts/qa_screenshots_v2/
 scripts/production_screenshots/
 scripts/test_*.png
+scripts/test_*.js
 
 .vercel
 .env*
