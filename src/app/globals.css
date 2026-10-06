@@ -250,3 +250,16 @@ html h1, html h2, html h3, html h4, html h5, html h6 {
   letter-spacing: -0.01em;
   color: #fdf7ee;
 }
+
+/* ============================================================================
+   ẨN HOÀN TOÀN THANH CUỘN (NO-SCROLLBAR) TRÊN MỌI TRÌNH DUYỆT & WINDOWS
+   ============================================================================ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important;    /* Firefox */
+}

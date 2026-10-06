@@ -210,8 +210,8 @@ export default function PwaRegistrar() {
         </aside>
       )}
 
-      {/* 2. NÚT NỔI NHẮC CÀI APP NẾU ĐÃ TẮT BANNER (GỌN GÀNG GÓC PHẢI MÀN HÌNH) */}
-      {!showBanner && showFloatingPill && !isReaderPage && (
+      {/* 2. NÚT NỔI NHẮC CÀI APP NẾU ĐÃ TẮT BANNER (CHỈ HIỂN THỊ Ở TRANG CHỦ, KHÔNG CHÈN LÊN TRANG TÌM KIẾM/ĐỌC SÁCH) */}
+      {!showBanner && showFloatingPill && !isReaderPage && pathname === '/' && (
         <button
           type="button"
           onClick={handleInstallClick}

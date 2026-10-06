@@ -15,7 +15,6 @@ import {
   Mic,
   MicOff,
   Bot,
-  Layers,
   FileText,
   Compass,
 } from 'lucide-react';
@@ -93,16 +92,6 @@ const POPULAR_SEARCHES = [
   'Tự chữa lành',
   'Lợi khuẩn',
   'Dinh dưỡng',
-];
-
-const CATEGORY_FILTERS = [
-  { id: 'all', label: 'Tất cả' },
-  { id: 'cot-song', label: 'Cột Sống' },
-  { id: 'dinh-duong', label: 'Dinh Dưỡng' },
-  { id: 'atlas', label: 'Atlas Giải Phẫu' },
-  { id: 'tieu-hoa', label: 'Tiêu Hóa & Vi Sinh' },
-  { id: 'nuoc', label: 'Nước & Khoáng' },
-  { id: 'tu-chua-lanh', label: 'Tự Chữa Lành' },
 ];
 
 /** Kho dữ liệu trích đoạn trang sách phục vụ Deep In-Book Search */
@@ -248,9 +237,6 @@ export default function SearchPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [books, setBooks] = useState<SearchBookItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Bộ lọc chuyên mục
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Lịch sử tìm kiếm gần đây
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -410,19 +396,6 @@ export default function SearchPage() {
 
   // 1. Lọc kết quả tìm kiếm theo Sách
   const matchedBooks = books.filter((b) => {
-    // Lọc theo Chuyên mục tab
-    if (selectedCategory !== 'all') {
-      const matchCat =
-        (selectedCategory === 'cot-song' && (b.title.includes('Cột Sống') || b.title.includes('Cổ') || b.badge_tag?.includes('CỘT SỐNG'))) ||
-        (selectedCategory === 'dinh-duong' && (b.title.includes('Dinh Dưỡng') || b.badge_tag?.includes('DINH DƯỠNG'))) ||
-        (selectedCategory === 'atlas' && (b.title.includes('Atlas') || b.title.includes('Giải Phẫu'))) ||
-        (selectedCategory === 'tieu-hoa' && (b.title.includes('Tiêu Hóa') || b.title.includes('Lợi Khuẩn'))) ||
-        (selectedCategory === 'nuoc' && (b.title.includes('Nước') || b.title.includes('Khoáng'))) ||
-        (selectedCategory === 'tu-chua-lanh' && b.title.includes('Tự Chữa Lành'));
-
-      if (!matchCat) return false;
-    }
-
     if (!cleanQuery) return true;
     const matchTitle = removeVietnameseTones(b.title).includes(cleanQuery);
     const matchAuthor = removeVietnameseTones(b.author).includes(cleanQuery);
@@ -598,7 +571,10 @@ export default function SearchPage() {
       )}
 
       {/* 3. GỢI Ý TỪ KHÓA TÌM KIẾM PHỔ BIẾN (CHIPS) */}
-      <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+      <section
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1"
+      >
         <span className="text-[11px] font-bold text-[#8B4513] dark:text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
           <Sparkles size={12} />
           <span>Gợi ý:</span>
@@ -613,38 +589,13 @@ export default function SearchPage() {
               saveToRecentSearches(chip);
               inputRef.current?.focus();
             }}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+            className={`px-3 py-1 rounded-full text-[11.5px] font-semibold whitespace-nowrap transition-all cursor-pointer border ${
               query.toLowerCase() === chip.toLowerCase()
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs font-bold'
                 : 'bg-[#e8ded1] dark:bg-white/5 hover:bg-[#ded1c0] dark:hover:bg-white/10 text-[#4A2612] dark:text-amber-100/80 border-[#d5c3b1] dark:border-white/10'
             }`}
           >
             {chip}
-          </button>
-        ))}
-      </section>
-
-      {/* 4. BỘ LỌC CHUYÊN MỤC TRƯỢT NGANG (HORIZONTAL CATEGORY TABS) */}
-      <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 border-b border-amber-900/10 dark:border-white/10 pb-2">
-        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 shrink-0 flex items-center gap-1 mr-0.5">
-          <Layers size={12} />
-          <span>Lọc:</span>
-        </span>
-        {CATEGORY_FILTERS.map((cat) => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => {
-              playTapSound();
-              setSelectedCategory(cat.id);
-            }}
-            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer border ${
-              selectedCategory === cat.id
-                ? 'bg-[#2A160A] text-amber-300 border-amber-500/50 shadow-xs'
-                : 'bg-white/70 dark:bg-white/5 hover:bg-white text-[#4A2612] dark:text-amber-100/70 border-slate-200 dark:border-white/10'
-            }`}
-          >
-            {cat.label}
           </button>
         ))}
       </section>
@@ -760,7 +711,6 @@ export default function SearchPage() {
             type="button"
             onClick={() => {
               setQuery('');
-              setSelectedCategory('all');
             }}
             className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 cursor-pointer font-semibold"
           >
