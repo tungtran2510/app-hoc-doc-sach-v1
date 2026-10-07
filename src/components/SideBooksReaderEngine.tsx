@@ -110,6 +110,10 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       hasMoved: false,
     });
 
+    // Lập lịch render frame khi vuốt ngón tay đồng bộ màn hình (V-Sync RAF Batching)
+    const moveRafRef = useRef<number | null>(null);
+    const pendingFrameRef = useRef<{ mode: 'next' | 'prev'; progress: number } | null>(null);
+
     // Hàm vẽ gáy sách bên trái (Left binding spine shadow)
     const drawSpineGutter = useCallback((ctx: CanvasRenderingContext2D, W: number, H: number) => {
       const gW = Math.max(12, W * 0.035);
@@ -241,26 +245,48 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         }
         ctx.restore();
 
-        // 4. Bóng đổ dọc nếp gấp chiếu lên trang dưới (Drop Shadow)
+        // 4. Bóng đổ nếp uốn kép chiếu lên trang dưới (Dual Real-Paper Drop Shadows)
         const inFactor = Math.min(1, p / 0.08);
         const outFactor = Math.max(0, Math.min(1, (1 - p) / 0.1));
-        const sDist = Math.min(48, W * 0.13) * inFactor * outFactor;
-        const sOpacity = 0.52 * inFactor * outFactor;
 
-        if (sDist > 1 && sOpacity > 0.02) {
+        // 4.1 Lớp 1: Bóng tiếp xúc nếp gập (Crease Occlusion Shadow - Ambient Contact)
+        const sDist1 = Math.min(18, W * 0.05) * inFactor * outFactor;
+        const sOpacity1 = 0.46 * inFactor * outFactor;
+        if (sDist1 > 0.5 && sOpacity1 > 0.01) {
           ctx.save();
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
-          ctx.lineTo(p2.x + nx * sDist, p2.y + ny * sDist);
-          ctx.lineTo(p1.x + nx * sDist, p1.y + ny * sDist);
+          ctx.lineTo(p2.x + nx * sDist1, p2.y + ny * sDist1);
+          ctx.lineTo(p1.x + nx * sDist1, p1.y + ny * sDist1);
           ctx.closePath();
 
-          const sGrad = ctx.createLinearGradient(mx, my, mx + nx * sDist, my + ny * sDist);
-          sGrad.addColorStop(0, `rgba(0, 0, 0, ${sOpacity})`);
-          sGrad.addColorStop(0.35, `rgba(0, 0, 0, ${sOpacity * 0.38})`);
-          sGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = sGrad;
+          const sGrad1 = ctx.createLinearGradient(mx, my, mx + nx * sDist1, my + ny * sDist1);
+          sGrad1.addColorStop(0, `rgba(0, 0, 0, ${sOpacity1})`);
+          sGrad1.addColorStop(0.38, `rgba(0, 0, 0, ${sOpacity1 * 0.42})`);
+          sGrad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = sGrad1;
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 4.2 Lớp 2: Bóng khuếch tán không gian mềm (Diffuse Ambient Soft Shadow)
+        const sDist2 = Math.min(52, W * 0.15) * inFactor * outFactor;
+        const sOpacity2 = 0.28 * inFactor * outFactor;
+        if (sDist2 > 1 && sOpacity2 > 0.01) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p2.x + nx * sDist2, p2.y + ny * sDist2);
+          ctx.lineTo(p1.x + nx * sDist2, p1.y + ny * sDist2);
+          ctx.closePath();
+
+          const sGrad2 = ctx.createLinearGradient(mx, my, mx + nx * sDist2, my + ny * sDist2);
+          sGrad2.addColorStop(0, `rgba(0, 0, 0, ${sOpacity2})`);
+          sGrad2.addColorStop(0.45, `rgba(0, 0, 0, ${sOpacity2 * 0.32})`);
+          sGrad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = sGrad2;
           ctx.fill();
           ctx.restore();
         }
@@ -272,7 +298,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
 
-        const bow = 16 * inFactor * outFactor;
+        const bow = 18 * inFactor * outFactor;
         ctx.quadraticCurveTo((p1.x + tx) / 2 + nx * bow, (p1.y + ty) / 2 + ny * bow, tx, ty);
 
         if (refTopRight) {
@@ -317,19 +343,19 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.fillStyle = paperTint;
         ctx.fill();
 
-        // 5.3 Dải sáng 3D uốn cong gân giấy (Specular Crest & Shading)
+        // 5.3 Dải sáng 3D uốn cong gân giấy (Specular Crest & Real Paper Shading)
         const fGrad = ctx.createLinearGradient(mx, my, tx, ty);
-        fGrad.addColorStop(0, 'rgba(205, 200, 190, 0.55)');
-        fGrad.addColorStop(0.22, 'rgba(255, 255, 255, 0.88)');
-        fGrad.addColorStop(0.5, 'rgba(235, 230, 220, 0.25)');
-        fGrad.addColorStop(0.85, 'rgba(190, 182, 170, 0.45)');
-        fGrad.addColorStop(1, 'rgba(120, 115, 100, 0.65)');
+        fGrad.addColorStop(0, 'rgba(215, 210, 200, 0.48)');
+        fGrad.addColorStop(0.20, 'rgba(255, 255, 255, 0.94)'); // gân sáng phản xạ ánh sáng phòng
+        fGrad.addColorStop(0.48, 'rgba(245, 240, 230, 0.28)');
+        fGrad.addColorStop(0.82, 'rgba(195, 188, 175, 0.44)');
+        fGrad.addColorStop(1, 'rgba(110, 105, 92, 0.62)');
         ctx.fillStyle = fGrad;
         ctx.fill();
 
-        // 5.4 Mép giấy sắc nét mảnh
-        ctx.strokeStyle = `rgba(0, 0, 0, ${0.16 * inFactor * outFactor})`;
-        ctx.lineWidth = 1.0;
+        // 5.4 Mép giấy sắc nét mảnh tinh tế
+        ctx.strokeStyle = `rgba(0, 0, 0, ${0.18 * inFactor * outFactor})`;
+        ctx.lineWidth = 0.8;
         ctx.stroke();
 
         ctx.restore();
@@ -401,24 +427,43 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const p1x = foldBottomX, p1y = H;
         const p2x = foldTopX, p2y = 0;
 
-        // Bóng đổ của nếp uốn chiếu sang phải lên Page dưới
-        const sDist = Math.min(48, W * 0.14) * inFactor * outFactor;
-        const sOpacity = 0.55 * inFactor * outFactor;
-
-        if (sDist > 1 && sOpacity > 0.02) {
+        // 2. Bóng đổ nếp uốn kép chiếu sang phải lên Page dưới (Dual Drop Shadows)
+        const sDist1 = Math.min(18, W * 0.05) * inFactor * outFactor;
+        const sOpacity1 = 0.46 * inFactor * outFactor;
+        if (sDist1 > 0.5 && sOpacity1 > 0.01) {
           ctx.save();
           ctx.beginPath();
           ctx.moveTo(p1x, p1y);
           ctx.lineTo(p2x, p2y);
-          ctx.lineTo(p2x + sDist, p2y);
-          ctx.lineTo(p1x + sDist, p1y);
+          ctx.lineTo(p2x + sDist1, p2y);
+          ctx.lineTo(p1x + sDist1, p1y);
           ctx.closePath();
           const midX = (p1x + p2x) / 2;
-          const sGrad = ctx.createLinearGradient(midX, 0, midX + sDist, 0);
-          sGrad.addColorStop(0, `rgba(0, 0, 0, ${sOpacity})`);
-          sGrad.addColorStop(0.38, `rgba(0, 0, 0, ${sOpacity * 0.38})`);
-          sGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          ctx.fillStyle = sGrad;
+          const sGrad1 = ctx.createLinearGradient(midX, 0, midX + sDist1, 0);
+          sGrad1.addColorStop(0, `rgba(0, 0, 0, ${sOpacity1})`);
+          sGrad1.addColorStop(0.38, `rgba(0, 0, 0, ${sOpacity1 * 0.42})`);
+          sGrad1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = sGrad1;
+          ctx.fill();
+          ctx.restore();
+        }
+
+        const sDist2 = Math.min(50, W * 0.15) * inFactor * outFactor;
+        const sOpacity2 = 0.28 * inFactor * outFactor;
+        if (sDist2 > 1 && sOpacity2 > 0.01) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(p1x, p1y);
+          ctx.lineTo(p2x, p2y);
+          ctx.lineTo(p2x + sDist2, p2y);
+          ctx.lineTo(p1x + sDist2, p1y);
+          ctx.closePath();
+          const midX = (p1x + p2x) / 2;
+          const sGrad2 = ctx.createLinearGradient(midX, 0, midX + sDist2, 0);
+          sGrad2.addColorStop(0, `rgba(0, 0, 0, ${sOpacity2})`);
+          sGrad2.addColorStop(0.45, `rgba(0, 0, 0, ${sOpacity2 * 0.32})`);
+          sGrad2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = sGrad2;
           ctx.fill();
           ctx.restore();
         }
@@ -428,7 +473,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           ctx.save();
           ctx.beginPath();
           ctx.moveTo(p1x, p1y);
-          const bow = 14 * inFactor * outFactor;
+          const bow = 16 * inFactor * outFactor;
           ctx.quadraticCurveTo((p1x + tx) / 2 + bow, (p1y + ty) / 2, tx, ty);
           ctx.quadraticCurveTo((tx + p2x) / 2 + bow, (ty + p2y) / 2, p2x, p2y);
           ctx.closePath();
@@ -457,20 +502,20 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           ctx.fillStyle = paperTint;
           ctx.fill();
 
-          // 3.3 Dải sáng 3D uốn cong gân giấy (Specular 3D highlight)
+          // 3.3 Dải sáng 3D uốn cong gân giấy (Specular 3D highlight & Paper Shading)
           const midX = (p1x + p2x) / 2;
           const fGrad = ctx.createLinearGradient(midX, 0, tx, ty);
-          fGrad.addColorStop(0, 'rgba(205, 200, 190, 0.55)');
-          fGrad.addColorStop(0.25, 'rgba(255, 255, 255, 0.88)');
-          fGrad.addColorStop(0.55, 'rgba(235, 230, 220, 0.25)');
-          fGrad.addColorStop(0.85, 'rgba(190, 182, 170, 0.45)');
-          fGrad.addColorStop(1, 'rgba(120, 115, 100, 0.65)');
+          fGrad.addColorStop(0, 'rgba(215, 210, 200, 0.48)');
+          fGrad.addColorStop(0.22, 'rgba(255, 255, 255, 0.94)');
+          fGrad.addColorStop(0.50, 'rgba(245, 240, 230, 0.28)');
+          fGrad.addColorStop(0.82, 'rgba(195, 188, 175, 0.44)');
+          fGrad.addColorStop(1, 'rgba(110, 105, 92, 0.62)');
           ctx.fillStyle = fGrad;
           ctx.fill();
 
-          // 3.4 Viền mép giấy mảnh
-          ctx.strokeStyle = `rgba(0, 0, 0, ${0.16 * inFactor * outFactor})`;
-          ctx.lineWidth = 1.0;
+          // 3.4 Viền mép giấy mảnh tinh tế
+          ctx.strokeStyle = `rgba(0, 0, 0, ${0.18 * inFactor * outFactor})`;
+          ctx.lineWidth = 0.8;
           ctx.stroke();
 
           ctx.restore();
@@ -697,6 +742,10 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     );
 
     // ================= BỘ HOẠT HỌA TIẾP TỤC KHÔNG GIẬT LÙI (SEAMLESS COMPLETION) =================
+    // Hàm hãm tốc vật lý tự nhiên (Natural Deceleration Curves)
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
+
     const animateNextCompletion = useCallback(
       (startProgress: number = 0) => {
         const curIdx = curIndexRef.current;
@@ -706,12 +755,14 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        const dur = Math.max(220, 440 * (1 - startProgress * 0.6));
+        // Giảm tốc độ lật trang thêm 13.6% (tăng duration từ 440ms lên 500ms) cho độ đầm tay tự nhiên
+        const dur = Math.max(250, 500 * (1 - startProgress * 0.6));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const currentP = startProgress + (1 - startProgress) * frac;
+          const easedFrac = easeOutCubic(frac);
+          const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawNextFrame(currentP);
 
@@ -739,12 +790,14 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        const dur = Math.max(160, 300 * startProgress);
+        // Giảm tốc độ rơi về vị trí cũ thêm 15% (345ms)
+        const dur = Math.max(185, 345 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const currentP = startProgress * (1 - frac);
+          const easedFrac = easeOutQuad(frac);
+          const currentP = startProgress * (1 - easedFrac);
 
           drawNextFrame(currentP);
 
@@ -771,12 +824,14 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        const dur = Math.max(220, 440 * (1 - startProgress * 0.6));
+        // Giảm tốc độ lật trang thêm 13.6% (500ms)
+        const dur = Math.max(250, 500 * (1 - startProgress * 0.6));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const currentP = startProgress + (1 - startProgress) * frac;
+          const easedFrac = easeOutCubic(frac);
+          const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawPrevFrame(currentP);
 
@@ -804,12 +859,14 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        const dur = Math.max(160, 300 * startProgress);
+        // Giảm tốc độ rơi về thêm 15% (345ms)
+        const dur = Math.max(185, 345 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const currentP = startProgress * (1 - frac);
+          const easedFrac = easeOutQuad(frac);
+          const currentP = startProgress * (1 - easedFrac);
 
           drawPrevFrame(currentP);
 
@@ -984,6 +1041,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isMounted = false;
         window.removeEventListener('resize', updateCanvasSize);
         if (animReqRef.current) cancelAnimationFrame(animReqRef.current);
+        if (moveRafRef.current) cancelAnimationFrame(moveRafRef.current);
       };
     }, [pageImages, readingMode, drawStaticPage]);
 
@@ -1038,11 +1096,27 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       };
     }, [zoomScale]);
 
-    // ================= XỬ LÝ CỬ CHỈ CHẠM VUỐT CHUẨN XÁC VÀ NHẠY BÉN =================
+    // ================= XỬ LÝ CỬ CHỈ CHẠM VUỐT CHUẨN XÁC, KHÔNG KHỰNG (SOFT-START ENGINE) =================
+    const GESTURE_THRESHOLD = 5; // Ngưỡng nhận diện cử chỉ nhạy bén (5px)
+
+    // Hàm khử khựng ban đầu: Triệt tiêu bước nhảy bậc tức thì khi vừa chạm kéo
+    const computeSmoothProgress = (rawDelta: number, maxW: number) => {
+      const rawDist = Math.max(0, rawDelta);
+      if (rawDist <= GESTURE_THRESHOLD) return 0;
+      const effective = rawDist - GESTURE_THRESHOLD;
+      // Damping mềm mại trong 28px đầu tiên theo đường cong lũy thừa mượt mà (Soft Entry Damping)
+      const ramp = effective < 28 ? Math.pow(effective / 28, 1.4) * effective : effective;
+      return Math.min(0.9, ramp / (maxW * 0.85));
+    };
+
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (isAnimatingRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
+
+      try {
+        (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      } catch (_) {}
 
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -1099,30 +1173,64 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       const dx = x - state.startX;
       const dy = y - state.startY;
 
-      // Xác định cử chỉ di chuyển
-      if (!state.hasMoved && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      // Xác định cử chỉ di chuyển với ngưỡng mềm 5px
+      if (!state.hasMoved && (Math.abs(dx) > GESTURE_THRESHOLD || Math.abs(dy) > GESTURE_THRESHOLD)) {
         state.hasMoved = true;
-        if (dx < -8 && curIdx < totalPages - 1) {
+        if (dx < -GESTURE_THRESHOLD && curIdx < totalPages - 1) {
           state.mode = 'drag_next';
-        } else if (dx > 8 && curIdx > 0) {
+        } else if (dx > GESTURE_THRESHOLD && curIdx > 0) {
           state.mode = 'drag_prev';
         }
       }
 
+      // Xử lý kéo với hàm làm mịn gia tốc Soft-Start
       if (state.mode === 'drag_next') {
-        const dragDist = Math.max(0, state.startX - x);
-        const progress = Math.min(0.9, dragDist / (W * 0.85));
+        const progress = computeSmoothProgress(state.startX - x, W);
         currentProgressRef.current = progress;
-        drawNextFrame(progress);
+        pendingFrameRef.current = { mode: 'next', progress };
+
+        if (!moveRafRef.current) {
+          moveRafRef.current = requestAnimationFrame(() => {
+            moveRafRef.current = null;
+            if (pendingFrameRef.current) {
+              if (pendingFrameRef.current.mode === 'next') {
+                drawNextFrame(pendingFrameRef.current.progress);
+              } else {
+                drawPrevFrame(pendingFrameRef.current.progress);
+              }
+            }
+          });
+        }
       } else if (state.mode === 'drag_prev') {
-        const dragDist = Math.max(0, x - state.startX);
-        const progress = Math.min(0.9, dragDist / (W * 0.85));
+        const progress = computeSmoothProgress(x - state.startX, W);
         currentProgressRef.current = progress;
-        drawPrevFrame(progress);
+        pendingFrameRef.current = { mode: 'prev', progress };
+
+        if (!moveRafRef.current) {
+          moveRafRef.current = requestAnimationFrame(() => {
+            moveRafRef.current = null;
+            if (pendingFrameRef.current) {
+              if (pendingFrameRef.current.mode === 'next') {
+                drawNextFrame(pendingFrameRef.current.progress);
+              } else {
+                drawPrevFrame(pendingFrameRef.current.progress);
+              }
+            }
+          });
+        }
       }
     };
 
     const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+      try {
+        (e.currentTarget as HTMLElement)?.releasePointerCapture?.(e.pointerId);
+      } catch (_) {}
+
+      if (moveRafRef.current) {
+        cancelAnimationFrame(moveRafRef.current);
+        moveRafRef.current = null;
+      }
+
       const state = pointerStateRef.current;
       if (!state.isDown) return;
       state.isDown = false;
