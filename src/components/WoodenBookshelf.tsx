@@ -17,6 +17,7 @@ import {
   Settings,
   Plus,
   LogOut,
+  AlertTriangle,
   Sparkles,
   Bell,
   Smartphone,
@@ -113,6 +114,27 @@ export default function WoodenBookshelf({
   const [isBookshelfFullscreen, setIsBookshelfFullscreen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const touchStartDistRef = React.useRef<number | null>(null);
+
+  // Trạng thái hiển thị Cảnh báo khi người dùng muốn thoát ra khỏi hẳn phần mềm
+  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [exitNotice, setExitNotice] = useState<string | null>(null);
+
+  const handleConfirmExit = () => {
+    setShowExitConfirm(false);
+    setExitNotice('Đã lưu tiến độ đọc an toàn! Bạn có thể đóng tab hoặc vuốt thoát ứng dụng.');
+    try {
+      window.close();
+    } catch {}
+    setTimeout(() => {
+      try {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = 'about:blank';
+        }
+      } catch {}
+    }, 1500);
+  };
 
   const handleToggleShowTitles = () => {
     setShowBookTitles((prev) => {
@@ -353,6 +375,36 @@ export default function WoodenBookshelf({
     };
   }, []);
 
+  // Lắng nghe phím Back của điện thoại khi ở Kệ Sách: Cảnh báo khi người dùng muốn thoát hẳn phần mềm
+  useEffect(() => {
+    try {
+      window.history.pushState({ screen: 'bookshelf_home' }, '');
+    } catch {}
+
+    const handlePopState = () => {
+      // Nếu có bất kỳ modal đọc sách, xem chi tiết, cài đặt nào đang mở thì nhường modal đó xử lý
+      const hasOtherModal = Boolean(
+        document.querySelector('[role="dialog"]') ||
+        window.location.hash.includes('doc-sach') ||
+        window.location.hash.includes('chi-tiet')
+      );
+      if (hasOtherModal) return;
+
+      // Đang ở Kệ Sách chính mà bấm Back -> Kích hoạt Hộp thoại Cảnh báo thoát hẳn phần mềm
+      setShowExitConfirm(true);
+
+      // Đẩy lại state để người dùng không bị văng ngay ra khỏi app
+      try {
+        window.history.pushState({ screen: 'bookshelf_home' }, '');
+      } catch {}
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   const handleSaveName = (newName: string) => {
     const val = newName.trim() || 'bạn';
     setUserName(val);
@@ -573,6 +625,17 @@ export default function WoodenBookshelf({
               {isAdmin && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-black" />
               )}
+            </button>
+
+            {/* Nút Cảnh Báo Thoát Khỏi Hẳn Phần Mềm */}
+            <button
+              type="button"
+              onClick={() => setShowExitConfirm(true)}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-red-500/20 hover:bg-red-500/35 border border-red-500/40 text-red-300 hover:text-red-100 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Thoát khỏi phần mềm (Cảnh báo xác nhận)"
+              aria-label="Thoát phần mềm"
+            >
+              <LogOut size={14} strokeWidth={2.4} />
             </button>
           </div>
         </div>
@@ -1362,8 +1425,102 @@ export default function WoodenBookshelf({
                   <span className="text-[11px] text-amber-400 font-bold">Khóa</span>
                 </Link>
               )}
+
+              {/* NÚT THOÁT PHẦN MỀM CÓ CẢNH BÁO (TRONG MENU CÀI ĐẶT) */}
+              <div className="h-px bg-white/10 my-0.5" />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsMenu(false);
+                  setShowExitConfirm(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-200 transition-all cursor-pointer whitespace-nowrap active:scale-98"
+              >
+                <div className="flex items-center gap-2">
+                  <LogOut size={16} className="text-red-400" />
+                  <span className="font-bold text-red-200">Thoát phần mềm</span>
+                </div>
+                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
+                  Cảnh báo
+                </span>
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* MODAL CẢNH BÁO KHI NGƯỜI DÙNG THOÁT RA KHỎI HẲN PHẦN MỀM */}
+      {showExitConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowExitConfirm(false)}
+        >
+          <div
+            className="w-full max-w-[330px] rounded-2xl bg-gradient-to-b from-[#25170e] via-[#1f130b] to-[#140b06] border border-amber-600/40 p-5 text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon cảnh báo hình tam giác phát sáng */}
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500/25 to-red-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg shadow-amber-900/30">
+              <AlertTriangle size={26} strokeWidth={2.4} className="text-amber-400 animate-pulse" />
+            </div>
+
+            {/* Tiêu đề Cảnh báo */}
+            <div className="flex flex-col gap-1">
+              <h3 className="text-[15px] font-black tracking-wide text-amber-100 uppercase">
+                Xác nhận thoát phần mềm
+              </h3>
+              <p className="text-[12px] text-amber-200/85 leading-relaxed px-1">
+                Bạn có chắc chắn muốn thoát khỏi ứng dụng đọc sách không?
+              </p>
+            </div>
+
+            {/* Khối thông báo an toàn dữ liệu */}
+            <div className="w-full p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-300/90 font-medium">
+              <CheckCircle2 size={13} className="shrink-0 text-emerald-400" />
+              <span>Tiến độ đọc đã được lưu an toàn</span>
+            </div>
+
+            {/* 2 nút hành động chuẩn Mobile */}
+            <div className="w-full flex flex-col gap-2 pt-1">
+              {/* Nút 1: Ở lại đọc sách */}
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(false)}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
+              >
+                Ở lại đọc sách
+              </button>
+
+              {/* Nút 2: Thoát hẳn phần mềm */}
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                className="w-full py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 hover:text-red-200 font-bold text-xs transition-all cursor-pointer active:scale-95"
+              >
+                Thoát phần mềm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MÀN HÌNH TẠM BIỆT KHI ĐÃ XÁC NHẬN THOÁT */}
+      {exitNotice && (
+        <div className="fixed inset-0 z-[120] bg-black/95 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+          <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4 border border-amber-500/40">
+            <CheckCircle2 size={28} />
+          </div>
+          <h3 className="text-lg font-black text-amber-200 mb-2">Tạm biệt bạn!</h3>
+          <p className="text-xs text-amber-100/80 max-w-xs leading-relaxed">{exitNotice}</p>
+          <button
+            type="button"
+            onClick={() => setExitNotice(null)}
+            className="mt-6 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-amber-300 font-bold cursor-pointer"
+          >
+            Mở lại Kệ Sách
+          </button>
         </div>
       )}
 
