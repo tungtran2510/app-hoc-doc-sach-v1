@@ -57,6 +57,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
     const [isReady, setIsReady] = useState<boolean>(false);
     const [currentPage, setCurrentPage] = useState<number>(initialPage);
@@ -125,31 +126,29 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       ctx.fillRect(0, 0, gW, H);
     }, []);
 
-    // Hàm vẽ trang tĩnh hoàn chỉnh
+    // Hàm vẽ trang tĩnh hoàn chỉnh (Zero-Flickering: Tuyệt đối không dùng clearRect)
     const drawStaticPage = useCallback(
       (idx: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = ctxRef.current || canvasRef.current?.getContext('2d');
         if (!ctx) return;
 
         const { width: W, height: H } = bookSizeRef.current;
-        ctx.clearRect(0, 0, W, H);
+        const paperTint =
+          readingTheme === 'sepia'
+            ? '#F4ECD8'
+            : readingTheme === 'dark'
+            ? '#141416'
+            : '#FAF8F3';
+
+        // 1. Phủ kín 100% canvas bằng màu giấy ngà/tối bảo vệ, triệt tiêu hoàn toàn nháy đen/trắng
+        ctx.fillStyle = paperTint;
+        ctx.fillRect(0, 0, W, H);
 
         const img = imagesRef.current[idx];
         if (img && img.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, 0, 0, W, H);
           drawSpineGutter(ctx, W, H);
         } else {
-          // Nền giấy màu kem trang nhã theo theme nếu ảnh đang nạp
-          const paperTint =
-            readingTheme === 'sepia'
-              ? '#F4ECD8'
-              : readingTheme === 'dark'
-              ? '#1E232D'
-              : '#FAF8F3';
-          ctx.fillStyle = paperTint;
-          ctx.fillRect(0, 0, W, H);
           drawSpineGutter(ctx, W, H);
         }
       },
@@ -160,9 +159,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     // Lật tiếp (NEXT): Góc dưới bên phải uốn cong hình nón, phản chiếu mặt sau trang sách
     const drawCurlNextFrame = useCallback(
       (progress: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = ctxRef.current || canvasRef.current?.getContext('2d');
         if (!ctx) return;
 
         const { width: W, height: H } = bookSizeRef.current;
@@ -183,7 +180,6 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
         if (p >= 0.999) {
-          ctx.clearRect(0, 0, W, H);
           ctx.fillStyle = paperTint;
           ctx.fillRect(0, 0, W, H);
           if (imgBottom && imgBottom.complete && imgBottom.naturalWidth > 0) {
@@ -193,8 +189,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        // 1. Vẽ trang phẳng bên dưới (Page N+1) với nền giấy bảo vệ chống nháy
-        ctx.clearRect(0, 0, W, H);
+        // 1. Vẽ trang phẳng bên dưới (Page N+1) với nền giấy bảo vệ chống nháy (Zero clearRect)
         ctx.fillStyle = paperTint;
         ctx.fillRect(0, 0, W, H);
         if (imgBottom && imgBottom.complete && imgBottom.naturalWidth > 0) {
@@ -396,9 +391,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     // Lật lùi (PREV): Uốn cong góc 3D hình nón từ gáy sang phải (chuẩn SideBooks)
     const drawCurlPrevFrame = useCallback(
       (progress: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = ctxRef.current || canvasRef.current?.getContext('2d');
         if (!ctx) return;
 
         const { width: W, height: H } = bookSizeRef.current;
@@ -419,7 +412,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        ctx.clearRect(0, 0, W, H);
+        // Đè nền giấy bảo vệ trực tiếp, khử chớp nháy hoàn toàn
         ctx.fillStyle = paperTint;
         ctx.fillRect(0, 0, W, H);
         if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
@@ -571,9 +564,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     // ================= 2. BỘ DỰNG CHẾ ĐỘ ROLL 3D (VUỐT CUỘN 3D RIÊNG BIỆT) =================
     const drawRollNextFrame = useCallback(
       (progress: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = ctxRef.current || canvasRef.current?.getContext('2d');
         if (!ctx) return;
 
         const { width: W, height: H } = bookSizeRef.current;
@@ -594,7 +585,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        ctx.clearRect(0, 0, W, H);
+        // Đè nền giấy bảo vệ trực tiếp, khử chớp nháy hoàn toàn
         ctx.fillStyle = paperTint;
         ctx.fillRect(0, 0, W, H);
         if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
@@ -677,9 +668,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
 
     const drawRollPrevFrame = useCallback(
       (progress: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = ctxRef.current || canvasRef.current?.getContext('2d');
         if (!ctx) return;
 
         const { width: W, height: H } = bookSizeRef.current;
@@ -700,7 +689,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        ctx.clearRect(0, 0, W, H);
+        // Đè nền giấy bảo vệ trực tiếp, khử chớp nháy hoàn toàn
         ctx.fillStyle = paperTint;
         ctx.fillRect(0, 0, W, H);
         if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
@@ -811,8 +800,9 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     );
 
     // ================= BỘ HOẠT HỌA TIẾP TỤC KHÔNG GIẬT LÙI (SEAMLESS COMPLETION) =================
-    // Hàm hãm tốc vật lý tự nhiên (Natural Deceleration Curves)
-    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    // Hàm hãm tốc vật lý tự nhiên chuẩn Apple Books (Quintic Deceleration Curve)
+    // Đường cong bậc 5: Bay đầm tay ở giữa và hạ cánh cực kỳ êm ái, tiếp đất nhẹ nhàng không bị phanh gấp
+    const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
     const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
     const animateNextCompletion = useCallback(
@@ -824,13 +814,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Giảm tốc độ lật trang thêm 20% (tăng duration lên 620ms) cho độ đầm tay tự nhiên như sách thật
-        const dur = Math.max(340, 620 * (1 - startProgress * 0.55));
+        // Tối ưu tốc độ mở trang đầm tay hơn thêm ~20% (740ms) cho cảm giác lật giấy thật quý phái
+        const dur = Math.max(380, 740 * (1 - startProgress * 0.55));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const easedFrac = easeOutCubic(frac);
+          const easedFrac = easeOutQuint(frac);
           const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawNextFrame(currentP);
@@ -859,8 +849,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Giảm tốc độ rơi về vị trí cũ thêm 20% (420ms)
-        const dur = Math.max(220, 420 * startProgress);
+        // Tốc độ rơi về vị trí cũ mềm mại (480ms)
+        const dur = Math.max(260, 480 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -893,13 +883,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Giảm tốc độ lật trang thêm 20% (620ms)
-        const dur = Math.max(340, 620 * (1 - startProgress * 0.55));
+        // Tối ưu tốc độ mở trang đầm tay hơn thêm ~20% (740ms)
+        const dur = Math.max(380, 740 * (1 - startProgress * 0.55));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const easedFrac = easeOutCubic(frac);
+          const easedFrac = easeOutQuint(frac);
           const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawPrevFrame(currentP);
@@ -928,8 +918,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Giảm tốc độ rơi về thêm 20% (420ms)
-        const dur = Math.max(220, 420 * startProgress);
+        // Tốc độ rơi về êm dịu (480ms)
+        const dur = Math.max(260, 480 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -1068,10 +1058,15 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         canvas.style.width = `${bW}px`;
         canvas.style.height = `${bH}px`;
 
-        const ctx = canvas.getContext('2d');
+        const ctx =
+          (canvas.getContext('2d', { alpha: false, desynchronized: true } as any) ||
+            canvas.getContext('2d')) as CanvasRenderingContext2D | null;
         if (ctx) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.scale(dpr, dpr);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctxRef.current = ctx;
         }
 
         drawStaticPage(curIndexRef.current);
@@ -1198,14 +1193,14 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     // ================= XỬ LÝ CỬ CHỈ CHẠM VUỐT CHUẨN XÁC, KHÔNG KHỰNG (SOFT-START ENGINE) =================
     const GESTURE_THRESHOLD = 5; // Ngưỡng nhận diện cử chỉ nhạy bén (5px)
 
-    // Hàm khử khựng ban đầu: Triệt tiêu bước nhảy bậc tức thì khi vừa chạm kéo
+    // Hàm khử khựng ban đầu: Triệt tiêu bước nhảy bậc tức thì khi vừa chạm kéo (Zero-Deadzone Soft Entry)
     const computeSmoothProgress = (rawDelta: number, maxW: number) => {
       const rawDist = Math.max(0, rawDelta);
       if (rawDist <= GESTURE_THRESHOLD) return 0;
       const effective = rawDist - GESTURE_THRESHOLD;
-      // Damping mềm mại trong 28px đầu tiên theo đường cong lũy thừa mượt mà (Soft Entry Damping)
-      const ramp = effective < 28 ? Math.pow(effective / 28, 1.4) * effective : effective;
-      return Math.min(0.9, ramp / (maxW * 0.85));
+      // Damping mềm mại trong 24px đầu tiên theo đường cong lũy thừa mượt mà (Soft Entry Damping)
+      const ramp = effective < 24 ? Math.pow(effective / 24, 1.35) * effective : effective;
+      return Math.min(1.0, ramp / (maxW * 0.88));
     };
 
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {

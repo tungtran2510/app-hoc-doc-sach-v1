@@ -258,7 +258,9 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
 
         ctx.save();
         ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, W, H);
+        // Zero clearRect: Phủ màu giấy đầm dịu khử hoàn toàn nháy đen/trắng
+        ctx.fillStyle = '#FAF8F5';
+        ctx.fillRect(0, 0, W, H);
 
         const fromImg = getImage(fromIdx);
         const toImg = getImage(toIdx);
@@ -561,6 +563,7 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
 
     // =========================================================================
     // HOẠT ẢNH HOÀN TẤT LẬT TRANG (ANIMATE TO TARGET PAGE)
+    // Tự nhiên, đầm tay chuẩn Apple Books (Quintic Deceleration Curve)
     // =========================================================================
     const animateToTarget = useCallback(
       (
@@ -568,7 +571,7 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
         fromIdx: number,
         toIdx: number,
         startProgress: number,
-        duration: number = 400
+        duration: number = 720
       ) => {
         const state = stateRef.current;
         if (state.animId) cancelAnimationFrame(state.animId);
@@ -584,8 +587,8 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
         const tick = (now: number) => {
           const elapsed = now - startTime;
           const t = Math.min(1, elapsed / duration);
-          // Easing function: Ease-out cubic mượt mà
-          const eased = startProgress + (1 - startProgress) * (1 - Math.pow(1 - t, 3));
+          // Easing function: Quintic bậc 5 mềm mại, tiếp đất êm ái
+          const eased = startProgress + (1 - startProgress) * (1 - Math.pow(1 - t, 5));
           state.progress = eased;
 
           renderCurl(fromIdx, toIdx, direction, eased);
@@ -616,7 +619,7 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
         fromIdx: number,
         toIdx: number,
         startProgress: number,
-        duration: number = 200
+        duration: number = 360
       ) => {
         const state = stateRef.current;
         if (state.animId) cancelAnimationFrame(state.animId);
@@ -658,18 +661,18 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
       () => ({
         flipNext: () => {
           if (currentPage >= totalPages) return;
-          animateToTarget('next', currentPage - 1, currentPage, 0, 450);
+          animateToTarget('next', currentPage - 1, currentPage, 0, 720);
         },
         flipPrev: () => {
           if (currentPage <= 1) return;
-          animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 450);
+          animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 720);
         },
         turnToPage: (targetIdx: number) => {
           if (targetIdx === currentPage - 1) return;
           if (targetIdx > currentPage - 1) {
-            animateToTarget('next', currentPage - 1, targetIdx, 0, 450);
+            animateToTarget('next', currentPage - 1, targetIdx, 0, 720);
           } else {
-            animateToTarget('prev', currentPage - 1, targetIdx, 0, 450);
+            animateToTarget('prev', currentPage - 1, targetIdx, 0, 720);
           }
         },
       }),
@@ -902,13 +905,13 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
         if (x < leftZone) {
           // Chạm mép trái -> Lật về trang trước
           if (currentPage > 1) {
-            animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 320);
+            animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 680);
           }
           return;
         } else if (x > rightZone) {
           // Chạm mép phải -> Lật sang trang tiếp
           if (currentPage < totalPages) {
-            animateToTarget('next', currentPage - 1, currentPage, 0, 320);
+            animateToTarget('next', currentPage - 1, currentPage, 0, 680);
           }
           return;
         } else {
@@ -928,18 +931,18 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
           // 1. Vuốt búng nhanh sang trái (v < -0.28 px/ms) HOẶC
           // 2. Kéo chậm đã qua 16% chiều rộng trang (p > 0.16)
           if ((v < -0.28 || p > 0.16) && currentPage < totalPages) {
-            animateToTarget('next', state.fromIdx, state.toIdx, p, 380);
+            animateToTarget('next', state.fromIdx, state.toIdx, p, Math.max(380, 720 * (1 - p * 0.5)));
           } else {
-            animateCancel('next', state.fromIdx, state.toIdx, p, 230);
+            animateCancel('next', state.fromIdx, state.toIdx, p, 360);
           }
         } else if (state.direction === 'prev') {
           // Điều kiện lật ngược về trang trước:
           // 1. Vuốt búng nhanh sang phải (v > 0.28 px/ms) HOẶC
           // 2. Kéo chậm đã qua 16% chiều rộng trang (p > 0.16)
           if ((v > 0.28 || p > 0.16) && currentPage > 1) {
-            animateToTarget('prev', state.fromIdx, state.toIdx, p, 380);
+            animateToTarget('prev', state.fromIdx, state.toIdx, p, Math.max(380, 720 * (1 - p * 0.5)));
           } else {
-            animateCancel('prev', state.fromIdx, state.toIdx, p, 230);
+            animateCancel('prev', state.fromIdx, state.toIdx, p, 360);
           }
         }
       }
