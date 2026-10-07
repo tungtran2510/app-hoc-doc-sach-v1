@@ -196,10 +196,9 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           ctx.drawImage(imgBottom, 0, 0, W, H);
         }
 
-        // 2. Tính toán tọa độ góc uốn hình nón (Conical Corner Coordinates)
-        const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-        const tx = W - ease * W * 1.88;
-        const ty = H - Math.sin(ease * Math.PI) * H * 0.36;
+        // 2. Tính toán tọa độ góc uốn hình nón trực tiếp 1:1 theo cử chỉ & hãm tốc vật lý
+        const tx = W - p * W * 1.88;
+        const ty = H - Math.sin(p * Math.PI) * H * 0.36;
 
         const cx = W, cy = H;
         const mx = (cx + tx) / 2;
@@ -430,9 +429,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-        const foldTopX = ease * W * 1.08;
-        const foldBottomX = ease * W * 0.92;
+        const foldTopX = p * W * 1.08;
+        const foldBottomX = p * W * 0.92;
 
         // 1. Vẽ phần phẳng của Page 1 (ở bên trái nếp gấp)
         ctx.save();
@@ -457,7 +455,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         // 2. Vạt lật cuốn 3D (Curled Flap) hướng sang phải
         const flapWidth = Math.min(65, W * 0.22) * inFactor * outFactor;
         const tx = foldBottomX + flapWidth * 1.35;
-        const ty = H - Math.sin(ease * Math.PI) * H * 0.28;
+        const ty = H - Math.sin(p * Math.PI) * H * 0.28;
 
         const p1x = foldBottomX, p1y = H;
         const p2x = foldTopX, p2y = 0;
@@ -597,9 +595,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-        const foldTopX = (1 - ease) * W * 1.08;
-        const foldBottomX = (1 - ease) * W * 0.94 - ease * W * 0.12;
+        const foldTopX = (1 - p) * W * 1.08;
+        const foldBottomX = (1 - p) * W * 0.94 - p * W * 0.12;
 
         ctx.save();
         ctx.beginPath();
@@ -707,9 +704,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           return;
         }
 
-        const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-        const foldTopX = ease * W * 1.08;
-        const foldBottomX = ease * W * 0.94;
+        const foldTopX = p * W * 1.08;
+        const foldBottomX = p * W * 0.94;
 
         ctx.save();
         ctx.beginPath();
@@ -801,8 +797,10 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
 
     // ================= BỘ HOẠT HỌA TIẾP TỤC KHÔNG GIẬT LÙI (SEAMLESS COMPLETION) =================
     // Hàm hãm tốc vật lý tự nhiên chuẩn Apple Books (Quintic Deceleration Curve)
-    // Đường cong bậc 5: Bay đầm tay ở giữa và hạ cánh cực kỳ êm ái, tiếp đất nhẹ nhàng không bị phanh gấp
-    const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
+    // ================= BỘ HOẠT HỌA TIẾP TỤC VẬT LÝ SIÊU MƯỢT (SILKY 60FPS COMPLETION) =================
+    // Hàm hãm tốc vật lý tự nhiên chuẩn Apple Books / Kindle (Cubic Deceleration Curve)
+    // Deceleration mượt mà liên tục, không nhảy giật khung hình điện ảnh, tiếp đất êm ái
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
     const easeOutQuad = (t: number) => 1 - (1 - t) * (1 - t);
 
     const animateNextCompletion = useCallback(
@@ -814,13 +812,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Tối ưu tốc độ mở trang đầm tay hơn thêm ~20% (740ms) cho cảm giác lật giấy thật quý phái
-        const dur = Math.max(380, 740 * (1 - startProgress * 0.55));
+        // Thời lượng chuyển động chuẩn quốc tế (320ms) - lướt bay êm, không ì ạch, không giật khung hình
+        const dur = Math.max(180, 320 * (1 - startProgress * 0.65));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const easedFrac = easeOutQuint(frac);
+          const easedFrac = easeOutCubic(frac);
           const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawNextFrame(currentP);
@@ -849,8 +847,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Tốc độ rơi về vị trí cũ mềm mại (480ms)
-        const dur = Math.max(260, 480 * startProgress);
+        // Trở về vị trí cũ nhanh gọn (220ms)
+        const dur = Math.max(140, 220 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -883,13 +881,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Tối ưu tốc độ mở trang đầm tay hơn thêm ~20% (740ms)
-        const dur = Math.max(380, 740 * (1 - startProgress * 0.55));
+        // Thời lượng lật trang trước êm ái (320ms)
+        const dur = Math.max(180, 320 * (1 - startProgress * 0.65));
 
         function step(now: number) {
           const elapsed = now - startTime;
           const frac = Math.min(1, elapsed / dur);
-          const easedFrac = easeOutQuint(frac);
+          const easedFrac = easeOutCubic(frac);
           const currentP = startProgress + (1 - startProgress) * easedFrac;
 
           drawPrevFrame(currentP);
@@ -918,8 +916,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Tốc độ rơi về êm dịu (480ms)
-        const dur = Math.max(260, 480 * startProgress);
+        // Trở về vị trí cũ nhanh gọn (220ms)
+        const dur = Math.max(140, 220 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -1059,7 +1057,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         canvas.style.height = `${bH}px`;
 
         const ctx =
-          (canvas.getContext('2d', { alpha: false, desynchronized: true } as any) ||
+          (canvas.getContext('2d', { alpha: false } as any) ||
             canvas.getContext('2d')) as CanvasRenderingContext2D | null;
         if (ctx) {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1194,13 +1192,12 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     const GESTURE_THRESHOLD = 5; // Ngưỡng nhận diện cử chỉ nhạy bén (5px)
 
     // Hàm khử khựng ban đầu: Triệt tiêu bước nhảy bậc tức thì khi vừa chạm kéo (Zero-Deadzone Soft Entry)
+    // Triệt tiêu bước nhảy: bám ngón tay 1:1 mượt mà (Linear Physical Finger Tracking)
     const computeSmoothProgress = (rawDelta: number, maxW: number) => {
       const rawDist = Math.max(0, rawDelta);
       if (rawDist <= GESTURE_THRESHOLD) return 0;
       const effective = rawDist - GESTURE_THRESHOLD;
-      // Damping mềm mại trong 24px đầu tiên theo đường cong lũy thừa mượt mà (Soft Entry Damping)
-      const ramp = effective < 24 ? Math.pow(effective / 24, 1.35) * effective : effective;
-      return Math.min(1.0, ramp / (maxW * 0.88));
+      return Math.min(1.0, effective / (maxW * 0.78));
     };
 
     const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1267,19 +1264,32 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       const dx = x - state.startX;
       const dy = y - state.startY;
 
-      // Xác định cử chỉ di chuyển với ngưỡng mềm 5px
-      if (!state.hasMoved && (Math.abs(dx) > GESTURE_THRESHOLD || Math.abs(dy) > GESTURE_THRESHOLD)) {
-        state.hasMoved = true;
-        if (dx < -GESTURE_THRESHOLD && curIdx < totalPages - 1) {
-          state.mode = 'drag_next';
-        } else if (dx > GESTURE_THRESHOLD && curIdx > 0) {
-          state.mode = 'drag_prev';
+      // Nhận diện cử chỉ: Hỗ trợ cả vuốt ngang (trái/phải) và vuốt dọc (lên/xuống)
+      if (!state.hasMoved) {
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+        if (absX > GESTURE_THRESHOLD && absX >= absY * 0.75) {
+          state.hasMoved = true;
+          if (dx < -GESTURE_THRESHOLD && curIdx < totalPages - 1) {
+            state.mode = 'drag_next';
+          } else if (dx > GESTURE_THRESHOLD && curIdx > 0) {
+            state.mode = 'drag_prev';
+          }
+        } else if (absY > GESTURE_THRESHOLD * 2 && absY > absX * 1.25) {
+          // Vuốt dọc tự nhiên: Vuốt lên (dy âm) mở trang kế, Vuốt xuống (dy dương) lùi trang trước
+          state.hasMoved = true;
+          if (dy < -GESTURE_THRESHOLD * 2 && curIdx < totalPages - 1) {
+            state.mode = 'drag_next';
+          } else if (dy > GESTURE_THRESHOLD * 2 && curIdx > 0) {
+            state.mode = 'drag_prev';
+          }
         }
       }
 
-      // Xử lý kéo với hàm làm mịn gia tốc Soft-Start
+      // Xử lý kéo bám ngón tay 1:1 siêu nhạy
       if (state.mode === 'drag_next') {
-        const progress = computeSmoothProgress(state.startX - x, W);
+        const rawDist = Math.abs(dx) >= Math.abs(dy) ? (state.startX - x) : (state.startY - y);
+        const progress = computeSmoothProgress(rawDist, W);
         currentProgressRef.current = progress;
         pendingFrameRef.current = { mode: 'next', progress };
 
@@ -1296,7 +1306,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           });
         }
       } else if (state.mode === 'drag_prev') {
-        const progress = computeSmoothProgress(x - state.startX, W);
+        const rawDist = Math.abs(dx) >= Math.abs(dy) ? (x - state.startX) : (y - state.startY);
+        const progress = computeSmoothProgress(rawDist, W);
         currentProgressRef.current = progress;
         pendingFrameRef.current = { mode: 'prev', progress };
 
@@ -1379,15 +1390,16 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       const mode = state.mode;
       state.mode = null;
       const prog = currentProgressRef.current;
+      const distDelta = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
 
       if (mode === 'drag_next') {
-        if (prog > 0.22 || dx < -35 || (dx < -15 && elapsed < 300)) {
+        if (prog > 0.18 || distDelta < -28 || (distDelta < -12 && elapsed < 320)) {
           animateNextCompletion(prog);
         } else {
           animateNextCancel(prog);
         }
       } else if (mode === 'drag_prev') {
-        if (prog > 0.22 || dx > 35 || (dx > 15 && elapsed < 300)) {
+        if (prog > 0.18 || distDelta > 28 || (distDelta > 12 && elapsed < 320)) {
           animatePrevCompletion(prog);
         } else {
           animatePrevCancel(prog);
@@ -1449,7 +1461,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ) : (
           <div
             className="w-full h-full overflow-y-auto overscroll-contain px-2 sm:px-4 py-4 flex flex-col items-center gap-6"
-            style={{ touchAction: 'pan-y' }}
+            style={{
+              touchAction: 'pan-y',
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'auto',
+              overscrollBehaviorY: 'contain',
+              willChange: 'scroll-position',
+            }}
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 onCenterClickRef.current?.();
@@ -1460,7 +1478,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
               <div
                 key={idx}
                 onClick={() => onCenterClickRef.current?.()}
-                className={`max-w-[520px] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full shrink-0 rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.65)] border transition-all cursor-pointer ${
+                className={`max-w-[520px] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full shrink-0 rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.65)] border cursor-pointer ${
                   readingTheme === 'sepia'
                     ? 'bg-[#2b241c] border-amber-900/50 text-[#f4ecd8]'
                     : readingTheme === 'ivory'

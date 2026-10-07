@@ -561,9 +561,6 @@ export default function WoodenBookshelf({
 
   return (
     <div
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       className="relative w-full min-h-[calc(100dvh-5.5rem)] flex flex-col justify-start rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF5EE] via-[#F3EADB] to-[#E8DBCA] dark:from-[#24170d] dark:via-[#1c1109] dark:to-[#110803] px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-8 sm:py-6 border-x-0 border-t-0 sm:border border-[#d8c5aa] dark:border-[#3d2817] shadow-[0_10px_30px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] text-[#29180c] dark:text-[#fdf7ee] select-none transition-colors duration-200"
     >
       {/* Toast thông báo thay đổi kích cỡ sách khi vuốt / bấm */}

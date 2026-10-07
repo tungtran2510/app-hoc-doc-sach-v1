@@ -463,11 +463,12 @@ export default function EpubReaderView({
             onCenterClick?.();
           }
         }}
-        className="flex-1 overflow-y-auto px-4 sm:px-12 md:px-20 lg:px-32 py-6 sm:py-10 max-w-4xl mx-auto w-full scroll-smooth"
+        className="flex-1 overflow-y-auto px-4 sm:px-12 md:px-20 lg:px-32 py-6 sm:py-10 max-w-4xl mx-auto w-full"
+        style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'auto', overscrollBehaviorY: 'contain' }}
       >
         {currentChapter ? (
           <article
-            className={`prose prose-base sm:prose-lg max-w-none leading-relaxed transition-all ${getFontFamilyClass(
+            className={`prose prose-base sm:prose-lg max-w-none leading-relaxed ${getFontFamilyClass(
               activeTypography.fontFamily
             )}`}
             style={{
