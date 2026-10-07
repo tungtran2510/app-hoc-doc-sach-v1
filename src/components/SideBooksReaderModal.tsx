@@ -701,12 +701,12 @@ export default function SideBooksReaderModal({
             : 'bg-black/90 text-slate-100 border-b border-white/10 shadow-xl'
         }`}
       >
-        {/* Bên trái: Nút Đóng / Thoát về kệ sách */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Bên trái: Nút Đóng / Thoát về kệ sách - Ưu tiên vị trí z-30 không bao giờ bị đè */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-30">
           <button
             type="button"
             onClick={handleExitBook}
-            className="h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-amber-300 hover:text-white flex items-center gap-1 text-[12px] font-bold cursor-pointer"
+            className="h-8 px-2 sm:px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white flex items-center gap-1 text-[12px] font-bold cursor-pointer transition-all border border-amber-500/30 active:scale-95 shadow-xs"
             title="Đóng sách & Về kệ"
             aria-label="Thoát về kệ sách"
           >
@@ -717,18 +717,18 @@ export default function SideBooksReaderModal({
 
         {/* Ở giữa: Tiêu đề cuốn sách & Chế độ lật trang (CURL, ROLL, SCROLL) */}
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-center">
-          <div className="text-center min-w-0 hidden md:block max-w-[280px]">
-            <h1 className="text-[13px] font-black truncate text-amber-100 leading-tight">
+          <div className="text-center min-w-0 max-w-[180px] sm:max-w-[280px]">
+            <h1 className="text-[12px] sm:text-[13px] font-black truncate text-amber-100 leading-tight">
               {title}
             </h1>
-            <p className="text-[10px] text-amber-300/70 truncate">
+            <p className="text-[9.5px] sm:text-[10px] text-amber-300/70 truncate hidden xs:block">
               {author || 'Tài Liệu Chuyên Sâu'} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
             </p>
           </div>
 
-          {/* Cụm 3 nút chuyển chế độ đọc (CURL 3D, ROLL 3D, SCROLL) - Chỉ áp dụng cho chế độ lật trang */}
+          {/* Cụm 3 nút chuyển chế độ đọc (CURL 3D, ROLL 3D, SCROLL) - Chỉ hiện trên màn hình lớn từ sm trở lên để mobile tinh gọn */}
           {!isEpub && (
-            <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10 shrink-0">
+            <div className="hidden sm:flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10 shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -788,9 +788,9 @@ export default function SideBooksReaderModal({
         </div>
 
         {/* Bên phải: Zoom + Bookmark + Toàn màn hình + Tông màu giấy */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-30">
           {!isEpub && (
-            <div className="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/10">
+            <div className="hidden md:flex items-center bg-white/10 p-0.5 rounded-lg border border-white/10">
               <button
                 type="button"
                 onClick={() => readerRef.current?.zoomOut?.()}
@@ -846,25 +846,25 @@ export default function SideBooksReaderModal({
             <span className="hidden sm:inline">Hỏi AI</span>
           </button>
 
-          {/* Nút Tìm kiếm toàn văn trong sách */}
+          {/* Nút Tìm kiếm toàn văn trong sách (Hiện từ màn hình md) */}
           <button
             type="button"
             onClick={() => setShowSearchModal(true)}
-            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold"
+            className="hidden md:flex w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold"
             title="Tìm kiếm từ khóa trong cuốn sách"
             aria-label="Tìm kiếm trong sách"
           >
             <Search size={15} />
           </button>
 
-          {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D */}
+          {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D (Hiện từ màn hình md) */}
           <button
             type="button"
             onClick={() => {
               setNotesModalInitialText(null);
               setShowNotesModal(true);
             }}
-            className="h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative"
+            className="hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative"
             title="Sổ tay ghi chú & Thẻ ghi nhớ Flashcard 3D"
             aria-label="Sổ tay và Flashcard"
           >
@@ -877,11 +877,11 @@ export default function SideBooksReaderModal({
             )}
           </button>
 
-          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa */}
+          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa (Hiện từ màn hình md) */}
           <button
             type="button"
             onClick={() => setShowTypographyModal(true)}
-            className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative ${
+            className={`hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative ${
               typographySettings.bionicReading
                 ? 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
                 : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
@@ -896,13 +896,13 @@ export default function SideBooksReaderModal({
             )}
           </button>
 
-          {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
+          {/* Nút Lưu Ngoại Tuyến (Hiện từ màn hình md) */}
           {Boolean(activeFileUrl) && (
             <button
               type="button"
               onClick={isOfflineCached ? handleRemoveOffline : handleSaveOffline}
               disabled={isSavingOffline}
-              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
+              className={`hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
                 isOfflineCached
                   ? 'bg-emerald-600/90 text-white shadow-md border border-emerald-400/40'
                   : isSavingOffline
@@ -952,7 +952,7 @@ export default function SideBooksReaderModal({
           <button
             type="button"
             onClick={toggleFullscreen}
-            className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+            className={`hidden md:flex w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg items-center justify-center transition-all cursor-pointer active:scale-95 ${
               isFullscreen
                 ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
                 : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'

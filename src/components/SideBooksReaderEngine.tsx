@@ -137,12 +137,23 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.clearRect(0, 0, W, H);
 
         const img = imagesRef.current[idx];
-        if (img && img.complete) {
+        if (img && img.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, 0, 0, W, H);
+          drawSpineGutter(ctx, W, H);
+        } else {
+          // Nền giấy màu kem trang nhã theo theme nếu ảnh đang nạp
+          const paperTint =
+            readingTheme === 'sepia'
+              ? '#F4ECD8'
+              : readingTheme === 'dark'
+              ? '#1E232D'
+              : '#FAF8F3';
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
           drawSpineGutter(ctx, W, H);
         }
       },
-      [drawSpineGutter]
+      [readingTheme, drawSpineGutter]
     );
 
     // ================= 1. BỘ DỰNG CHẾ ĐỘ CURL 3D (LẬT SÁCH GÓC NHƯ THẬT) =================
@@ -1011,34 +1022,54 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       // Nạp toàn bộ ảnh vào bộ nhớ đệm
       imagesRef.current = [];
       let loadedCount = 0;
+      let rescueTimer: any = null;
 
-      pageImages.forEach((src, idx) => {
-        const img = new Image();
-        img.onload = () => {
-          if (!isMounted) return;
-          loadedCount++;
-          if (loadedCount >= Math.min(2, pageImages.length)) {
-            setIsReady(true);
-            updateCanvasSize();
+      const markReady = () => {
+        if (!isMounted) return;
+        setIsReady(true);
+        updateCanvasSize();
+      };
+
+      const validImages = pageImages.filter((src) => typeof src === 'string' && src.trim().length > 0);
+
+      if (validImages.length === 0) {
+        markReady();
+      } else {
+        pageImages.forEach((src, idx) => {
+          if (!src || !src.trim()) {
+            imagesRef.current[idx] = null as any;
+            return;
           }
-        };
-        img.onerror = () => {
-          if (!isMounted) return;
-          loadedCount++;
-          if (loadedCount >= Math.min(2, pageImages.length)) {
-            setIsReady(true);
-            updateCanvasSize();
+          const img = new Image();
+          const onFinish = () => {
+            if (!isMounted) return;
+            loadedCount++;
+            // Chỉ cần trang hiện tại hoặc ít nhất 1 trang đã nạp xong là mở ngay
+            if (idx === curIndexRef.current || loadedCount >= 1) {
+              markReady();
+            }
+          };
+          img.onload = onFinish;
+          img.onerror = onFinish;
+          img.src = src;
+          if (img.complete) {
+            onFinish();
           }
-        };
-        img.src = src;
-        imagesRef.current[idx] = img;
-      });
+          imagesRef.current[idx] = img;
+        });
+
+        // Timer cứu hộ siêu an toàn (400ms) đảm bảo canvas luôn mở, không bao giờ bị kẹt spinner
+        rescueTimer = setTimeout(() => {
+          markReady();
+        }, 400);
+      }
 
       updateCanvasSize();
       window.addEventListener('resize', updateCanvasSize);
 
       return () => {
         isMounted = false;
+        if (rescueTimer) clearTimeout(rescueTimer);
         window.removeEventListener('resize', updateCanvasSize);
         if (animReqRef.current) cancelAnimationFrame(animReqRef.current);
         if (moveRafRef.current) cancelAnimationFrame(moveRafRef.current);
