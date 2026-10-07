@@ -18,8 +18,10 @@ import {
   Sliders,
   Mic,
   MicOff,
+  FileText,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
+import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import { checkAdminStatus } from '../../lib/adminAuth';
 import { AiTrainingConfig } from '../../lib/types';
 import EditAiTrainingModal from '../../components/admin/EditAiTrainingModal';
@@ -33,10 +35,50 @@ interface SuggestedPage {
   reason?: string;
 }
 
+interface SuggestedBook {
+  id: string;
+  title: string;
+  author: string;
+  cover_url: string;
+  badge_tag?: string;
+  target_page?: number;
+  target_index?: number;
+  reason?: string;
+}
+
+interface InBookSnippet {
+  id: string;
+  book_id: string;
+  book_title: string;
+  cover_url: string;
+  chapter: string;
+  page_number: number;
+  page_index: number;
+  excerpt: string;
+  relevance_reason?: string;
+}
+
+interface SearchBookItem {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  cover_url: string;
+  badge_tag: string;
+  pages_count: number;
+  pages: string[];
+  gallery_images?: string[];
+  flipbook_pages?: string[];
+  file_url?: string | null;
+  pdf_url?: string | null;
+}
+
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  suggested_books?: SuggestedBook[];
+  in_book_snippets?: InBookSnippet[];
   suggested_pages?: SuggestedPage[];
   follow_up_questions?: string[];
   timestamp: number;
@@ -98,6 +140,9 @@ export default function AiAssistantPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showTrainingModal, setShowTrainingModal] = useState(false);
   const [trainingConfig, setTrainingConfig] = useState<AiTrainingConfig | null>(null);
+  const [books, setBooks] = useState<SearchBookItem[]>([]);
+  const [readerBook, setReaderBook] = useState<SearchBookItem | null>(null);
+  const [readerInitialPage, setReaderInitialPage] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -254,6 +299,53 @@ export default function AiAssistantPage() {
     });
   }, []);
 
+  // Tải danh mục sách phục vụ đọc trực tiếp khi AI gợi ý
+  useEffect(() => {
+    fetch('/api/search')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.books)) {
+          setBooks(data.books);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleOpenAiBook = (suggestedBook: SuggestedBook) => {
+    playTapSound();
+    const target =
+      books.find((b) => b.id === suggestedBook.id) ||
+      books.find((b) => b.title.toLowerCase().includes(suggestedBook.title.toLowerCase())) || {
+        id: suggestedBook.id,
+        title: suggestedBook.title,
+        author: suggestedBook.author || 'Tùng Dinh Dưỡng',
+        description: '',
+        cover_url: suggestedBook.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: suggestedBook.badge_tag || 'NÊN ĐỌC',
+        pages_count: 9,
+        pages: [],
+      };
+
+    const initialP =
+      suggestedBook.target_index ??
+      (suggestedBook.target_page ? suggestedBook.target_page - 1 : 0);
+    setReaderInitialPage(Math.max(0, initialP));
+    setReaderBook(target as SearchBookItem);
+  };
+
+  const handleOpenAiSnippet = (snippet: InBookSnippet) => {
+    playTapSound();
+    const target =
+      books.find((b) => b.id === snippet.book_id) ||
+      books.find((b) => b.title.toLowerCase().includes(snippet.book_title.toLowerCase())) ||
+      books[0];
+
+    if (target) {
+      setReaderInitialPage(snippet.page_index);
+      setReaderBook(target);
+    }
+  };
+
   // Tự động nhận câu hỏi từ trang Tìm Kiếm hoặc từ liên kết bên ngoài qua param ?q= hoặc ?question=
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -377,6 +469,8 @@ export default function AiAssistantPage() {
         id: `ai-${Date.now()}`,
         role: 'assistant',
         text: cleanAnswer || data.answer,
+        suggested_books: data.suggested_books || [],
+        in_book_snippets: data.in_book_snippets || [],
         suggested_pages: data.suggested_pages || [],
         follow_up_questions: data.follow_up_questions || [],
         timestamp: Date.now(),
@@ -584,6 +678,105 @@ export default function AiAssistantPage() {
                     )}
                   </div>
 
+                  {/* THẺ SÁCH ĐỀ XUẤT PHÙ HỢP CỦA AI */}
+                  {!isUser && msg.suggested_books && msg.suggested_books.length > 0 && (
+                    <div className="w-full max-w-[96%] sm:max-w-[90%] flex flex-col gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 px-0.5 text-[11px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                        <BookOpen size={13} strokeWidth={2.5} />
+                        <span>Sách đề xuất nên đọc:</span>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        {msg.suggested_books.map((b, bIdx) => (
+                          <div
+                            key={bIdx}
+                            className="flex items-start gap-2.5 p-2.5 rounded-[15px] bg-white dark:bg-[#160D30] border border-amber-200/90 dark:border-purple-800/40 shadow-2xs hover:shadow-xs transition-all"
+                          >
+                            <div className="w-12 h-16 rounded-[8px] overflow-hidden shrink-0 border border-amber-300/40 shadow-2xs bg-slate-100 dark:bg-black/40">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={b.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
+                                alt={b.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                                    {b.badge_tag || 'NÊN ĐỌC'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 dark:text-purple-300/70 truncate">
+                                    {b.author || 'Tùng Dinh Dưỡng'}
+                                  </span>
+                                </div>
+                                <h4 className="text-[13px] font-black text-slate-900 dark:text-white truncate mt-0.5">
+                                  {b.title}
+                                </h4>
+                                {b.reason && (
+                                  <p className="text-[11px] text-slate-600 dark:text-purple-200/80 line-clamp-2 mt-0.5 leading-tight">
+                                    {b.reason}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="pt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAiBook(b)}
+                                  className="px-2.5 py-1 rounded-[8px] bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow-2xs active:scale-95 transition-all cursor-pointer"
+                                >
+                                  <BookOpen size={12} />
+                                  <span>Mở đọc sách ngay (3D)</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* THẺ TRÍCH ĐOẠN TÀI LIỆU SÂU TRONG TRANG SÁCH */}
+                  {!isUser && msg.in_book_snippets && msg.in_book_snippets.length > 0 && (
+                    <div className="w-full max-w-[96%] sm:max-w-[90%] flex flex-col gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 px-0.5 text-[11px] font-black text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                        <FileText size={13} strokeWidth={2.5} />
+                        <span>Trích đoạn tài liệu sâu trong trang sách:</span>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        {msg.in_book_snippets.map((snip, sIdx) => (
+                          <div
+                            key={sIdx}
+                            className="p-2.5 rounded-[15px] bg-white dark:bg-[#160D30] border border-amber-300/60 dark:border-purple-800/40 shadow-2xs flex flex-col gap-1.5"
+                          >
+                            <div className="flex items-center justify-between gap-1 text-[11px]">
+                              <span className="font-extrabold text-slate-900 dark:text-amber-200 truncate">
+                                📖 {snip.book_title} · {snip.chapter}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-[6px] bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold shrink-0 text-[10px]">
+                                Trang {snip.page_number}
+                              </span>
+                            </div>
+                            <p className="text-[11.5px] text-slate-700 dark:text-purple-100/90 italic leading-relaxed line-clamp-3 pl-2 border-l-2 border-amber-500/50">
+                              &ldquo;{snip.excerpt}&rdquo;
+                            </p>
+                            <div className="flex items-center justify-end pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAiSnippet(snip)}
+                                className="px-2.5 py-1 rounded-[7px] bg-amber-100 hover:bg-amber-200 dark:bg-purple-900/60 dark:hover:bg-purple-900 text-amber-900 dark:text-amber-200 text-[11px] font-black flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <span>Đọc trang này ngay</span>
+                                <ChevronRight size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* THẺ BÀI HỌC GỢI Ý ĐI KÈM CỦA AI (CÓ ĐỦ LOGO CHUYÊN ĐỀ & FONT RÕ RÀNG) */}
                   {!isUser && msg.suggested_pages && msg.suggested_pages.length > 0 && (
                     <div className="w-full max-w-[96%] sm:max-w-[90%] flex flex-col gap-1.5 mt-1">
@@ -769,6 +962,22 @@ export default function AiAssistantPage() {
           </button>
         </form>
       </div>
+
+      {/* MODAL ĐỌC SÁCH 3D KHI CHỌN SÁCH TỪ KẾT QUẢ GỢI Ý HOẶC TRÍCH ĐOẠN AI */}
+      <SideBooksReaderModal
+        isOpen={Boolean(readerBook)}
+        title={readerBook?.title || 'Tủ Sách Y Khoa'}
+        author={readerBook?.author}
+        pages={readerBook?.pages || []}
+        initialPage={readerInitialPage}
+        pdfUrl={readerBook?.pdf_url}
+        fileUrl={readerBook?.file_url}
+        coverUrl={readerBook?.cover_url}
+        onClose={() => {
+          setReaderBook(null);
+          setReaderInitialPage(0);
+        }}
+      />
 
       {/* 4. THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}
       <BottomNav />

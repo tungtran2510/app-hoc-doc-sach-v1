@@ -255,6 +255,80 @@ export default function SearchPage() {
   const [readerInitialPage, setReaderInitialPage] = useState<number>(0);
   const [detailBook, setDetailBook] = useState<UnifiedBookItem | null>(null);
 
+  // Trạng thái Trợ lý AI Tìm Sách & Tra Cứu Y Khoa ngay dưới ô tìm kiếm
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<{
+    answer: string;
+    suggested_books?: Array<{
+      id: string;
+      title: string;
+      author: string;
+      cover_url: string;
+      badge_tag?: string;
+      target_page?: number;
+      target_index?: number;
+      reason: string;
+    }>;
+    in_book_snippets?: Array<{
+      id: string;
+      book_id: string;
+      book_title: string;
+      cover_url: string;
+      chapter: string;
+      page_number: number;
+      page_index: number;
+      excerpt: string;
+      relevance_reason?: string;
+    }>;
+    follow_up_questions?: string[];
+  } | null>(null);
+
+  const handleAskAi = async (questionText: string) => {
+    const q = (questionText || query).trim();
+    if (!q || isAiLoading) return;
+    playTapSound();
+    setIsAiLoading(true);
+    saveToRecentSearches(q);
+
+    try {
+      const res = await fetch('/api/ai/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q }),
+      });
+      if (!res.ok) throw new Error('Lỗi máy chủ');
+      const data = await res.json();
+      setAiResult(data);
+    } catch {
+      setAiResult({
+        answer: 'Kết nối tới Trợ lý AI đang gián đoạn một chút. Mời bạn tham khảo các cuốn sách y khoa bên dưới hoặc thử lại sau ít phút.',
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleOpenAiBook = (suggestedBook: { id: string; title: string; target_index?: number; target_page?: number; cover_url?: string }) => {
+    playTapSound();
+    const target =
+      books.find((b) => b.id === suggestedBook.id) ||
+      books.find((b) => removeVietnameseTones(b.title).includes(removeVietnameseTones(suggestedBook.title))) ||
+      {
+        id: suggestedBook.id,
+        title: suggestedBook.title,
+        author: 'Tùng Dinh Dưỡng',
+        description: '',
+        cover_url: suggestedBook.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'NÊN ĐỌC',
+        pages_count: 9,
+        pages: [],
+      };
+
+    const initialP = suggestedBook.target_index ?? (suggestedBook.target_page ? suggestedBook.target_page - 1 : 0);
+    setReaderInitialPage(Math.max(0, initialP));
+    setReaderBook(target as SearchBookItem);
+  };
+
   useEffect(() => {
     inputRef.current?.focus();
     document.title = 'Tìm kiếm sách · Qbiz Books';
@@ -529,7 +603,259 @@ export default function SearchPage() {
         )}
       </section>
 
-      {/* 2. LỊCH SỬ TÌM KIẾM GẦN ĐÂY (KHI CHƯA GÕ TỪ KHÓA) */}
+      {/* 2. KHỐI TRỢ LÝ AI TÌM SÁCH & TRA CỨU Y KHOA (NGAY DƯỚI MỤC TÌM KIẾM) */}
+      <section className="rounded-2xl border border-amber-500/40 dark:border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white/80 dark:from-[#2a170b] dark:via-[#1c1109] dark:to-[#140b06] shadow-sm p-3 flex flex-col gap-2.5 transition-all">
+        {/* Thanh tiêu đề nút AI */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0">
+              <Sparkles size={15} className="animate-pulse" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[12.5px] sm:text-[13px] font-black text-[#2c180c] dark:text-[#fdf7ee] leading-tight truncate">
+                Trợ lý AI Tìm Sách & Tra Cứu Y Khoa
+              </span>
+              <span className="text-[10px] text-amber-800/80 dark:text-amber-300/70 font-medium truncate">
+                {isAiLoading
+                  ? 'Đang tra cứu sâu trong kho sách y khoa...'
+                  : 'Hỏi triệu chứng, tìm tài liệu sâu trong trang sách & gợi ý'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {query.trim().length > 0 ? (
+              <button
+                type="button"
+                onClick={() => handleAskAi(query)}
+                disabled={isAiLoading}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isAiLoading ? (
+                  <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Sparkles size={12} />
+                )}
+                <span>Hỏi AI</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push('/tro-ly-ai')}
+                className="px-2 sm:px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                title="Mở toàn bộ giao diện Trợ lý AI"
+              >
+                <span>Hội thoại</span>
+                <ChevronRight size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Gợi ý các câu hỏi tra cứu nhanh bằng AI (khi chưa có kết quả AI) */}
+        {!aiResult && !isAiLoading && (
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {[
+              'Thoát vị đĩa đệm L4-L5 nên đọc gì?',
+              'Cơ chế bơm hút dịch nhân nhầy đĩa đệm',
+              'Gợi ý sách dinh dưỡng kháng viêm khớp',
+              'Cẩm nang đốt sống cổ & tê tay',
+            ].map((prompt, pIdx) => (
+              <button
+                key={pIdx}
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setQuery(prompt);
+                  handleAskAi(prompt);
+                }}
+                className="px-2.5 py-1 rounded-full bg-white/80 dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-200 text-[11px] font-semibold border border-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer text-left active:scale-95"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Trạng thái đang tải phản hồi AI */}
+        {isAiLoading && (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 animate-pulse text-amber-900 dark:text-amber-200 text-xs font-semibold">
+            <span className="w-4 h-4 border-2 border-amber-600 dark:border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
+            <span>AI đang phân tích triệu chứng và tra cứu sâu trong kho sách y khoa...</span>
+          </div>
+        )}
+
+        {/* Hiển thị kết quả AI thông minh: Phân tích + Sách đề xuất + Trích đoạn trang sách */}
+        {aiResult && !isAiLoading && (
+          <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-white/95 dark:bg-[#160D30]/90 border border-amber-500/30 text-slate-900 dark:text-white shadow-xs animate-in fade-in zoom-in-95 duration-150">
+            {/* Thanh tiêu đề kết quả & nút thu gọn */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-amber-500/20">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <Sparkles size={13} className="text-amber-500" />
+                <span>AI Giải đáp & Đề xuất tài liệu</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setAiResult(null);
+                }}
+                className="text-[11px] font-semibold text-slate-400 hover:text-red-500 flex items-center gap-1 cursor-pointer transition-colors"
+                title="Đóng kết quả AI"
+              >
+                <X size={13} />
+                <span>Thu gọn</span>
+              </button>
+            </div>
+
+            {/* Nội dung giải đáp súc tích của AI */}
+            <div className="text-[12.5px] leading-relaxed text-[#2c180c] dark:text-[#fdf7ee] font-medium whitespace-pre-wrap">
+              {aiResult.answer}
+            </div>
+
+            {/* DANH SÁCH SÁCH ĐƯỢC AI ĐỀ XUẤT */}
+            {aiResult.suggested_books && aiResult.suggested_books.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                  <BookOpen size={12} />
+                  <span>Sách đề xuất phù hợp nhất:</span>
+                </span>
+                <div className="flex flex-col gap-2">
+                  {aiResult.suggested_books.map((b, bIdx) => (
+                    <div
+                      key={bIdx}
+                      className="flex items-start gap-2.5 p-2 rounded-xl bg-amber-50/60 dark:bg-white/5 border border-amber-200/80 dark:border-white/10"
+                    >
+                      <div className="w-12 h-16 rounded-md overflow-hidden shrink-0 border border-amber-500/30 shadow-xs bg-slate-100 dark:bg-black/40">
+                        <img
+                          src={b.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
+                          alt={b.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                              {b.badge_tag || 'NÊN ĐỌC'}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                              Tác giả: {b.author || 'Tùng Dinh Dưỡng'}
+                            </span>
+                          </div>
+                          <h4 className="text-[12.5px] font-black text-[#2c180c] dark:text-amber-100 truncate mt-0.5">
+                            {b.title}
+                          </h4>
+                          <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 line-clamp-2 mt-0.5 leading-tight">
+                            {b.reason}
+                          </p>
+                        </div>
+                        <div className="pt-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAiBook(b)}
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
+                          >
+                            <BookOpen size={12} />
+                            <span>Mở đọc sách ngay (3D)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* DANH SÁCH TRÍCH ĐOẠN SÂU TRONG TRANG SÁCH */}
+            {aiResult.in_book_snippets && aiResult.in_book_snippets.length > 0 && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                  <FileText size={12} />
+                  <span>Trích đoạn tài liệu sâu trong trang sách:</span>
+                </span>
+                <div className="flex flex-col gap-2">
+                  {aiResult.in_book_snippets.map((snip, sIdx) => (
+                    <div
+                      key={sIdx}
+                      className="p-2.5 rounded-xl bg-white dark:bg-black/30 border border-amber-300/50 dark:border-white/10 flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-1 text-[11px]">
+                        <span className="font-extrabold text-[#2c180c] dark:text-amber-200 truncate">
+                          📖 {snip.book_title} · {snip.chapter}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold shrink-0 text-[10px]">
+                          Trang {snip.page_number}
+                        </span>
+                      </div>
+                      <p className="text-[11.5px] text-slate-700 dark:text-slate-300 italic leading-relaxed line-clamp-3 pl-2 border-l-2 border-amber-500/40">
+                        &ldquo;{snip.excerpt}&rdquo;
+                      </p>
+                      <div className="flex items-center justify-end pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const b = books.find((bk) => bk.id === snip.book_id || bk.title.includes(snip.book_title)) || books[0];
+                            if (b) {
+                              playTapSound();
+                              setReaderInitialPage(Math.max(0, snip.page_index));
+                              setReaderBook(b);
+                            }
+                          }}
+                          className="px-2 py-0.8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 text-[10.5px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <span>Đọc trang này ngay</span>
+                          <ChevronRight size={11} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CÂU HỎI GỢI Ý TIẾP THEO */}
+            {aiResult.follow_up_questions && aiResult.follow_up_questions.length > 0 && (
+              <div className="flex flex-col gap-1 pt-1">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide">
+                  Gợi ý câu hỏi tiếp theo:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {aiResult.follow_up_questions.map((fq, fIdx) => (
+                    <button
+                      key={fIdx}
+                      type="button"
+                      onClick={() => {
+                        playTapSound();
+                        setQuery(fq);
+                        handleAskAi(fq);
+                      }}
+                      className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-200 text-[10.5px] font-medium border border-amber-500/20 transition-all cursor-pointer text-left active:scale-95"
+                    >
+                      {fq}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Nút mở hội thoại AI đầy đủ */}
+            <div className="pt-1 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => router.push(`/tro-ly-ai?q=${encodeURIComponent(query || 'Hiểu đúng về cột sống')}`)}
+                className="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Bot size={13} />
+                <span>Trò chuyện sâu hơn trong Trợ lý AI toàn diện</span>
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 3. LỊCH SỬ TÌM KIẾM GẦN ĐÂY (KHI CHƯA GÕ TỪ KHÓA) */}
       {!isSearching && recentSearches.length > 0 && (
         <section className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm flex flex-col gap-2">
           <div className="flex items-center justify-between">

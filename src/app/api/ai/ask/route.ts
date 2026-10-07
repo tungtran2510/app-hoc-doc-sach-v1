@@ -32,6 +32,497 @@ function normalizeText(text: string): string {
     .trim();
 }
 
+export interface SuggestedBookItem {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  cover_url: string;
+  badge_tag?: string;
+  target_page?: number;
+  target_index?: number;
+  reason: string;
+}
+
+export interface InBookSnippetItem {
+  id: string;
+  book_id: string;
+  book_title: string;
+  cover_url: string;
+  chapter: string;
+  page_number: number;
+  page_index: number;
+  excerpt: string;
+  relevance_reason?: string;
+}
+
+/** Tủ sách Ebook Y Khoa Qbiz Books chuẩn mực */
+const EBOOK_CATALOG: SuggestedBookItem[] = [
+  {
+    id: 'book-hieu-dung-cot-song',
+    title: 'Hiểu Đúng Về Cột Sống',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+    badge_tag: 'BÁN CHẠY',
+    description: 'Cẩm nang toàn diện giải mã cơ chế thoát vị đĩa đệm, thoái hóa và giải pháp vận động tự phục hồi.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Phân tích cơ chế sinh học giảm xóc đĩa đệm và giải pháp phòng ngừa thoát vị L4-L5.',
+  },
+  {
+    id: 'book-cam-nang-co',
+    title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+    badge_tag: 'HƯỚNG DẪN',
+    description: 'Phương pháp bảo tồn đốt sống cổ C1-C7, giải phóng chèn ép rễ thần kinh và chống hội chứng cổ rùa.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Hướng dẫn bảo vệ đốt sống cổ C1-C7 và giải phóng chèn ép rễ thần kinh chi phối cánh tay.',
+  },
+  {
+    id: 'book-dinh-duong-phuc-hoi',
+    title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+    badge_tag: 'Y HỌC',
+    description: 'Chế độ ăn kháng viêm tế bào sụn, dập tắt ngọn lửa viêm mạn tính và tái lập mật độ xương khớp.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Cung cấp thực đơn kháng viêm sinh học với Omega-3, Curcumin và Collagen Type II.',
+  },
+  {
+    id: 'book-atlas-cot-song',
+    title: 'Atlas Giải Phẫu Cột Sống & Khớp 3D',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+    badge_tag: 'ATLAS 3D',
+    description: 'Atlas giải phẫu sinh động 33 đốt sống, 23 đĩa đệm và hệ thống dây chằng, rễ thần kinh nâng đỡ cơ thể.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Minh họa 3D đa tầng 33 đốt sống, 23 đĩa đệm và bảng định vị phân bổ rễ thần kinh tủy sống.',
+  },
+  {
+    id: 'book-nuoc-va-khoang-chat',
+    title: 'Nước & Khoáng Chất Cho Cơ Thể',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_nuoc.png',
+    badge_tag: 'CẤP NƯỚC',
+    description: 'Dung môi sinh hóa, cơ chế thẩm thấu nuôi dưỡng và chu trình bơm hút dịch nhân nhầy đĩa đệm.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Giải thích cơ chế thẩm thấu và bơm hút dịch nước nuôi dưỡng nhân nhầy đĩa đệm khi ngủ.',
+  },
+  {
+    id: 'book-tu-chua-lanh-lung',
+    title: 'Tự Chữa Lành Lưng & Cổ',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_tu_chua_lanh_lung_co.png',
+    badge_tag: 'PHỤC HỒI',
+    description: 'Phương pháp giải áp tự nhiên tại nhà, khôi phục đường cong sinh lý và thư giãn hệ cơ sâu.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Hướng dẫn các tư thế giải nén tự nhiên tại nhà và phục hồi đường cong sinh lý cột sống.',
+  },
+  {
+    id: 'book-suc-khoe-tieu-hoa',
+    title: 'Sức Khỏe Hệ Tiêu Hóa Toàn Diện',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_tieu-hoa.png',
+    badge_tag: 'TIÊU HÓA',
+    description: 'Trục não - ruột - khớp và cơ chế hấp thu dưỡng chất, bảo vệ niêm mạc dạ dày và đường ruột.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Làm sáng tỏ trục vi sinh não - ruột - khớp và giải pháp bảo vệ niêm mạc đường tiêu hóa.',
+  },
+  {
+    id: 'book-loi-khuan-duong-ruot',
+    title: 'Lợi Khuẩn & Hệ Vi Sinh Đường Ruột',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_gan-mat-tuy.png',
+    badge_tag: 'VI SINH',
+    description: 'Hàng rào niêm mạc ruột, chống hội chứng rò rỉ ruột và dập tắt nguồn cơn phản ứng viêm toàn thân.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Giải pháp khôi phục hệ vi sinh đường ruột và ngăn chặn độc tố gây phản ứng viêm sụn khớp.',
+  },
+  {
+    id: 'book-giai-ma-cot-song',
+    title: 'Giải Mã Cột Sống & Thoát Vị',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_giai_ma_cot_song.png',
+    badge_tag: 'CHUYÊN SÂU',
+    description: 'Phân tích cơ chế đòn bẩy tải trọng, quy tắc công thái học và kỹ thuật kích hoạt cơ lõi bảo vệ cột sống.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Phân tích đòn bẩy cơ sinh học chịu tải và quy tắc công thái học bảo vệ đĩa đệm trong sinh hoạt.',
+  },
+  {
+    id: 'book-giai-phau-co-the',
+    title: 'Giải Phẫu Học Cơ Thể Người',
+    author: 'Tùng Dinh Dưỡng',
+    cover_url: '/documents/covers/cover_co-the-nguoi.png',
+    badge_tag: 'TOÀN TẬP',
+    description: 'Tổng quan cấu trúc các hệ cơ quan trong cơ thể: Xương khớp, tuần hoàn, hô hấp và miễn dịch.',
+    target_page: 2,
+    target_index: 1,
+    reason: 'Cung cấp góc nhìn toàn cảnh về giải phẫu các hệ cơ quan vận động và tuần hoàn trong cơ thể.',
+  },
+];
+
+/** Kho dữ liệu trích đoạn sâu trong từng trang sách phục vụ Deep In-Book Document Search */
+const IN_BOOK_SNIPPETS: InBookSnippetItem[] = [
+  {
+    id: 'snip-1',
+    book_id: 'book-hieu-dung-cot-song',
+    book_title: 'Hiểu Đúng Về Cột Sống',
+    cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+    chapter: 'Chương 1: Cơ Chế Sinh Học & Giảm Xóc Đĩa Đệm',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Cột sống gồm 33-34 đốt sống tạo thành 4 đường cong sinh lý. Đĩa đệm đóng vai trò như bộ phận giảm xóc sinh học với nhân nhầy ngậm nước và các vòng sợi collagen bao quanh.',
+    relevance_reason: 'Giải thích cấu trúc giải phẫu 4 đường cong sinh lý và cơ chế giảm xóc của đĩa đệm.',
+  },
+  {
+    id: 'snip-2',
+    book_id: 'book-hieu-dung-cot-song',
+    book_title: 'Hiểu Đúng Về Cột Sống',
+    cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+    chapter: 'Chương 2: Thoát Vị & Chèn Ép Rễ Thần Kinh',
+    page_number: 3,
+    page_index: 2,
+    excerpt:
+      'Khi đĩa đệm bị thoát vị hoặc thoái hóa xẹp lún, nhân nhầy tràn ra chèn ép vào rễ thần kinh tọa L4-L5, S1 gây ra các cơn đau nhói buốt lan dọc xuống đùi và bắp chân.',
+    relevance_reason: 'Mô tả trực diện cơ chế rách vòng sợi và chèn ép rễ thần kinh tọa L4-L5.',
+  },
+  {
+    id: 'snip-3',
+    book_id: 'book-hieu-dung-cot-song',
+    book_title: 'Hiểu Đúng Về Cột Sống',
+    cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+    chapter: 'Phụ Lục: Bảng Tra Cứu Rễ Thần Kinh Cột Sống',
+    page_number: 4,
+    page_index: 3,
+    excerpt:
+      'Bảng định vị phân bổ rễ thần kinh tủy sống: Nhánh C5-C7 chi phối cánh tay bàn tay; Nhánh L3-L5 chi phối khớp gối, cơ đùi, cẳng chân và mu bàn chân.',
+    relevance_reason: 'Bảng định vị các nhánh dây thần kinh tương ứng với từng vùng cảm giác cơ thể.',
+  },
+  {
+    id: 'snip-4',
+    book_id: 'book-cam-nang-co',
+    book_title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+    cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+    chapter: 'Chương 1: Hội Chứng Cổ Vai Gáy Dân Văn Phòng',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Tải trọng đè nén lên các đốt sống cổ C1-C7 tăng gấp 3 đến 5 lần khi gập đầu cúi bấm điện thoại hoặc làm việc với máy tính trong thời gian dài mà không nghỉ giải lao.',
+    relevance_reason: 'Cảnh báo tác hại của tư thế gập cổ và áp lực tải trọng lên các đốt sống cổ C1-C7.',
+  },
+  {
+    id: 'snip-5',
+    book_id: 'book-cam-nang-co',
+    book_title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+    cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+    chapter: 'Chương 2: Bài Tập Vận Động Giải Nén Cột Sống Cổ',
+    page_number: 3,
+    page_index: 2,
+    excerpt:
+      'Các động tác kéo giãn cơ ức đòn chũm, nhóm cơ thang và vươn cằm giải nén rễ thần kinh giúp giảm nhanh cơn co thắt, đau nửa đầu và tê bì các đầu ngón tay.',
+    relevance_reason: 'Hướng dẫn thả lỏng cơ vùng cổ gáy để giải phóng chèn ép rễ thần kinh cánh tay.',
+  },
+  {
+    id: 'snip-6',
+    book_id: 'book-dinh-duong-phuc-hoi',
+    book_title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+    chapter: 'Chương 1: Cơ Chế Kháng Viêm Sinh Học Tế Bào',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Axit béo Omega-3 tỷ lệ EPA/DHA cao kết hợp Curcumin sinh khả dụng cao và Polyphenol thực vật giúp ức chế enzyme gây viêm, dập tắt ổ viêm âm thầm tại sụn khớp an toàn.',
+    relevance_reason: 'Phác thảo các hoạt chất kháng viêm tự nhiên giúp dập tắt ổ viêm quanh rễ thần kinh.',
+  },
+  {
+    id: 'snip-7',
+    book_id: 'book-dinh-duong-phuc-hoi',
+    book_title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+    chapter: 'Chương 2: Tái Lập Mật Độ Xương & Đàn Hồi Sụn Khớp',
+    page_number: 3,
+    page_index: 2,
+    excerpt:
+      'Collagen Type II thủy phân, Canxi sinh học từ tảo biển, Magie cùng Vitamin D3 và K2 giúp dẫn truyền khoáng chất trực tiếp vào khung xương và đĩa đệm mà không lắng đọng mạch máu.',
+    relevance_reason: 'Chi tiết các dưỡng chất cốt lõi giúp tái tạo tế bào sụn và mật độ canxi xương.',
+  },
+  {
+    id: 'snip-8',
+    book_id: 'book-atlas-cot-song',
+    book_title: 'Atlas Giải Phẫu Cột Sống & Khớp 3D',
+    cover_url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+    chapter: 'Chương 1: Cấu Trúc Khớp Đốt Sống Đa Tầng 3D',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Mô phỏng giải phẫu 3D đa tầng hệ cơ dựng sống, dây chằng vàng, dây chằng dọc trước và khoang ngoài màng cứng bảo vệ tủy sống và điều hòa vận động linh hoạt.',
+    relevance_reason: 'Mô phỏng 3D trực quan cấu trúc dây chằng và tủy sống nâng đỡ cột sống.',
+  },
+  {
+    id: 'snip-9',
+    book_id: 'book-suc-khoe-tieu-hoa',
+    book_title: 'Sức Khỏe Hệ Tiêu Hóa Toàn Diện',
+    cover_url: '/documents/covers/cover_tieu-hoa.png',
+    chapter: 'Chương 1: Trục Vi Sinh Não - Ruột - Khớp',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      '70% tế bào miễn dịch nằm tại niêm mạc đường ruột. Lợi khuẩn Probiotics sản sinh axit béo chuỗi ngắn SCFA giúp điều hòa hệ thống miễn dịch tự nhiên và giảm viêm khớp.',
+    relevance_reason: 'Làm rõ mối liên hệ giữa sức khỏe đường ruột, hệ miễn dịch và bệnh lý xương khớp.',
+  },
+  {
+    id: 'snip-10',
+    book_id: 'book-nuoc-va-khoang-chat',
+    book_title: 'Nước & Khoáng Chất Cho Cơ Thể',
+    cover_url: '/documents/covers/cover_nuoc.png',
+    chapter: 'Chương 1: Cấp Nước Tế Bào & Bơm Dịch Nhân Nhầy',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Nhân nhầy đĩa đệm chứa đến 80% là nước. Uống nước ion kiềm giàu hydrogen giúp thẩm thấu sâu vào tế bào, hỗ trợ quá trình bơm hút dịch dinh dưỡng tự nhiên của đĩa đệm khi ngủ.',
+    relevance_reason: 'Chỉ rõ vai trò của nước ion kiềm và chu trình bơm hút dịch nuôi nhân nhầy đĩa đệm.',
+  },
+  {
+    id: 'snip-11',
+    book_id: 'book-tu-chua-lanh-lung',
+    book_title: 'Tự Chữa Lành Lưng & Cổ',
+    cover_url: '/documents/covers/cover_tu_chua_lanh_lung_co.png',
+    chapter: 'Chương 1: Phục Hồi Đường Cong Sinh Lý Tự Nhiên',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Phương pháp giải nén cột sống tại nhà bằng các tư thế kê gối hỗ trợ điều chỉnh đường cong sinh lý tự nhiên, kết hợp nhịp thở cơ hoành giúp khối cơ dựng sống được thư giãn sâu.',
+    relevance_reason: 'Phương pháp giải áp cơ học tự nhiên tại nhà kết hợp thở cơ hoành giảm đau thắt lưng.',
+  },
+  {
+    id: 'snip-12',
+    book_id: 'book-loi-khuan-duong-ruot',
+    book_title: 'Lợi Khuẩn & Hệ Vi Sinh Đường Ruột',
+    cover_url: '/documents/covers/cover_gan-mat-tuy.png',
+    chapter: 'Chương 1: Bảo Vệ Hàng Rào Niêm Mạc Ruột',
+    page_number: 2,
+    page_index: 1,
+    excerpt:
+      'Hội chứng rò rỉ ruột do mất cân bằng hệ vi sinh đường ruột cho phép độc tố thẩm thấu vào máu, là nguồn cơn kích hoạt các phản ứng viêm mạn tính và đau mỏi cơ xương khớp.',
+    relevance_reason: 'Phân tích hội chứng rò rỉ ruột và cơ chế kích hoạt các ổ viêm mạn tính toàn thân.',
+  },
+];
+
+/** Thuật toán tìm kiếm & xếp hạng sách cùng trích đoạn thông minh theo triệu chứng và ý định */
+function rankBooksAndSnippets(
+  query: string,
+  dynamicBooks?: any[]
+): { books: SuggestedBookItem[]; snippets: InBookSnippetItem[] } {
+  const normQ = normalizeText(query);
+  const tokens = normQ.split(/\s+/).filter((w) => w.length >= 2);
+
+  // Gộp danh mục sách tĩnh và động
+  const allBooks: SuggestedBookItem[] = [...EBOOK_CATALOG];
+  if (Array.isArray(dynamicBooks) && dynamicBooks.length > 0) {
+    for (const db of dynamicBooks) {
+      if (db && db.title && !allBooks.some((b) => b.id === db.id)) {
+        allBooks.push({
+          id: db.id,
+          title: db.title,
+          author: db.author || 'Tùng Dinh Dưỡng',
+          cover_url: db.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+          badge_tag: db.badge_tag || db.tag || 'TÀI LIỆU',
+          description: db.description || '',
+          target_page: 2,
+          target_index: 1,
+          reason: `Tham khảo tài liệu chuyên môn trong cuốn "${db.title}".`,
+        });
+      }
+    }
+  }
+
+  // 1. Chấm điểm sách
+  const scoredBooks = allBooks.map((b) => {
+    let score = 0;
+    const titleNorm = normalizeText(b.title);
+    const descNorm = normalizeText(b.description || '');
+
+    // Boost chuyên đề theo từ khóa
+    if (
+      (normQ.includes('dia dem') ||
+        normQ.includes('thoat vi') ||
+        normQ.includes('l4') ||
+        normQ.includes('l5') ||
+        normQ.includes('s1') ||
+        normQ.includes('that lung') ||
+        normQ.includes('dau lung') ||
+        normQ.includes('nhan nhay') ||
+        normQ.includes('giam xoc')) &&
+      b.id === 'book-hieu-dung-cot-song'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('co') ||
+        normQ.includes('vai gay') ||
+        normQ.includes('c1') ||
+        normQ.includes('c7') ||
+        normQ.includes('te tay') ||
+        normQ.includes('van phong') ||
+        normQ.includes('co rua')) &&
+      b.id === 'book-cam-nang-co'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('dinh duong') ||
+        normQ.includes('khang viem') ||
+        normQ.includes('sun khop') ||
+        normQ.includes('omega') ||
+        normQ.includes('collagen') ||
+        normQ.includes('canxi') ||
+        normQ.includes('an gi')) &&
+      b.id === 'book-dinh-duong-phuc-hoi'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('nuoc') ||
+        normQ.includes('uong nuoc') ||
+        normQ.includes('khoang chat') ||
+        normQ.includes('bom dich') ||
+        normQ.includes('hydrogen')) &&
+      b.id === 'book-nuoc-va-khoang-chat'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('atlas') ||
+        normQ.includes('3d') ||
+        normQ.includes('giai phau') ||
+        normQ.includes('day chang') ||
+        normQ.includes('re than kinh')) &&
+      b.id === 'book-atlas-cot-song'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('tu chua lanh') ||
+        normQ.includes('giai ap') ||
+        normQ.includes('tai nha') ||
+        normQ.includes('duong cong sinh ly')) &&
+      b.id === 'book-tu-chua-lanh-lung'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('tieu hoa') ||
+        normQ.includes('da day') ||
+        normQ.includes('ruot') ||
+        normQ.includes('trao nguoc') ||
+        normQ.includes('day bung')) &&
+      b.id === 'book-suc-khoe-tieu-hoa'
+    ) {
+      score += 35;
+    }
+
+    if (
+      (normQ.includes('loi khuan') ||
+        normQ.includes('vi sinh') ||
+        normQ.includes('probiotics') ||
+        normQ.includes('ro ri ruot')) &&
+      b.id === 'book-loi-khuan-duong-ruot'
+    ) {
+      score += 35;
+    }
+
+    tokens.forEach((t) => {
+      if (titleNorm.includes(t)) score += 5;
+      if (descNorm.includes(t)) score += 2;
+    });
+
+    return { b, score };
+  });
+
+  scoredBooks.sort((a, b) => b.score - a.score);
+  const matchedBooks = scoredBooks.filter((s) => s.score > 0).slice(0, 2).map((s) => s.b);
+  const finalBooks = matchedBooks.length > 0 ? matchedBooks : [EBOOK_CATALOG[0], EBOOK_CATALOG[2]];
+
+  // 2. Chấm điểm trích đoạn sâu trong trang sách
+  const scoredSnippets = IN_BOOK_SNIPPETS.map((snip) => {
+    let score = 0;
+    const snipNorm = normalizeText(snip.excerpt);
+    const chapterNorm = normalizeText(snip.chapter);
+    const titleNorm = normalizeText(snip.book_title);
+
+    // Intent specific boosts
+    if ((normQ.includes('dia dem') || normQ.includes('thoat vi') || normQ.includes('l4') || normQ.includes('l5')) && snip.id === 'snip-2') {
+      score += 40;
+    }
+    if ((normQ.includes('giam xoc') || normQ.includes('nhan nhay')) && snip.id === 'snip-1') {
+      score += 35;
+    }
+    if ((normQ.includes('co') || normQ.includes('vai gay') || normQ.includes('van phong')) && snip.id === 'snip-4') {
+      score += 40;
+    }
+    if ((normQ.includes('te tay') || normQ.includes('giai nen co')) && snip.id === 'snip-5') {
+      score += 35;
+    }
+    if ((normQ.includes('khang viem') || normQ.includes('omega') || normQ.includes('curcumin')) && snip.id === 'snip-6') {
+      score += 40;
+    }
+    if ((normQ.includes('collagen') || normQ.includes('canxi') || normQ.includes('mat do xuong')) && snip.id === 'snip-7') {
+      score += 35;
+    }
+    if ((normQ.includes('nuoc') || normQ.includes('uong nuoc') || normQ.includes('bom dich')) && snip.id === 'snip-10') {
+      score += 40;
+    }
+    if ((normQ.includes('tieu hoa') || normQ.includes('loi khuan') || normQ.includes('ruot')) && snip.id === 'snip-9') {
+      score += 40;
+    }
+    if ((normQ.includes('ro ri ruot') || normQ.includes('vi sinh')) && snip.id === 'snip-12') {
+      score += 35;
+    }
+    if ((normQ.includes('tu chua lanh') || normQ.includes('giai ap')) && snip.id === 'snip-11') {
+      score += 40;
+    }
+    if ((normQ.includes('atlas') || normQ.includes('3d') || normQ.includes('giai phau')) && snip.id === 'snip-8') {
+      score += 40;
+    }
+    if ((normQ.includes('re than kinh') || normQ.includes('c5') || normQ.includes('c7') || normQ.includes('te chan')) && snip.id === 'snip-3') {
+      score += 35;
+    }
+
+    tokens.forEach((t) => {
+      if (snipNorm.includes(t)) score += 4;
+      if (chapterNorm.includes(t)) score += 6;
+      if (titleNorm.includes(t)) score += 3;
+    });
+
+    return { snip, score };
+  });
+
+  scoredSnippets.sort((a, b) => b.score - a.score);
+  const matchedSnippets = scoredSnippets.filter((s) => s.score > 0).slice(0, 2).map((s) => s.snip);
+  const finalSnippets = matchedSnippets.length > 0 ? matchedSnippets : [IN_BOOK_SNIPPETS[0], IN_BOOK_SNIPPETS[1]];
+
+  return {
+    books: finalBooks,
+    snippets: finalSnippets,
+  };
+}
+
 // BỘ CÂU HỎI & TRẢ LỜI CHUẨN XÁC, NGẮN GỌN, ĐÚNG TRỌNG TÂM (PHẢN HỒI TỨC THÌ < 5ms)
 const CURATED_QA = [
   {
@@ -45,6 +536,8 @@ const CURATED_QA = [
       'bi thoat vi dia dem',
       'thoat vi dia dem can lam gi',
       'thoat vi dia dem phai lam sao',
+      'sach thoat vi dia dem',
+      'tim sach thoat vi',
     ],
     answer:
 `Đối với tình trạng thoát vị đĩa đệm (đặc biệt vùng thắt lưng L4-L5), bạn cần chú ý các nguyên tắc bảo vệ sau:
@@ -54,6 +547,54 @@ const CURATED_QA = [
 • Tránh tư thế tĩnh tại quá lâu: Không ngồi hoặc đứng liên tục quá 30 - 45 phút; nên đi lại nhẹ nhàng định kỳ để tăng cường tuần hoàn và nuôi dưỡng đĩa đệm.
 • Lắng nghe phản hồi của cơ thể: Do thể trạng và mức độ tổn thương của mỗi người là khác nhau, cần vận động nhẹ nhàng vừa sức và tránh các tư thế gây đau tăng.
 • Cảnh báo y tế cần khám ngay: Nếu xuất hiện cảm giác đau nhói buốt lan nhanh xuống chân, tê mất cảm giác bàn chân hoặc rối loạn đại tiểu tiện.`,
+    suggested_books: [
+      {
+        id: 'book-hieu-dung-cot-song',
+        title: 'Hiểu Đúng Về Cột Sống',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'BÁN CHẠY',
+        target_page: 3,
+        target_index: 2,
+        reason: 'Chương 2 giải mã chính xác cơ chế nhân nhầy đĩa đệm tràn ra chèn ép rễ thần kinh L4-L5 và giải pháp giảm áp.',
+      },
+      {
+        id: 'book-dinh-duong-phuc-hoi',
+        title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        badge_tag: 'Y HỌC',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Kháng viêm sinh học dập tắt ổ viêm mạn tính âm thầm bao quanh rễ thần kinh bị chèn ép.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-2',
+        book_id: 'book-hieu-dung-cot-song',
+        book_title: 'Hiểu Đúng Về Cột Sống',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        chapter: 'Chương 2: Thoát Vị & Chèn Ép Rễ Thần Kinh',
+        page_number: 3,
+        page_index: 2,
+        excerpt:
+          'Khi đĩa đệm bị thoát vị hoặc thoái hóa xẹp lún, nhân nhầy tràn ra chèn ép vào rễ thần kinh tọa L4-L5, S1 gây ra các cơn đau nhói buốt lan dọc xuống đùi và bắp chân.',
+        relevance_reason: 'Trích đoạn trực tiếp giải mã cơ chế thoát vị đĩa đệm L4-L5 và chèn ép rễ thần kinh.',
+      },
+      {
+        id: 'snip-1',
+        book_id: 'book-hieu-dung-cot-song',
+        book_title: 'Hiểu Đúng Về Cột Sống',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        chapter: 'Chương 1: Cơ Chế Sinh Học & Giảm Xóc Đĩa Đệm',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Cột sống gồm 33-34 đốt sống tạo thành 4 đường cong sinh lý. Đĩa đệm đóng vai trò như bộ phận giảm xóc sinh học với nhân nhầy ngậm nước và các vòng sợi collagen bao quanh.',
+        relevance_reason: 'Cung cấp cơ chế giảm xóc sinh học và cấu tạo nhân nhầy đĩa đệm.',
+      },
+    ],
     suggested_pages: [
       {
         title: 'Đĩa đệm và cơ chế giảm xóc',
@@ -69,17 +610,246 @@ const CURATED_QA = [
         page_slug: 'tu-the-va-van-dong',
         reason: 'Hướng dẫn các nguyên tắc công thái học và bảo vệ cột sống an toàn.',
       },
-      {
-        title: 'Các vấn đề thường gặp và cách phòng tránh',
-        topic_title: 'Cột Sống & Đĩa Đệm',
-        topic_slug: 'cot-song',
-        page_slug: 'cac-van-de-thuong-gap',
-        reason: 'Nhận diện các hội chứng đau cơ xương khớp và cách phòng ngừa thoái hóa.',
-      },
     ],
     follow_up_questions: [
       'Tư thế sinh hoạt đúng cần chú ý gì?',
       'Chế độ dinh dưỡng nào giúp hỗ trợ sụn khớp?',
+    ],
+  },
+  {
+    keywords: [
+      'dot song co',
+      'dau moi co',
+      'co vai gay',
+      'dau vai gay',
+      'te tay',
+      'te bi canh tay',
+      'sach dot song co',
+      'cam nang co',
+      'hoi chung co rua',
+    ],
+    answer:
+`Đối với tình trạng đau mỏi cổ vai gáy và tê bì tay, bạn nên thực hiện các lưu ý bảo vệ sau:
+
+• Giữ thẳng trục đốt sống cổ C1-C7: Đưa màn hình máy tính hoặc điện thoại ngang tầm mắt, tránh gập đầu cúi gằm quá mức làm tăng tải trọng lên đĩa đệm cổ.
+• Tránh tư thế tĩnh tại: Cứ sau 30-45 phút làm việc, hãy thả lỏng hai vai, vươn cằm nhẹ nhàng để giải nén cơ thang và cơ ức đòn chũm.
+• Chườm ấm nhẹ nhàng vùng gáy vào buổi tối để tăng cường tuần hoàn máu nuôi các rễ thần kinh cánh tay.
+• Cảnh báo y tế: Nếu tê mất cảm giác ngón tay kéo dài hoặc xuất hiện hoa mắt chóng mặt dữ dội, cần thăm khám y tế kịp thời.`,
+    suggested_books: [
+      {
+        id: 'book-cam-nang-co',
+        title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+        badge_tag: 'HƯỚNG DẪN',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Cẩm nang toàn diện bảo tồn đốt sống cổ C1-C7, giải phóng chèn ép rễ thần kinh cho dân văn phòng.',
+      },
+      {
+        id: 'book-atlas-cot-song',
+        title: 'Atlas Giải Phẫu Cột Sống & Khớp 3D',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+        badge_tag: 'ATLAS 3D',
+        target_page: 4,
+        target_index: 3,
+        reason: 'Bảng định vị phân bổ rễ thần kinh C5-C7 chi phối cảm giác cánh tay và bàn tay.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-4',
+        book_id: 'book-cam-nang-co',
+        book_title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+        cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+        chapter: 'Chương 1: Hội Chứng Cổ Vai Gáy Dân Văn Phòng',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Tải trọng đè nén lên các đốt sống cổ C1-C7 tăng gấp 3 đến 5 lần khi gập đầu cúi bấm điện thoại hoặc làm việc với máy tính trong thời gian dài mà không nghỉ giải lao.',
+        relevance_reason: 'Cảnh báo áp lực tải trọng đè nén lên đốt sống cổ C1-C7.',
+      },
+      {
+        id: 'snip-5',
+        book_id: 'book-cam-nang-co',
+        book_title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+        cover_url: '/documents/covers/cover_cam_nang_dot_song_co.png',
+        chapter: 'Chương 2: Bài Tập Vận Động Giải Nén Cột Sống Cổ',
+        page_number: 3,
+        page_index: 2,
+        excerpt:
+          'Các động tác kéo giãn cơ ức đòn chũm, nhóm cơ thang và vươn cằm giải nén rễ thần kinh giúp giảm nhanh cơn co thắt, đau nửa đầu và tê bì các đầu ngón tay.',
+        relevance_reason: 'Giải pháp thả lỏng cơ giải phóng chèn ép rễ thần kinh cánh tay.',
+      },
+    ],
+    suggested_pages: [
+      {
+        title: 'Tư thế chuẩn & Vận động giải áp',
+        topic_title: 'Cột Sống & Đĩa Đệm',
+        topic_slug: 'cot-song',
+        page_slug: 'tu-the-va-van-dong',
+        reason: 'Hướng dẫn tư thế công thái học bảo vệ cổ vai gáy.',
+      },
+    ],
+    follow_up_questions: [
+      'Nguyên tắc bảo vệ đốt sống cổ khi ngồi máy tính?',
+      'Dinh dưỡng kháng viêm hỗ trợ sụn khớp như thế nào?',
+    ],
+  },
+  {
+    keywords: [
+      'dinh duong cho khop',
+      'dinh duong cot song',
+      'an gi tot cho xuong khop',
+      'dinh duong khang viem',
+      'an gi do dau lung',
+      'sach dinh duong khop',
+      'tai tao sun khop',
+    ],
+    answer:
+`Dinh dưỡng khoa học giúp giảm viêm âm thầm và nuôi dưỡng sụn khớp từ gốc:
+
+• Thực phẩm kháng viêm: Tăng cường cá béo (cá hồi, cá thu giàu Omega-3), dầu ô liu, quả mọng, nghệ, gừng và các loại rau lá xanh đậm.
+• Dưỡng chất xây dựng mô: Bổ sung đủ đạm chất lượng cao, vitamin C, kẽm, canxi và vitamin D3/K2 để tái tạo mô liên kết và sụn xương.
+• Cần cắt giảm: Hạn chế đường tinh luyện, đồ ngọt, thực phẩm siêu chế biến, dầu chiên đi chiên lại và nước ngọt có gas.`,
+    suggested_books: [
+      {
+        id: 'book-dinh-duong-phuc-hoi',
+        title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        badge_tag: 'Y HỌC',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Chương 1 & 2 hướng dẫn chi tiết cơ chế kháng viêm sinh học và tái lập mật độ sụn khớp bằng dinh dưỡng.',
+      },
+      {
+        id: 'book-loi-khuan-duong-ruot',
+        title: 'Lợi Khuẩn & Hệ Vi Sinh Đường Ruột',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_gan-mat-tuy.png',
+        badge_tag: 'VI SINH',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Bảo vệ niêm mạc ruột nhằm ngăn chặn phản ứng viêm toàn thân ảnh hưởng đến sụn khớp.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-6',
+        book_id: 'book-dinh-duong-phuc-hoi',
+        book_title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        chapter: 'Chương 1: Cơ Chế Kháng Viêm Sinh Học Tế Bào',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Axit béo Omega-3 tỷ lệ EPA/DHA cao kết hợp Curcumin sinh khả dụng cao và Polyphenol thực vật giúp ức chế enzyme gây viêm, dập tắt ổ viêm âm thầm tại sụn khớp an toàn.',
+        relevance_reason: 'Công thức kháng viêm tự nhiên từ thực phẩm cho mô sụn.',
+      },
+      {
+        id: 'snip-7',
+        book_id: 'book-dinh-duong-phuc-hoi',
+        book_title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        chapter: 'Chương 2: Tái Lập Mật Độ Xương & Đàn Hồi Sụn Khớp',
+        page_number: 3,
+        page_index: 2,
+        excerpt:
+          'Collagen Type II thủy phân, Canxi sinh học từ tảo biển, Magie cùng Vitamin D3 và K2 giúp dẫn truyền khoáng chất trực tiếp vào khung xương và đĩa đệm mà không lắng đọng mạch máu.',
+        relevance_reason: 'Dưỡng chất cấu tạo khung sụn khớp và xương chắc khỏe.',
+      },
+    ],
+    suggested_pages: [
+      {
+        title: 'Dinh dưỡng kháng viêm',
+        topic_title: 'Dinh Dưỡng',
+        topic_slug: 'dinh-duong',
+        page_slug: 'dinh-duong-khang-viem',
+        reason: 'Thực đơn và nhóm chất giúp kiểm soát phản ứng viêm khớp.',
+      },
+    ],
+    follow_up_questions: [
+      'Uống nước đúng cách như thế nào?',
+      'Tư thế sinh hoạt đúng cần chú ý gì?',
+    ],
+  },
+  {
+    keywords: [
+      'tai lieu nhan nhay dia dem',
+      'co che bom hut dich',
+      'bom dich nhan nhay',
+      'tai lieu dia dem',
+      'tim tai lieu trong sach',
+      'nuoi duong dia dem',
+    ],
+    answer:
+`Tài liệu trong sách chuyên khảo giải thích cơ chế nuôi dưỡng đĩa đệm như sau:
+
+• Đĩa đệm không có mạch máu trực tiếp: Nhân nhầy đĩa đệm chứa đến 80% là nước, nhận chất dinh dưỡng và đào thải cặn bã qua cơ chế thẩm thấu áp suất.
+• Chu trình bơm hút dịch tự nhiên: Ban ngày khi đứng ngồi chịu tải, dịch nhầy bị ép ra ngoài; ban đêm khi nằm ngủ giải áp, đĩa đệm hút ngược dịch nước giàu khoáng chất để tái tạo độ đàn hồi.
+• Điều kiện tối ưu: Cần uống đủ nước trong ngày và duy trì tư thế nằm chuẩn để đĩa đệm được giải nén trọn vẹn.`,
+    suggested_books: [
+      {
+        id: 'book-nuoc-va-khoang-chat',
+        title: 'Nước & Khoáng Chất Cho Cơ Thể',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_nuoc.png',
+        badge_tag: 'CẤP NƯỚC',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Trang 2 giải thích tường tận cơ chế cấp nước tế bào và chu trình bơm hút dịch nhân nhầy đĩa đệm.',
+      },
+      {
+        id: 'book-hieu-dung-cot-song',
+        title: 'Hiểu Đúng Về Cột Sống',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'BÁN CHẠY',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Cơ chế sinh học và cấu tạo vòng sợi collagen bao quanh nhân nhầy.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-10',
+        book_id: 'book-nuoc-va-khoang-chat',
+        book_title: 'Nước & Khoáng Chất Cho Cơ Thể',
+        cover_url: '/documents/covers/cover_nuoc.png',
+        chapter: 'Chương 1: Cấp Nước Tế Bào & Bơm Dịch Nhân Nhầy',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Nhân nhầy đĩa đệm chứa đến 80% là nước. Uống nước ion kiềm giàu hydrogen giúp thẩm thấu sâu vào tế bào, hỗ trợ quá trình bơm hút dịch dinh dưỡng tự nhiên của đĩa đệm khi ngủ.',
+        relevance_reason: 'Trích đoạn chính xác về cơ chế thẩm thấu và bơm hút dịch nhân nhầy đĩa đệm.',
+      },
+      {
+        id: 'snip-1',
+        book_id: 'book-hieu-dung-cot-song',
+        book_title: 'Hiểu Đúng Về Cột Sống',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        chapter: 'Chương 1: Cơ Chế Sinh Học & Giảm Xóc Đĩa Đệm',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Cột sống gồm 33-34 đốt sống tạo thành 4 đường cong sinh lý. Đĩa đệm đóng vai trò như bộ phận giảm xóc sinh học với nhân nhầy ngậm nước và các vòng sợi collagen bao quanh.',
+        relevance_reason: 'Cấu tạo sinh học của đĩa đệm giảm xóc.',
+      },
+    ],
+    suggested_pages: [
+      {
+        title: 'Đĩa đệm và cơ chế giảm xóc',
+        topic_title: 'Cột Sống & Đĩa Đệm',
+        topic_slug: 'cot-song',
+        page_slug: 'dia-dem',
+        reason: 'Hiểu cơ chế thẩm thấu dinh dưỡng nuôi đĩa đệm.',
+      },
+    ],
+    follow_up_questions: [
+      'Uống nước đúng cách như thế nào?',
+      'Tư thế sinh hoạt đúng cần chú ý gì?',
     ],
   },
   {
@@ -103,6 +873,54 @@ const CURATED_QA = [
 • Khi nâng nhấc vật nặng: Luôn giữ lưng thẳng, hạ thấp trọng tâm và dùng lực từ đùi để nâng lên, tuyệt đối không cúi gập cong lưng.
 • Tránh tư thế tĩnh tại: Không ngồi hoặc đứng yên một chỗ quá 45 - 60 phút; hãy đứng dậy vươn người nhẹ nhàng để giải tỏa áp lực cho đĩa đệm.
 • Lắng nghe cơ thể: Do thể trạng và cơ địa mỗi người khác nhau, không có một tư thế cố định áp dụng cho tất cả; hãy điều chỉnh tư thế sao cho cột sống được nâng đỡ thoải mái và tự nhiên nhất.`,
+    suggested_books: [
+      {
+        id: 'book-hieu-dung-cot-song',
+        title: 'Hiểu Đúng Về Cột Sống',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'BÁN CHẠY',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Hướng dẫn các nguyên tắc công thái học bảo vệ đĩa đệm.',
+      },
+      {
+        id: 'book-tu-chua-lanh-lung',
+        title: 'Tự Chữa Lành Lưng & Cổ',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_tu_chua_lanh_lung_co.png',
+        badge_tag: 'PHỤC HỒI',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Phương pháp tự điều chỉnh và phục hồi đường cong sinh lý.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-1',
+        book_id: 'book-hieu-dung-cot-song',
+        book_title: 'Hiểu Đúng Về Cột Sống',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        chapter: 'Chương 1: Cơ Chế Sinh Học & Giảm Xóc Đĩa Đệm',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Cột sống gồm 33-34 đốt sống tạo thành 4 đường cong sinh lý. Đĩa đệm đóng vai trò như bộ phận giảm xóc sinh học với nhân nhầy ngậm nước và các vòng sợi collagen bao quanh.',
+        relevance_reason: 'Nguyên lý bảo vệ 4 đường cong sinh lý.',
+      },
+      {
+        id: 'snip-11',
+        book_id: 'book-tu-chua-lanh-lung',
+        book_title: 'Tự Chữa Lành Lưng & Cổ',
+        cover_url: '/documents/covers/cover_tu_chua_lanh_lung_co.png',
+        chapter: 'Chương 1: Phục Hồi Đường Cong Sinh Lý Tự Nhiên',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Phương pháp giải nén cột sống tại nhà bằng các tư thế kê gối hỗ trợ điều chỉnh đường cong sinh lý tự nhiên, kết hợp nhịp thở cơ hoành giúp khối cơ dựng sống được thư giãn sâu.',
+        relevance_reason: 'Phương pháp phục hồi độ cong tự nhiên của cột sống.',
+      },
+    ],
     suggested_pages: [
       {
         title: 'Tư thế chuẩn & Vận động giải áp',
@@ -110,13 +928,6 @@ const CURATED_QA = [
         topic_slug: 'cot-song',
         page_slug: 'tu-the-va-van-dong',
         reason: 'Hướng dẫn chi tiết nguyên tắc tư thế công thái học bảo vệ cột sống.',
-      },
-      {
-        title: 'Đĩa đệm và cơ chế giảm xóc',
-        topic_title: 'Cột Sống & Đĩa Đệm',
-        topic_slug: 'cot-song',
-        page_slug: 'dia-dem',
-        reason: 'Hiểu cơ chế thẩm thấu dinh dưỡng và giảm tải áp lực đĩa đệm.',
       },
     ],
     follow_up_questions: [
@@ -126,47 +937,12 @@ const CURATED_QA = [
   },
   {
     keywords: [
-      'cach phan biet dau moi thong thuong',
-      'phan biet dau moi thong thuong',
-      'phan biet dau moi',
-      'dau moi thong thuong',
-      'dau co hay thoat vi',
-      'dau lung thong thuong',
-    ],
-    answer:
-`Bạn có thể phân biệt cơn đau qua các đặc điểm thực tế sau:
-
-• Đau mỏi cơ thông thường: Do căng cơ khi ngồi lâu hoặc làm việc nặng. Đau âm ỉ khu trú tại vùng cơ lưng/cổ, giảm nhanh khi nghỉ ngơi, xoa bóp và không lan xuống tay chân.
-• Tổn thương đĩa đệm hoặc chèn ép: Đau buốt nhói, đau tăng rõ rệt khi cúi gập hoặc ho/hắt hơi; kèm cảm giác tê bì, châm chích hoặc yếu cơ lan dọc theo cánh tay hoặc cẳng chân.
-• Cần đi khám y tế ngay: Nếu xuất hiện cảm giác tê yếu chi lan nhanh, bàn chân khó nhấc hoặc rối loạn đại tiểu tiện.`,
-    suggested_pages: [
-      {
-        title: 'Các vấn đề thường gặp và cách phòng tránh',
-        topic_title: 'Cột Sống & Đĩa Đệm',
-        topic_slug: 'cot-song',
-        page_slug: 'cac-van-de-thuong-gap',
-        reason: 'Nhận diện các hội chứng đau cơ xương khớp và biện pháp phòng ngừa.',
-      },
-      {
-        title: 'Thần kinh và tủy sống',
-        topic_title: 'Cột Sống & Đĩa Đệm',
-        topic_slug: 'cot-song',
-        page_slug: 'than-kinh',
-        reason: 'Tìm hiểu đường dẫn truyền thần kinh và cơ chế chèn ép rễ.',
-      },
-    ],
-    follow_up_questions: [
-      'Tư thế sinh hoạt đúng cần chú ý gì?',
-      'Dinh dưỡng kháng viêm hỗ trợ sụn khớp như thế nào?',
-    ],
-  },
-  {
-    keywords: [
       'uong nuoc dung cach',
       'cach uong nuoc',
       'nguyen tac uong nuoc',
       'uong nuoc the nao',
       'uong bao nhieu nuoc',
+      'sach nuoc',
     ],
     answer:
 `Uống nước đúng cách giúp nuôi dưỡng tế bào và duy trì độ đàn hồi cho đĩa đệm:
@@ -175,6 +951,42 @@ const CURATED_QA = [
 • Thời điểm vàng: 1 ly nước ấm ngay khi thức dậy để kích hoạt tuần hoàn, 1 ly trước bữa ăn 30 phút, và uống rải rác đều trong ngày.
 • Lượng nước chuẩn: Khoảng 0.04 lít trên mỗi kg cân nặng (ví dụ: người 50kg cần khoảng 2 lít nước/ngày), tăng nhẹ khi vận động nhiều mồ hôi.
 • Chọn nguồn nước: Ưu tiên nước sạch, giàu khoáng và có tính kiềm tự nhiên để trung hòa axit dư thừa.`,
+    suggested_books: [
+      {
+        id: 'book-nuoc-va-khoang-chat',
+        title: 'Nước & Khoáng Chất Cho Cơ Thể',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_nuoc.png',
+        badge_tag: 'CẤP NƯỚC',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Cẩm nang toàn diện về cấp nước tế bào và phục hồi đĩa đệm.',
+      },
+      {
+        id: 'book-hieu-dung-cot-song',
+        title: 'Hiểu Đúng Về Cột Sống',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'BÁN CHẠY',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Cơ chế thẩm thấu dưỡng chất nuôi nhân nhầy đĩa đệm.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-10',
+        book_id: 'book-nuoc-va-khoang-chat',
+        book_title: 'Nước & Khoáng Chất Cho Cơ Thể',
+        cover_url: '/documents/covers/cover_nuoc.png',
+        chapter: 'Chương 1: Cấp Nước Tế Bào & Bơm Dịch Nhân Nhầy',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Nhân nhầy đĩa đệm chứa đến 80% là nước. Uống nước ion kiềm giàu hydrogen giúp thẩm thấu sâu vào tế bào, hỗ trợ quá trình bơm hút dịch dinh dưỡng tự nhiên của đĩa đệm khi ngủ.',
+        relevance_reason: 'Cơ chế bơm hút nước nuôi nhân nhầy đĩa đệm.',
+      },
+    ],
     suggested_pages: [
       {
         title: 'Nguyên tắc uống nước',
@@ -182,13 +994,6 @@ const CURATED_QA = [
         topic_slug: 'nuoc',
         page_slug: 'nguyen-tac-uong-nuoc',
         reason: 'Quy tắc 4 đúng khi uống nước cho tế bào.',
-      },
-      {
-        title: 'Vai trò của nước',
-        topic_title: 'Nước',
-        topic_slug: 'nuoc',
-        page_slug: 'vai-tro-cua-nuoc',
-        reason: 'Dung môi sinh hóa và cơ chế thẩm thấu nuôi đĩa đệm.',
       },
     ],
     follow_up_questions: [
@@ -198,45 +1003,12 @@ const CURATED_QA = [
   },
   {
     keywords: [
-      'dinh duong cho khop',
-      'dinh duong cot song',
-      'an gi tot cho xuong khop',
-      'dinh duong khang viem',
-      'an gi do dau lung',
-    ],
-    answer:
-`Dinh dưỡng khoa học giúp giảm viêm âm thầm và nuôi dưỡng sụn khớp từ gốc:
-
-• Thực phẩm kháng viêm: Tăng cường cá béo (cá hồi, cá thu giàu Omega-3), dầu ô liu, quả mọng, nghệ, gừng và các loại rau lá xanh đậm.
-• Dưỡng chất xây dựng mô: Bổ sung đủ đạm chất lượng cao, vitamin C, kẽm, canxi và vitamin D3/K2 để tái tạo mô liên kết và xương.
-• Cần cắt giảm: Hạn chế đường tinh luyện, đồ ngọt, thực phẩm siêu chế biến, dầu chiên đi chiên lại và nước ngọt có gas.`,
-    suggested_pages: [
-      {
-        title: 'Dinh dưỡng kháng viêm',
-        topic_title: 'Dinh Dưỡng',
-        topic_slug: 'dinh-duong',
-        page_slug: 'dinh-duong-khang-viem',
-        reason: 'Thực đơn và nhóm chất giúp kiểm soát phản ứng viêm khớp.',
-      },
-      {
-        title: 'Chất đạm (Protein)',
-        topic_title: 'Dinh Dưỡng',
-        topic_slug: 'dinh-duong',
-        page_slug: 'chat-dam-protein',
-        reason: 'Nguyên liệu cấu tạo cơ bắp và hệ thống dây chằng.',
-      },
-    ],
-    follow_up_questions: [
-      'Uống nước đúng cách như thế nào?',
-      'Tư thế sinh hoạt đúng cần chú ý gì?',
-    ],
-  },
-  {
-    keywords: [
-      'tong quan ve cot song',
+      'atlas giai phau',
+      'giai phau 3d',
+      'sach atlas',
+      'sach 3d',
       'cau tao cot song',
-      'vai tro cot song',
-      'cot song va dia dem',
+      'tong quan ve cot song',
     ],
     answer:
 `Cột sống là trục nâng đỡ và bảo vệ hệ thần kinh trung ương của cơ thể:
@@ -244,6 +1016,54 @@ const CURATED_QA = [
 • Cấu tạo tổng thể: Gồm 33-34 đốt sống xếp chồng lên nhau, tạo thành 4 đường cong sinh lý tự nhiên (cổ, ngực, thắt lưng, cùng cụt) giúp phân tán lực khi vận động.
 • Đĩa đệm giảm xóc: Nằm giữa các đốt sống, đóng vai trò như đệm sinh học giảm chấn động và giúp cơ thể cúi, ngửa, xoay chuyển linh hoạt.
 • Cơ chế nuôi dưỡng: Đĩa đệm nhận dinh dưỡng qua cơ chế thẩm thấu khi vận động đúng trục sinh học tự nhiên.`,
+    suggested_books: [
+      {
+        id: 'book-atlas-cot-song',
+        title: 'Atlas Giải Phẫu Cột Sống & Khớp 3D',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+        badge_tag: 'ATLAS 3D',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Atlas 3D mô phỏng trực quan 33 đốt sống và 23 đĩa đệm.',
+      },
+      {
+        id: 'book-hieu-dung-cot-song',
+        title: 'Hiểu Đúng Về Cột Sống',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        badge_tag: 'BÁN CHẠY',
+        target_page: 4,
+        target_index: 3,
+        reason: 'Bảng tra cứu rễ thần kinh tủy sống và các phân đoạn chi phối.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-8',
+        book_id: 'book-atlas-cot-song',
+        book_title: 'Atlas Giải Phẫu Cột Sống & Khớp 3D',
+        cover_url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+        chapter: 'Chương 1: Cấu Trúc Khớp Đốt Sống Đa Tầng 3D',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Mô phỏng giải phẫu 3D đa tầng hệ cơ dựng sống, dây chằng vàng, dây chằng dọc trước và khoang ngoài màng cứng bảo vệ tủy sống và điều hòa vận động linh hoạt.',
+        relevance_reason: 'Mô phỏng giải phẫu 3D hệ cơ và dây chằng cột sống.',
+      },
+      {
+        id: 'snip-3',
+        book_id: 'book-hieu-dung-cot-song',
+        book_title: 'Hiểu Đúng Về Cột Sống',
+        cover_url: '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+        chapter: 'Phụ Lục: Bảng Tra Cứu Rễ Thần Kinh Cột Sống',
+        page_number: 4,
+        page_index: 3,
+        excerpt:
+          'Bảng định vị phân bổ rễ thần kinh tủy sống: Nhánh C5-C7 chi phối cánh tay bàn tay; Nhánh L3-L5 chi phối khớp gối, cơ đùi, cẳng chân và mu bàn chân.',
+        relevance_reason: 'Bảng định vị phân bổ các nhánh rễ thần kinh.',
+      },
+    ],
     suggested_pages: [
       {
         title: 'Tổng quan về cột sống',
@@ -251,13 +1071,6 @@ const CURATED_QA = [
         topic_slug: 'cot-song',
         page_slug: 'tong-quan-ve-cot-song',
         reason: 'Cấu trúc giải phẫu và 4 đường cong sinh lý.',
-      },
-      {
-        title: 'Đĩa đệm',
-        topic_title: 'Cột Sống & Đĩa Đệm',
-        topic_slug: 'cot-song',
-        page_slug: 'dia-dem',
-        reason: 'Cấu tạo nhân nhầy và cơ chế hấp thụ xung lực.',
       },
     ],
     follow_up_questions: [
@@ -382,28 +1195,32 @@ async function getOrBuildLessonCatalog(): Promise<LessonCatalogItem[]> {
   return catalog;
 }
 
-// Fallback an toàn khi mạng chập chờn (gọn gàng, đúng trọng tâm, TUYỆT ĐỐI KHÔNG CHÈN DOCTORLOAN HAY BẢN NÓI ĐÀO TẠO)
-function fastFallbackSearch(query: string, catalog: LessonCatalogItem[]) {
+// Fallback an toàn khi mạng chập chờn (gọn gàng, đúng trọng tâm, kèm sách & trích đoạn trang sách)
+function fastFallbackSearch(query: string, catalog: LessonCatalogItem[], dynamicBooks?: any[]) {
   const selectedPages = rankCatalogPages(query, catalog);
-  const primaryPage = selectedPages[0];
+  const { books: matchedBooks, snippets: matchedSnippets } = rankBooksAndSnippets(query, dynamicBooks);
 
   let answerText = '';
   const lowerQ = query.toLowerCase();
 
-  if (lowerQ.includes('cổ') || lowerQ.includes('vai') || lowerQ.includes('gáy') || lowerQ.includes('ngực')) {
-    answerText = `• Duy trì tư thế ngồi chuẩn, nằm chuẩn để bảo vệ trục cột sống cổ tự nhiên.\n• Tránh giữ nguyên một tư thế quá lâu; nghỉ ngơi và thả lỏng cơ định kỳ.\n• Chườm ấm nhẹ nhàng vùng cổ vai gáy vào buổi tối để tăng cường tuần hoàn máu.`;
-  } else if (lowerQ.includes('lưng') || lowerQ.includes('đĩa đệm') || lowerQ.includes('thoát vị') || lowerQ.includes('tọa')) {
+  if (lowerQ.includes('cổ') || lowerQ.includes('vai') || lowerQ.includes('gáy') || lowerQ.includes('ngực') || lowerQ.includes('tay')) {
+    answerText = `• Duy trì tư thế ngồi chuẩn, nằm chuẩn để bảo vệ trục cột sống cổ C1-C7 tự nhiên.\n• Tránh giữ nguyên một tư thế quá lâu; nghỉ ngơi và thả lỏng cơ định kỳ.\n• Chườm ấm nhẹ nhàng vùng cổ vai gáy vào buổi tối để tăng cường tuần hoàn máu nuôi các rễ thần kinh cánh tay.`;
+  } else if (lowerQ.includes('lưng') || lowerQ.includes('đĩa đệm') || lowerQ.includes('thoát vị') || lowerQ.includes('tọa') || lowerQ.includes('l4') || lowerQ.includes('l5')) {
     answerText = `• Duy trì tư thế nằm chuẩn, ngồi chuẩn để bảo vệ trục sinh lý cột sống và giảm áp lực cho đĩa đệm.\n• Tránh ngồi tĩnh tại liên tục một chỗ quá lâu, nên đứng dậy đi lại nhẹ nhàng sau mỗi 30 - 45 phút.\n• Khi nâng nhấc đồ vật, luôn giữ thẳng lưng và hạ thấp trọng tâm, tránh cúi gập vặn xoắn đột ngột.`;
-  } else if (lowerQ.includes('nước') || lowerQ.includes('uống')) {
-    answerText = `• Uống từng ngụm nhỏ, rải đều trong suốt cả ngày thay vì uống dồn một lượng lớn.\n• Bổ sung nước ấm vào buổi sáng sau khi thức dậy để kích hoạt nhu động đường tiêu hóa.\n• Khi vận động ra nhiều mồ hôi, nên bù thêm khoáng điện giải tự nhiên.`;
-  } else if (lowerQ.includes('ăn') || lowerQ.includes('tiêu hóa') || lowerQ.includes('dạ dày') || lowerQ.includes('đầy bụng')) {
+  } else if (lowerQ.includes('nước') || lowerQ.includes('uống') || lowerQ.includes('bơm dịch')) {
+    answerText = `• Uống từng ngụm nhỏ, rải đều trong suốt cả ngày thay vì uống dồn một lượng lớn.\n• Bổ sung nước ấm vào buổi sáng sau khi thức dậy để kích hoạt nhu động đường tiêu hóa.\n• Uống đủ nước để hỗ trợ quá trình bơm hút dịch dinh dưỡng tự nhiên của đĩa đệm khi ngủ.`;
+  } else if (lowerQ.includes('ăn') || lowerQ.includes('tiêu hóa') || lowerQ.includes('dạ dày') || lowerQ.includes('đầy bụng') || lowerQ.includes('ruột')) {
     answerText = `• Ăn chậm, nhai kỹ để giảm gánh nặng co bóp và tiết acid cho dạ dày.\n• Hạn chế đồ ăn quá nhiều dầu mỡ, đồ cay nóng hoặc nằm ngay sau khi ăn no.\n• Duy trì khoảng cách tối thiểu 2 - 3 giờ giữa bữa tối và giờ đi ngủ.`;
+  } else if (lowerQ.includes('dinh dưỡng') || lowerQ.includes('kháng viêm') || lowerQ.includes('sụn') || lowerQ.includes('khớp')) {
+    answerText = `• Tăng cường thực phẩm giàu Omega-3, nghệ, gừng và rau lá xanh đậm để giảm phản ứng viêm âm thầm.\n• Bổ sung đủ protein chất lượng cao, vitamin C, canxi và D3/K2 để hỗ trợ tái tạo mô liên kết và sụn khớp.\n• Cắt giảm đường tinh luyện, đồ ngọt và thực phẩm siêu chế biến.`;
   } else {
-    answerText = `• Lắng nghe các tín hiệu của cơ thể, duy trì lối sống điều độ và chế độ dinh dưỡng lành mạnh.\n• Duy trì vận động nhịp nhàng mỗi ngày để tăng cường tuần hoàn và trao đổi chất.\n• Xem chi tiết bài học y học trực quan bên dưới để nắm rõ cơ chế và cách ứng dụng.`;
+    answerText = `• Lắng nghe các tín hiệu của cơ thể, duy trì lối sống điều độ và chế độ dinh dưỡng lành mạnh.\n• Duy trì vận động nhịp nhàng mỗi ngày để tăng cường tuần hoàn và trao đổi chất.\n• Xem chi tiết cuốn sách y khoa và đoạn trích tài liệu bên dưới để nắm rõ cơ chế và cách ứng dụng.`;
   }
 
   return {
     answer: `Hướng dẫn chăm sóc sức khỏe chủ động:\n\n${answerText}`,
+    suggested_books: matchedBooks,
+    in_book_snippets: matchedSnippets,
     suggested_pages: selectedPages.map((s) => ({
       title: s.page_title,
       topic_title: s.topic_title,
@@ -439,8 +1256,15 @@ export async function POST(req: NextRequest) {
     if (!bookContext) {
       const curated = findCuratedMatch(question);
       if (curated) {
+        const { books: rankedBooks, snippets: rankedSnippets } = rankBooksAndSnippets(question);
         return NextResponse.json({
           answer: curated.answer,
+          suggested_books: (curated as any).suggested_books && (curated as any).suggested_books.length > 0
+            ? (curated as any).suggested_books
+            : rankedBooks,
+          in_book_snippets: (curated as any).in_book_snippets && (curated as any).in_book_snippets.length > 0
+            ? (curated as any).in_book_snippets
+            : rankedSnippets,
           suggested_pages: curated.suggested_pages,
           follow_up_questions: curated.follow_up_questions,
           provider: 'curated_instant',
@@ -448,11 +1272,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Lấy catalog bài học siêu nhanh
+    // Lấy catalog bài học và danh mục sách
     const [catalog, settings] = await Promise.all([
       getOrBuildLessonCatalog(),
       getSettings(),
     ]);
+
+    const { books: rankedBooks, snippets: rankedSnippets } = rankBooksAndSnippets(question, settings?.recommended_books);
 
     const aiTraining = settings?.ai_training;
     const lowerQ = question.toLowerCase();
@@ -471,6 +1297,8 @@ export async function POST(req: NextRequest) {
 
           return NextResponse.json({
             answer: matchedFaq.answer,
+            suggested_books: rankedBooks,
+            in_book_snippets: rankedSnippets,
             suggested_pages: selectedPages.map((s) => ({
               title: s.page_title,
               topic_title: s.topic_title,
@@ -492,17 +1320,27 @@ export async function POST(req: NextRequest) {
     const geminiKey = process.env.GEMINI_API_KEY;
 
     if (!deepseekKey && !geminiKey) {
-      return NextResponse.json(fastFallbackSearch(question, catalog));
+      return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
     }
 
-    // 3. LỌC 2-3 BÀI HỌC LIÊN QUAN NHẤT TỪ CATALOG BẰNG THUẬT TOÁN ĐIỂM CHỦ ĐỀ
+    // 3. LỌC BÀI HỌC VÀ SÁCH LIÊN QUAN
     const topCatalog = rankCatalogPages(question, catalog);
 
     const catalogText = topCatalog
       .map((c, idx) => `[Bài ${idx + 1}] "${c.page_title}" (Chủ đề: ${c.topic_title}, slug: ${c.topic_slug}/${c.page_slug}): ${c.summary}`)
       .join('\n');
 
-    // 4. HỆ THỐNG PROMPT TỐI ƯU: ĐÚNG TRỌNG TÂM, NGẮN GỌN, TUYỆT ĐỐI CẤM BÁN HÀNG DOCTORLOAN
+    const booksText = EBOOK_CATALOG
+      .slice(0, 8)
+      .map((b, idx) => `[Sách ${idx + 1}] ID: "${b.id}" | Tựa: "${b.title}" (Tác giả: ${b.author}, Tag: ${b.badge_tag || 'NÊN ĐỌC'}, Trang gợi ý: ${b.target_page || 2}): ${b.description}`)
+      .join('\n');
+
+    const snippetsText = IN_BOOK_SNIPPETS
+      .slice(0, 8)
+      .map((s, idx) => `[Trích đoạn ${idx + 1}] ID: "${s.id}" | Sách: "${s.book_title}" (ID: ${s.book_id}) | Chương: "${s.chapter}" | Trang ${s.page_number} (Index ${s.page_index}): "${s.excerpt}"`)
+      .join('\n');
+
+    // 4. HỆ THỐNG PROMPT TỐI ƯU CHO EBOOK & THỦ THƯ TRA CỨU Y KHOA
     const contextPrefix = bookContext
       ? `BỐI CẢNH ĐỌC SÁCH HIỆN TẠI (TỦ SÁCH QBIZ BOOKS):
 - Tên cuốn sách: "${bookContext.title || 'Sách chuyên đề'}" ${bookContext.author ? `(Tác giả: ${bookContext.author})` : ''}
@@ -511,44 +1349,63 @@ ${bookContext.excerpt ? `- Trích đoạn / Nội dung trang sách đang đọc:
 NHIỆM VỤ ĐẶC BIỆT: Bạn đóng vai trò Trợ lý AI Đồng hành Đọc sách (Interactive Reading Copilot). Hãy ưu tiên trực tiếp giải thích, làm sáng tỏ các thuật ngữ chuyên sâu, tóm tắt hoặc giải đáp thắc mắc của độc giả dựa trên chính xác nội dung trang sách được cung cấp ở trên một cách dễ hiểu, sinh động, chuẩn y khoa.\n\n`
       : '';
 
-    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Sức Khỏe AI trong ứng dụng giáo dục y học "Học Cơ Thể" (Tủ Sách Y Khoa Qbiz Books của tác giả Tùng dinh dưỡng).
+    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Sức Khỏe AI và Thủ Thư Tra Cứu Thông Minh trong Tủ Sách Điện Tử Qbiz Books (Tác giả: Tùng Dinh Dưỡng).
 
 NGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT):
 1. ĐÚNG TRỌNG TÂM CÂU HỎI (P0):
-   - Người học hỏi vấn đề gì, hãy trả lời trực diện, chính xác vào đúng vấn đề đó.
+   - Người đọc hỏi vấn đề gì, hãy trả lời trực diện, chính xác vào đúng vấn đề đó.
    - Ngắn gọn & súc tích: 60 đến 90 từ (tối đa 110 từ). Trình bày thông thoáng bằng 3 đến 4 gạch đầu dòng rõ ràng, dễ hiểu.
    - TUYỆT ĐỐI KHÔNG lan man sang các chủ đề không liên quan.
 
 2. NGUYÊN TẮC QUAN TRỌNG VỀ TƯ THẾ & VẬN ĐỘNG (TUYỆT ĐỐI TUÂN THỦ THEO TÁC GIẢ):
-   - CẤM TIỂU TƯ VẤN NẰM/NGỒI CHI TIẾT:
-     + Tuyệt đối KHÔNG hướng dẫn cụ thể nằm kiểu gì (không chỉ định nằm nghiêng trái, nằm ngửa, co chân, kê cao đầu giường 15-20cm, kê vật gì dưới đệm...).
-     + Tuyệt đối KHÔNG hướng dẫn cụ thể ngồi kiểu gì (không quy định góc khuỷu tay 90 độ, không quy định mắt cách vở/bàn bao nhiêu cm, không chỉ định chân đặt thế nào...).
-   - CẤM TƯ VẤN GỐI & GHẾ:
-     + Tuyệt đối KHÔNG tư vấn về gối hay ghế (loại gối, kê gối, chọn gối, loại ghế, chỉnh ghế...). Tác giả Tùng Dinh Dưỡng KHÔNG có tài liệu và KHÔNG tư vấn về gối hay ghế.
-   - CẤM TƯ VẤN BÀI TẬP CỤ THỂ:
-     + Tuyệt đối KHÔNG kê toa hoặc chỉ định bài tập thể dục, động tác tập cụ thể (không bảo đu xà, bơi lội, squat, plank, bài tập kéo giãn chi tiết...).
-   - NẾU CÓ ĐỀ CẬP ĐẾN TƯ THẾ HOẶC SINH HOẠT:
-     + CHỈ ĐƯỢC NÓI CHUNG theo nguyên tắc: "Duy trì tư thế nằm chuẩn, ngồi chuẩn để bảo vệ trục cột sống và độ cong sinh lý tự nhiên", "tránh duy trì tư thế tĩnh tại một chỗ quá lâu, nên đứng dậy đi lại nhẹ nhàng định kỳ", "vận động nhẹ nhàng phù hợp với thể trạng của bản thân".
-   - LÝ DO CHUYÊN MÔN: Thể trạng, cơ địa và mức độ tổn thương của mỗi người là khác nhau, không ai giống ai nên không áp đặt một tư thế nằm ngồi hay bài tập cố định cho tất cả mọi người.
+   - CẤM TIỂU TƯ VẤN NẰM/NGỒI CHI TIẾT (không chỉ định nằm nghiêng trái, nằm ngửa, kê đầu giường 15-20cm, không quy định góc tay 90 độ, mắt cách bàn bao nhiêu cm).
+   - CẤM TƯ VẤN GỐI & GHẾ (loại gối, kê gối, chọn gối, loại ghế, chỉnh ghế...).
+   - CẤM TƯ VẤN BÀI TẬP CỤ THỂ (không kê toa squat, plank, bơi lội, đu xà...).
+   - CHỈ ĐƯỢC NÓI CHUNG theo nguyên tắc: "Duy trì tư thế nằm chuẩn, ngồi chuẩn để bảo vệ trục cột sống và độ cong sinh lý tự nhiên", "tránh duy trì tư thế tĩnh tại một chỗ quá lâu, nên đứng dậy đi lại nhẹ nhàng định kỳ", "vận động nhẹ nhàng phù hợp với thể trạng của bản thân".
 
 3. TUYỆT ĐỐI CẤM KHÁC:
    - CẤM TUYỆT ĐỐI nhắc đến thương hiệu DoctorLoan, ghế DoctorLoan hay bất kỳ sản phẩm bán hàng nào (trừ khi người dùng đích thân hỏi từ "DoctorLoan").
-   - CẤM chia kiểu máy móc: "TẦNG 1", "TẦNG 2", "TẦNG 3".
-   - CẤM tự ý đưa công thức nước 0.04 hay cảnh báo cấp cứu/bệnh viện vào các câu hỏi sinh hoạt thông thường.
    - CẤM các từ: "chữa bệnh", "khám chữa bệnh", "điều trị dứt điểm", "bác sĩ".
    - CẤM các câu trần tình như "tôi không phải bác sĩ", "tác giả không phải bác sĩ".
-   - CÂU HỎI TIẾP THEO (follow_up_questions): Tuyệt đối KHÔNG gợi ý các câu hỏi về bài tập, tư thế nằm ngủ, cách nằm, gối hay ghế. Chỉ gợi ý câu hỏi về dinh dưỡng, nước, kiến thức giải phẫu, cơ chế bệnh học hoặc nguyên tắc tư thế chuẩn chung.
 
-4. ĐỊNH HƯỚNG BÀI HỌC:
-   - Chọn đúng 1-2 bài học liên quan nhất trong danh mục dưới đây:
+4. NHIỆM VỤ TRA CỨU SÁCH & TRÍCH ĐOẠN (SIÊU THÔNG MINH):
+   - TÌM SÁCH CHÍNH XÁC (suggested_books): Chọn 1-2 cuốn sách phù hợp nhất từ danh mục Tủ Sách Ebook dưới đây:
+${booksText}
+   - TRÍCH XUẤT TÀI LIỆU TRANG SÁCH (in_book_snippets): Chọn 1-2 đoạn trích sâu trong trang sách phù hợp nhất từ kho trích đoạn dưới đây:
+${snippetsText}
+   - ĐỊNH HƯỚNG BÀI HỌC (suggested_pages): Chọn 1-2 bài học liên quan từ danh mục dưới đây:
 ${catalogText}
 
 BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
 {
   "answer": "Nội dung trả lời ngắn gọn theo 3-4 gạch đầu dòng...",
+  "suggested_books": [
+    {
+      "id": "book-id-chinh-xac",
+      "title": "Tên sách",
+      "author": "Tác giả",
+      "cover_url": "url ảnh bìa",
+      "badge_tag": "tag",
+      "target_page": 2,
+      "reason": "Lý do ngắn gọn 1 câu vì sao cuốn sách này giải quyết thắc mắc"
+    }
+  ],
+  "in_book_snippets": [
+    {
+      "id": "snip-id",
+      "book_id": "book-id",
+      "book_title": "Tên sách",
+      "cover_url": "url ảnh bìa",
+      "chapter": "Tên chương",
+      "page_number": 2,
+      "page_index": 1,
+      "excerpt": "Đoạn văn bản trích dẫn chính xác trong trang sách",
+      "relevance_reason": "Lý do vì sao đoạn trích này làm sáng tỏ câu hỏi"
+    }
+  ],
   "suggested_pages": [
     {
-      "title": "Tên bài học chính xác trong danh mục",
+      "title": "Tên bài học",
       "topic_title": "Tên chủ đề",
       "topic_slug": "slug_chu_de",
       "page_slug": "slug_bai_hoc",
@@ -564,7 +1421,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
     let rawText = '';
     let usedProvider = '';
 
-    // 5. GỌI PRIMARY: DEEPSEEK V3 VỚI TIMEOUT 3500ms
+    // 5. GỌI PRIMARY: DEEPSEEK V3 VỚI TIMEOUT 8000ms
     if (deepseekKey) {
       try {
         const controller = new AbortController();
@@ -587,7 +1444,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
               })),
               { role: 'user', content: question },
             ],
-            max_tokens: 800,
+            max_tokens: 1000,
             temperature: 0.3,
           }),
           signal: controller.signal,
@@ -604,7 +1461,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
           }
         }
       } catch (err: any) {
-        console.warn('[AI] DeepSeek timed out or failed, falling back to Gemini Flash Lite...', err?.message);
+        console.warn('[AI] DeepSeek timed out or failed, falling back to Gemini Flash...', err?.message);
       }
     }
 
@@ -631,7 +1488,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
               generationConfig: {
                 responseMimeType: 'application/json',
                 temperature: 0.3,
-                maxOutputTokens: 800,
+                maxOutputTokens: 1000,
               },
             }),
             signal: controller.signal,
@@ -655,7 +1512,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
     }
 
     if (!rawText) {
-      return NextResponse.json(fastFallbackSearch(question, catalog));
+      return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
     }
 
     // 7. BÓC TÁCH JSON VÀ LÀM SẠCH KẾT QUẢ
@@ -779,6 +1636,44 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
         cleanAnswer = cleanAnswer.charAt(0).toUpperCase() + cleanAnswer.slice(1);
       }
 
+      // Xử lý danh sách Sách gợi ý (suggested_books)
+      const validSuggestedBooks: SuggestedBookItem[] = Array.isArray(parsedJson.suggested_books) && parsedJson.suggested_books.length > 0
+        ? parsedJson.suggested_books.map((b: any) => {
+            const foundCatalog = EBOOK_CATALOG.find((cat) => cat.id === b.id || cat.title.toLowerCase().includes((b.title || '').toLowerCase()));
+            const targetPage = b.target_page || foundCatalog?.target_page || 2;
+            return {
+              id: b.id || foundCatalog?.id || 'book-hieu-dung-cot-song',
+              title: b.title || foundCatalog?.title || 'Hiểu Đúng Về Cột Sống',
+              author: b.author || foundCatalog?.author || 'Tùng Dinh Dưỡng',
+              description: b.description || foundCatalog?.description || '',
+              cover_url: b.cover_url || foundCatalog?.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+              badge_tag: b.badge_tag || foundCatalog?.badge_tag || 'NÊN ĐỌC',
+              target_page: targetPage,
+              target_index: Math.max(0, targetPage - 1),
+              reason: b.reason || foundCatalog?.reason || 'Tham khảo kiến thức chuẩn y khoa trong cuốn sách này.',
+            };
+          })
+        : rankedBooks;
+
+      // Xử lý danh sách trích đoạn sâu trong trang sách (in_book_snippets)
+      const validSnippets: InBookSnippetItem[] = Array.isArray(parsedJson.in_book_snippets) && parsedJson.in_book_snippets.length > 0
+        ? parsedJson.in_book_snippets.map((snip: any) => {
+            const foundSnip = IN_BOOK_SNIPPETS.find((s) => s.id === snip.id || s.chapter.toLowerCase().includes((snip.chapter || '').toLowerCase()));
+            const pageNum = snip.page_number || foundSnip?.page_number || 2;
+            return {
+              id: snip.id || foundSnip?.id || 'snip-1',
+              book_id: snip.book_id || foundSnip?.book_id || 'book-hieu-dung-cot-song',
+              book_title: snip.book_title || foundSnip?.book_title || 'Hiểu Đúng Về Cột Sống',
+              cover_url: snip.cover_url || foundSnip?.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+              chapter: snip.chapter || foundSnip?.chapter || 'Chương 1: Cơ Chế Sinh Học',
+              page_number: pageNum,
+              page_index: Math.max(0, pageNum - 1),
+              excerpt: snip.excerpt || foundSnip?.excerpt || '',
+              relevance_reason: snip.relevance_reason || foundSnip?.relevance_reason || 'Trích đoạn trực tiếp từ trang sách.',
+            };
+          })
+        : rankedSnippets;
+
       const normalizedSuggested = Array.isArray(parsedJson.suggested_pages)
         ? parsedJson.suggested_pages.map((p: any) => {
             const topicSlug = (p.topic_slug || '').trim();
@@ -824,17 +1719,22 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
 
       return NextResponse.json({
         answer: cleanAnswer || parsedJson.answer,
+        suggested_books: validSuggestedBooks,
+        in_book_snippets: validSnippets,
         suggested_pages: normalizedSuggested,
         follow_up_questions: filteredFollowUps,
         provider: usedProvider || 'ai',
       });
     }
 
-    return NextResponse.json(fastFallbackSearch(question, catalog));
+    return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
   } catch (error: any) {
+    const { books: fallbackBooks, snippets: fallbackSnippets } = rankBooksAndSnippets('');
     return NextResponse.json(
       {
-        answer: 'Xin lỗi bạn, kết nối tới Trợ lý AI đang gián đoạn một chút. Mời bạn tham khảo trực tiếp các bài học hướng dẫn dưới đây:',
+        answer: 'Xin lỗi bạn, kết nối tới Trợ lý AI đang gián đoạn một chút. Mời bạn tham khảo trực tiếp các cuốn sách y khoa và bài học hướng dẫn dưới đây:',
+        suggested_books: fallbackBooks,
+        in_book_snippets: fallbackSnippets,
         suggested_pages: [],
         follow_up_questions: [],
       },
