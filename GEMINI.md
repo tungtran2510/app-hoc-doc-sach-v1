@@ -2,10 +2,12 @@
 > **Tài liệu nạp tự động cho AI Agent khi mở thư mục `d:\app-hoc-co-the-v2`**
 
 ## 0. QUY TẮC BẤT KHẢ XÂM PHẠM (MANDATORY SUPREME RULES)
-1. **NGHIỆM THU BẰNG MẮT THỰC TẾ TRÊN MOBILE 390x844:**
+1. **TUYỆT ĐỐI KHÔNG TỰ Ý ĐẨY (GIT PUSH) LÊN MẠNG KHI NGƯỜI DÙNG CHƯA CHO PHÉP:**
+   Chỉ kiểm thử trên localhost/môi trường xem thử nội bộ. CẤM TUYỆT ĐỐI mọi hành động `git push` hoặc đẩy code lên Vercel/GitHub khi người dùng chưa xác nhận lệnh rõ ràng bằng chữ ("Đẩy" hoặc "Chốt và đẩy lên").
+2. **NGHIỆM THU BẰNG MẮT THỰC TẾ TRÊN MOBILE 390x844:**
    Sau BẤT KỲ một thao tác, tính năng, sửa lỗi, căn chỉnh nút bấm hay văn bản nào: Agent BẮT BUỘC phải dùng trình duyệt (Playwright mobile viewport 390x844) chụp ảnh màn hình giao diện thực tế và GỬI TRỰC TIẾP HÌNH ÁNH ĐÓ VÀO ĐOẠN CHAT (dùng định dạng `![Mô tả](file:///...)`) để người dùng nghiệm thu bằng mắt thường. Tuyệt đối CẤM báo cáo chay bằng chữ hay chỉ đưa tên file.
-2. **TIÊU CHUẨN TINH GỌN TRÊN ĐIỆN THOẠI (STRICT MOBILE-FIRST MINIMALISM):**
-   Mỗi tính năng hoàn thiện BẮT BUỘC phải chuẩn tinh gọn trên điện thoại. CẤM TUYỆT ĐỐI các dòng thừa, từ thừa, nhãn thừa gây rối mắt, phình trang hoặc xô lệch bố cục màn hình dọc.
+3. **TIÊU CHUẨN TINH GỌN TRÊN ĐIỆN THOẠI & NGUYÊN TẮC ĐƠN DÒNG (STRICT 1-LINE CONSTRAINTS ON MOBILE):**
+   Mỗi tính năng hoàn thiện BẮT BUỘC phải chuẩn tinh gọn trên điện thoại. CẤM TUYỆT ĐỐI các nút bấm, nhãn, metadata, tab switcher bị rớt xuống 2 dòng gây xô lệch giao diện, phình trang hoặc rối mắt. Mọi nhãn, nút bấm, thông tin phụ phụ phải tối ưu chặt chẽ trên đúng 1 dòng duy nhất.
 
 ## 1. NGUYÊN TẮC CỐT LÕI
 1. **Dự án độc lập 100% (Không gian sáng tạo Giao diện mới V2):** Thư mục này (`d:\app-hoc-doc-sach-v1`) được phát triển riêng để cách ly hoàn toàn khỏi bản gốc đang chạy.

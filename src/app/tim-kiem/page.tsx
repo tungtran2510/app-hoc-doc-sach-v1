@@ -17,11 +17,15 @@ import {
   Bot,
   FileText,
   Compass,
+  Globe,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import BookDetailModal, { UnifiedBookItem } from '../../components/BookDetailModal';
+import OnlineLibrarySection from '../../components/OnlineLibrarySection';
+import FloatingAiButton from '../../components/FloatingAiButton';
 import { playTapSound } from '../../lib/audioFeedback';
+import { matchSmartKeywords, CURATED_ONLINE_BOOKS } from '../../lib/onlineLibraryData';
 
 export const dynamic = 'force-dynamic';
 
@@ -256,79 +260,58 @@ export default function SearchPage() {
   const [readerInitialPage, setReaderInitialPage] = useState<number>(0);
   const [detailBook, setDetailBook] = useState<UnifiedBookItem | null>(null);
 
-  // Trạng thái Trợ lý AI Tìm Sách & Tra Cứu Y Khoa ngay dưới ô tìm kiếm
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<{
-    answer: string;
-    suggested_books?: Array<{
-      id: string;
-      title: string;
-      author: string;
-      cover_url: string;
-      badge_tag?: string;
-      target_page?: number;
-      target_index?: number;
-      reason: string;
-    }>;
-    in_book_snippets?: Array<{
-      id: string;
-      book_id: string;
-      book_title: string;
-      cover_url: string;
-      chapter: string;
-      page_number: number;
-      page_index: number;
-      excerpt: string;
-      relevance_reason?: string;
-    }>;
-    follow_up_questions?: string[];
-  } | null>(null);
+  // Tab chuyển đổi: Tủ sách hiện có ('local') hoặc Kho sách trực tuyến ('online')
+  const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
 
-  const handleAskAi = async (questionText: string) => {
-    const q = (questionText || query).trim();
-    if (!q || isAiLoading) return;
-    playTapSound();
-    setIsAiLoading(true);
-    saveToRecentSearches(q);
+  // Lắng nghe sự kiện mở sách từ Trợ lý AI bám đuổi (FloatingAiButton)
+  useEffect(() => {
+    const handleOpenFromAi = (e: any) => {
+      const detail = e.detail;
+      if (!detail) return;
+      playTapSound();
+      const cleanT = removeVietnameseTones(detail.title || '');
+      const localBook =
+        books.find((b) => b.id === detail.id) ||
+        books.find((b) => removeVietnameseTones(b.title).includes(cleanT));
+      const onlineBook =
+        CURATED_ONLINE_BOOKS.find((b) => b.id === detail.id) ||
+        CURATED_ONLINE_BOOKS.find((b) => removeVietnameseTones(b.title).includes(cleanT));
 
-    try {
-      const res = await fetch('/api/ai/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
-      });
-      if (!res.ok) throw new Error('Lỗi máy chủ');
-      const data = await res.json();
-      setAiResult(data);
-    } catch {
-      setAiResult({
-        answer: 'Kết nối tới Trợ lý AI đang gián đoạn một chút. Mời bạn tham khảo các cuốn sách y khoa bên dưới hoặc thử lại sau ít phút.',
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
+      const fileUrl =
+        localBook?.file_url ||
+        localBook?.pdf_url ||
+        onlineBook?.downloadUrl ||
+        '/documents/cam_nang_tu_the_vang_bai_tap_lung.pdf';
+      const coverUrl =
+        detail.cover_url ||
+        localBook?.cover_url ||
+        onlineBook?.coverUrl ||
+        '/documents/covers/cover_hieu_dung_ve_cot_song.png';
 
-  const handleOpenAiBook = (suggestedBook: { id: string; title: string; target_index?: number; target_page?: number; cover_url?: string }) => {
-    playTapSound();
-    const target =
-      books.find((b) => b.id === suggestedBook.id) ||
-      books.find((b) => removeVietnameseTones(b.title).includes(removeVietnameseTones(suggestedBook.title))) ||
-      {
-        id: suggestedBook.id,
-        title: suggestedBook.title,
-        author: 'Tùng Dinh Dưỡng',
-        description: '',
-        cover_url: suggestedBook.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
-        badge_tag: 'NÊN ĐỌC',
-        pages_count: 9,
-        pages: [],
+      const target: SearchBookItem = {
+        id: localBook?.id || onlineBook?.id || detail.id,
+        title: localBook?.title || onlineBook?.title || detail.title,
+        author: localBook?.author || onlineBook?.author || detail.author || 'Tùng Dinh Dưỡng',
+        description: localBook?.description || onlineBook?.description || detail.reason || '',
+        cover_url: coverUrl,
+        badge_tag: localBook?.badge_tag || onlineBook?.badgeTag || detail.badge_tag || 'AI ĐỀ XUẤT',
+        pages_count: localBook?.pages_count || 10,
+        pages: localBook?.pages || [],
+        file_url: fileUrl,
+        pdf_url: fileUrl,
+        file_name: localBook?.file_name || onlineBook?.title || detail.title,
       };
 
-    const initialP = suggestedBook.target_index ?? (suggestedBook.target_page ? suggestedBook.target_page - 1 : 0);
-    setReaderInitialPage(Math.max(0, initialP));
-    setReaderBook(target as SearchBookItem);
-  };
+      const initialP =
+        detail.target_index ??
+        (detail.target_page ? detail.target_page - 1 : 0);
+      setReaderInitialPage(Math.max(0, initialP));
+      setReaderBook(target);
+    };
+
+    window.addEventListener('open_book_from_ai', handleOpenFromAi);
+    return () => window.removeEventListener('open_book_from_ai', handleOpenFromAi);
+  }, [books]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -471,27 +454,31 @@ export default function SearchPage() {
     }
   };
 
-  const cleanQuery = removeVietnameseTones(debouncedQuery);
-
-  // 1. Lọc kết quả tìm kiếm theo Sách
-  const matchedBooks = books.filter((b) => {
-    if (!cleanQuery) return true;
-    const matchTitle = removeVietnameseTones(b.title).includes(cleanQuery);
-    const matchAuthor = removeVietnameseTones(b.author).includes(cleanQuery);
-    const matchDesc = removeVietnameseTones(b.description).includes(cleanQuery);
-    const matchBadge = removeVietnameseTones(b.badge_tag).includes(cleanQuery);
-    return matchTitle || matchAuthor || matchDesc || matchBadge;
+  // 1. Lọc kết quả tìm kiếm theo Sách (áp dụng NLP Smart Keyword Matching cho cả câu tự nhiên)
+  const scoredBooks = books.map((b) => {
+    if (!debouncedQuery.trim()) return { book: b, matched: true, score: 1 };
+    const fullText = `${b.title} ${b.author} ${b.description} ${b.badge_tag}`;
+    const res = matchSmartKeywords(fullText, debouncedQuery);
+    return { book: b, matched: res.matched, score: res.score };
   });
 
+  const matchedBooks = scoredBooks
+    .filter((s) => s.matched)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.book);
+
   // 2. Tìm kiếm sâu trong các trang sách (Deep In-Book Snippet Search)
-  const matchedSnippets = cleanQuery.length >= 2
-    ? BOOK_PAGE_SNIPPETS.filter((snip) => {
-        const matchSnip = removeVietnameseTones(snip.snippet).includes(cleanQuery);
-        const matchChapter = removeVietnameseTones(snip.chapter).includes(cleanQuery);
-        const matchBook = removeVietnameseTones(snip.bookTitle).includes(cleanQuery);
-        return matchSnip || matchChapter || matchBook;
-      })
-    : [];
+  const scoredSnippets = BOOK_PAGE_SNIPPETS.map((snip) => {
+    if (!debouncedQuery.trim()) return { snip, matched: false, score: 0 };
+    const fullText = `${snip.snippet} ${snip.chapter} ${snip.bookTitle}`;
+    const res = matchSmartKeywords(fullText, debouncedQuery);
+    return { snip, matched: res.matched, score: res.score };
+  });
+
+  const matchedSnippets = scoredSnippets
+    .filter((s) => s.matched)
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.snip);
 
   const isSearching = debouncedQuery.length > 0;
 
@@ -518,6 +505,33 @@ export default function SearchPage() {
     saveToRecentSearches(debouncedQuery || book.title);
     setReaderInitialPage(0);
     setReaderBook(book);
+  };
+
+  // Mở sách tải từ Kho Trực Tuyến
+  const handleOpenOnlineBook = (book: {
+    id: string;
+    title: string;
+    author: string;
+    fileUrl: string;
+    coverUrl?: string;
+    pages?: string[];
+  }) => {
+    playTapSound();
+    saveToRecentSearches(book.title);
+    setReaderInitialPage(0);
+    setReaderBook({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      description: '',
+      cover_url: book.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+      badge_tag: 'SÁCH MỞ',
+      pages_count: 10,
+      pages: book.pages || [],
+      file_url: book.fileUrl,
+      pdf_url: book.fileUrl,
+      file_name: book.title,
+    });
   };
 
   return (
@@ -554,7 +568,7 @@ export default function SearchPage() {
                   saveToRecentSearches(query);
                 }
               }}
-              placeholder={isListening ? 'Đang lắng nghe bạn nói...' : 'Tìm tựa sách, tác giả, trang sách, đĩa đệm...'}
+              placeholder={isListening ? 'Đang lắng nghe bạn nói...' : 'Mô tả kiểu sách bạn cần (vd: Dinh dưỡng cho người Việt)...'}
               className={`w-full h-[46px] pl-11 pr-20 rounded-2xl border text-[#2A160A] dark:text-[#fdf7ee] text-[13.5px] placeholder:text-[#9e8574] focus:outline-none transition-all shadow-sm ${
                 isListening
                   ? 'bg-red-500/10 border-red-500 ring-2 ring-red-500/30'
@@ -604,257 +618,49 @@ export default function SearchPage() {
         )}
       </section>
 
-      {/* 2. KHỐI TRỢ LÝ AI TÌM SÁCH & TRA CỨU Y KHOA (NGAY DƯỚI MỤC TÌM KIẾM) */}
-      <section className="rounded-2xl border border-amber-500/40 dark:border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white/80 dark:from-[#2a170b] dark:via-[#1c1109] dark:to-[#140b06] shadow-sm p-3 flex flex-col gap-2.5 transition-all">
-        {/* Thanh tiêu đề nút AI */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0">
-              <Sparkles size={15} className="animate-pulse" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[12.5px] sm:text-[13px] font-black text-[#2c180c] dark:text-[#fdf7ee] leading-tight truncate">
-                Trợ lý AI Tìm Sách & Tra Cứu Y Khoa
-              </span>
-              <span className="text-[10px] text-amber-800/80 dark:text-amber-300/70 font-medium truncate">
-                {isAiLoading
-                  ? 'Đang tra cứu sâu trong kho sách y khoa...'
-                  : 'Hỏi triệu chứng, tìm tài liệu sâu trong trang sách & gợi ý'}
-              </span>
-            </div>
-          </div>
+      {/* 2. CHUYỂN ĐỔI TAB: SÁCH CỦA BẠN VS SÁCH TRỰC TUYẾN (KHUNG CHIA ĐÔI 50-50, 1 DÒNG DUY NHẤT) */}
+      <section className="grid grid-cols-2 p-1 rounded-2xl bg-[#e8ded1] dark:bg-white/5 border border-[#d5c3b1] dark:border-white/10 gap-1 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => {
+            playTapSound();
+            setActiveTab('local');
+          }}
+          className={`h-9 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap overflow-hidden ${
+            activeTab === 'local'
+              ? 'bg-white dark:bg-[#2A160A] text-[#2A160A] dark:text-amber-200 shadow-sm border border-amber-500/25'
+              : 'text-[#6E4223] dark:text-slate-400 hover:text-[#2A160A] dark:hover:text-white'
+          }`}
+        >
+          <BookOpen size={14} className={`shrink-0 ${activeTab === 'local' ? 'text-amber-500' : ''}`} />
+          <span className="truncate">Sách của bạn</span>
+        </button>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {query.trim().length > 0 ? (
-              <button
-                type="button"
-                onClick={() => handleAskAi(query)}
-                disabled={isAiLoading}
-                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isAiLoading ? (
-                  <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Sparkles size={12} />
-                )}
-                <span>Hỏi AI</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => router.push('/tro-ly-ai')}
-                className="px-2 sm:px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
-                title="Mở toàn bộ giao diện Trợ lý AI"
-              >
-                <span>Hội thoại</span>
-                <ChevronRight size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Gợi ý các câu hỏi tra cứu nhanh bằng AI (khi chưa có kết quả AI) */}
-        {!aiResult && !isAiLoading && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {[
-              'Thoát vị đĩa đệm L4-L5 nên đọc gì?',
-              'Cơ chế bơm hút dịch nhân nhầy đĩa đệm',
-              'Gợi ý sách dinh dưỡng kháng viêm khớp',
-              'Cẩm nang đốt sống cổ & tê tay',
-            ].map((prompt, pIdx) => (
-              <button
-                key={pIdx}
-                type="button"
-                onClick={() => {
-                  playTapSound();
-                  setQuery(prompt);
-                  handleAskAi(prompt);
-                }}
-                className="px-2.5 py-1 rounded-full bg-white/80 dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-200 text-[11px] font-semibold border border-amber-500/20 hover:border-amber-500/50 transition-all cursor-pointer text-left active:scale-95"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Trạng thái đang tải phản hồi AI */}
-        {isAiLoading && (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 animate-pulse text-amber-900 dark:text-amber-200 text-xs font-semibold">
-            <span className="w-4 h-4 border-2 border-amber-600 dark:border-amber-400 border-t-transparent rounded-full animate-spin shrink-0" />
-            <span>AI đang phân tích triệu chứng và tra cứu sâu trong kho sách y khoa...</span>
-          </div>
-        )}
-
-        {/* Hiển thị kết quả AI thông minh: Phân tích + Sách đề xuất + Trích đoạn trang sách */}
-        {aiResult && !isAiLoading && (
-          <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-white/95 dark:bg-[#160D30]/90 border border-amber-500/30 text-slate-900 dark:text-white shadow-xs animate-in fade-in zoom-in-95 duration-150">
-            {/* Thanh tiêu đề kết quả & nút thu gọn */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-amber-500/20">
-              <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                <Sparkles size={13} className="text-amber-500" />
-                <span>AI Giải đáp & Đề xuất tài liệu</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  playTapSound();
-                  setAiResult(null);
-                }}
-                className="text-[11px] font-semibold text-slate-400 hover:text-red-500 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Đóng kết quả AI"
-              >
-                <X size={13} />
-                <span>Thu gọn</span>
-              </button>
-            </div>
-
-            {/* Nội dung giải đáp súc tích của AI */}
-            <div className="text-[12.5px] leading-relaxed text-[#2c180c] dark:text-[#fdf7ee] font-medium whitespace-pre-wrap">
-              {aiResult.answer}
-            </div>
-
-            {/* DANH SÁCH SÁCH ĐƯỢC AI ĐỀ XUẤT */}
-            {aiResult.suggested_books && aiResult.suggested_books.length > 0 && (
-              <div className="flex flex-col gap-1.5 pt-1">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                  <BookOpen size={12} />
-                  <span>Sách đề xuất phù hợp nhất:</span>
-                </span>
-                <div className="flex flex-col gap-2">
-                  {aiResult.suggested_books.map((b, bIdx) => (
-                    <div
-                      key={bIdx}
-                      className="flex items-start gap-2.5 p-2 rounded-xl bg-amber-50/60 dark:bg-white/5 border border-amber-200/80 dark:border-white/10"
-                    >
-                      <div className="w-12 h-16 rounded-md overflow-hidden shrink-0 border border-amber-500/30 shadow-xs bg-slate-100 dark:bg-black/40">
-                        <img
-                          src={b.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
-                          alt={b.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300">
-                              {b.badge_tag || 'NÊN ĐỌC'}
-                            </span>
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                              Tác giả: {b.author || 'Tùng Dinh Dưỡng'}
-                            </span>
-                          </div>
-                          <h4 className="text-[12.5px] font-black text-[#2c180c] dark:text-amber-100 truncate mt-0.5">
-                            {b.title}
-                          </h4>
-                          <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 line-clamp-2 mt-0.5 leading-tight">
-                            {b.reason}
-                          </p>
-                        </div>
-                        <div className="pt-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenAiBook(b)}
-                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 text-[11px] font-black flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
-                          >
-                            <BookOpen size={12} />
-                            <span>Mở đọc sách ngay (3D)</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* DANH SÁCH TRÍCH ĐOẠN SÂU TRONG TRANG SÁCH */}
-            {aiResult.in_book_snippets && aiResult.in_book_snippets.length > 0 && (
-              <div className="flex flex-col gap-1.5 pt-1">
-                <span className="text-[10.5px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                  <FileText size={12} />
-                  <span>Trích đoạn tài liệu sâu trong trang sách:</span>
-                </span>
-                <div className="flex flex-col gap-2">
-                  {aiResult.in_book_snippets.map((snip, sIdx) => (
-                    <div
-                      key={sIdx}
-                      className="p-2.5 rounded-xl bg-white dark:bg-black/30 border border-amber-300/50 dark:border-white/10 flex flex-col gap-1.5"
-                    >
-                      <div className="flex items-center justify-between gap-1 text-[11px]">
-                        <span className="font-extrabold text-[#2c180c] dark:text-amber-200 truncate">
-                          📖 {snip.book_title} · {snip.chapter}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold shrink-0 text-[10px]">
-                          Trang {snip.page_number}
-                        </span>
-                      </div>
-                      <p className="text-[11.5px] text-slate-700 dark:text-slate-300 italic leading-relaxed line-clamp-3 pl-2 border-l-2 border-amber-500/40">
-                        &ldquo;{snip.excerpt}&rdquo;
-                      </p>
-                      <div className="flex items-center justify-end pt-0.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const b = books.find((bk) => bk.id === snip.book_id || bk.title.includes(snip.book_title)) || books[0];
-                            if (b) {
-                              playTapSound();
-                              setReaderInitialPage(Math.max(0, snip.page_index));
-                              setReaderBook(b);
-                            }
-                          }}
-                          className="px-2 py-0.8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 text-[10.5px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <span>Đọc trang này ngay</span>
-                          <ChevronRight size={11} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* CÂU HỎI GỢI Ý TIẾP THEO */}
-            {aiResult.follow_up_questions && aiResult.follow_up_questions.length > 0 && (
-              <div className="flex flex-col gap-1 pt-1">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wide">
-                  Gợi ý câu hỏi tiếp theo:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {aiResult.follow_up_questions.map((fq, fIdx) => (
-                    <button
-                      key={fIdx}
-                      type="button"
-                      onClick={() => {
-                        playTapSound();
-                        setQuery(fq);
-                        handleAskAi(fq);
-                      }}
-                      className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-200 text-[10.5px] font-medium border border-amber-500/20 transition-all cursor-pointer text-left active:scale-95"
-                    >
-                      {fq}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Nút mở hội thoại AI đầy đủ */}
-            <div className="pt-1 flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => router.push(`/tro-ly-ai?q=${encodeURIComponent(query || 'Hiểu đúng về cột sống')}`)}
-                className="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Bot size={13} />
-                <span>Trò chuyện sâu hơn trong Trợ lý AI toàn diện</span>
-                <ChevronRight size={12} />
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            playTapSound();
+            setActiveTab('online');
+          }}
+          className={`h-9 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap overflow-hidden ${
+            activeTab === 'online'
+              ? 'bg-white dark:bg-[#2A160A] text-[#2A160A] dark:text-amber-200 shadow-sm border border-amber-500/25'
+              : 'text-[#6E4223] dark:text-slate-400 hover:text-[#2A160A] dark:hover:text-white'
+          }`}
+        >
+          <Globe size={14} className={`shrink-0 ${activeTab === 'online' ? 'text-amber-500' : ''}`} />
+          <span className="truncate">Sách trực tuyến</span>
+        </button>
       </section>
+
+      {/* HIỂN THỊ NỘI DUNG THEO TAB ĐƯỢC CHỌN */}
+      {activeTab === 'online' ? (
+        <OnlineLibrarySection
+          searchQuery={debouncedQuery}
+          onOpenBook={handleOpenOnlineBook}
+        />
+      ) : (
+        <>
 
       {/* 3. LỊCH SỬ TÌM KIẾM GẦN ĐÂY (KHI CHƯA GÕ TỪ KHÓA) */}
       {!isSearching && recentSearches.length > 0 && (
@@ -931,35 +737,6 @@ export default function SearchPage() {
         ))}
       </section>
 
-      {/* 5. CẦU NỐI HỎI TRỢ LÝ AI (KHI CÓ TỪ KHÓA TÌM KIẾM) */}
-      {isSearching && (
-        <section
-          onClick={() => {
-            playTapSound();
-            router.push(`/tro-ly-ai?q=${encodeURIComponent(debouncedQuery)}`);
-          }}
-          className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-600/20 border border-amber-500/35 hover:border-amber-400 flex items-center justify-between gap-3 shadow-sm cursor-pointer transition-all active:scale-[0.99] group"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
-              <Bot size={18} strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-black text-[#2A160A] dark:text-amber-200 truncate flex items-center gap-1.5">
-                <span>Hỏi Bác sĩ & Trợ lý AI về:</span>
-                <span className="text-amber-600 dark:text-amber-400 underline font-extrabold">"{debouncedQuery}"</span>
-              </span>
-              <span className="text-[11px] text-[#6E4223] dark:text-amber-200/70 truncate">
-                Nhận phân tích y khoa, cơ chế phục hồi và tự động trích dẫn sách liên quan
-              </span>
-            </div>
-          </div>
-          <div className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shrink-0 flex items-center gap-1 shadow-sm">
-            <span>Hỏi ngay</span>
-            <ChevronRight size={13} strokeWidth={3} />
-          </div>
-        </section>
-      )}
 
       {/* 6. KẾT QUẢ TÌM KIẾM NỘI DUNG SÂU (DEEP IN-BOOK SNIPPETS) */}
       {isSearching && matchedSnippets.length > 0 && (
@@ -1064,17 +841,9 @@ export default function SearchPage() {
           <div className="flex flex-col gap-1 max-w-xs">
             <h3 className="text-sm font-bold text-[#2A160A] dark:text-amber-100">Không tìm thấy sách phù hợp</h3>
             <p className="text-xs text-[#6E4223] dark:text-amber-200/60 leading-relaxed">
-              Không có đầu sách nào khớp với từ khóa "{query}". Bạn có thể hỏi trực tiếp Trợ lý AI hoặc thử với từ khóa khác.
+              Không có đầu sách nào khớp với từ khóa "{query}". Bạn có thể thử với từ khóa khác hoặc bấm nút "Nhờ AI tìm sách" bên dưới.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => router.push(`/tro-ly-ai?q=${encodeURIComponent(query)}`)}
-            className="mt-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            <Bot size={15} />
-            <span>Hỏi Trợ lý AI ngay</span>
-          </button>
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -1163,6 +932,35 @@ export default function SearchPage() {
         </div>
       )}
 
+          {/* BANNER MỜI KHÁM PHÁ SÁCH TRỰC TUYẾN Ở ĐÁY KẾT QUẢ */}
+          <div
+            onClick={() => {
+              playTapSound();
+              setActiveTab('online');
+            }}
+            className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-600/10 to-amber-700/15 border border-amber-500/30 flex items-center justify-between gap-2.5 cursor-pointer hover:border-amber-400 transition-all active:scale-[0.99] shadow-2xs"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                <Globe size={15} />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-black text-[#2A160A] dark:text-amber-100 truncate">
+                  Khám phá Sách trực tuyến
+                </span>
+                <span className="text-[10px] text-[#6E4223] dark:text-amber-300/80 truncate">
+                  Đọc và nghe sách ngoại tuyến không cần đăng nhập
+                </span>
+              </div>
+            </div>
+            <div className="px-2.5 py-1 rounded-xl bg-amber-500 text-slate-950 text-xs font-black flex items-center gap-1 shrink-0 whitespace-nowrap">
+              <span>Xem ngay</span>
+              <ChevronRight size={13} strokeWidth={2.5} />
+            </div>
+          </div>
+        </>
+      )}
+
       {/* MODAL ĐỌC SÁCH 3D KHI CHỌN SÁCH TỪ KẾT QUẢ TÌM KIẾM */}
       <SideBooksReaderModal
         isOpen={Boolean(readerBook)}
@@ -1190,6 +988,9 @@ export default function SearchPage() {
           handleOpenBook(target as SearchBookItem);
         }}
       />
+
+      {/* NÚT AI BÁM ĐUỔI THÔNG MINH (TỰ ĐỘNG NHẬN DIỆN TRANG TÌM KIẾM ĐỂ DÀI HƠN THÀNH 'NHỜ AI TÌM SÁCH') */}
+      <FloatingAiButton />
 
       {/* THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}
       <BottomNav />

@@ -2,7 +2,6 @@ import React from 'react';
 import { getSettings } from '../lib/data';
 import HomeSectionsClient from '../components/HomeSectionsClient';
 import BottomNav from '../components/BottomNav';
-import FloatingAiButton from '../components/FloatingAiButton';
 import QbizBooksOpeningSplash from '../components/QbizBooksOpeningSplash';
 import { Metadata } from 'next';
 
@@ -46,9 +45,6 @@ export default async function HomePage() {
         welcomeVideoUrl={settings.welcome_video_url}
         initialCustomBlocks={settings.home_custom_blocks}
       />
-
-      {/* Nút nhỏ bán trong suốt bám đuổi ở trên: Hỏi AI Tra cứu sách */}
-      <FloatingAiButton />
 
       {/* Thanh điều hướng dưới cùng */}
       <BottomNav />

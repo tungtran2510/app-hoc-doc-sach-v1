@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sparkles, X, Send, BookOpen, Loader2, Move, Mic, MicOff } from 'lucide-react';
 import { playTapSound } from '../lib/audioFeedback';
 
@@ -23,15 +24,34 @@ interface FloatingChatMessage {
 }
 
 export default function FloatingAiButton() {
+  const pathname = usePathname();
+  const isSearchPage = pathname === '/tim-kiem';
+
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<FloatingChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Xin chào! Tôi là Trợ lý Tra cứu Sách Y Khoa. Bạn cần tìm kiếm thông tin hay tóm tắt nội dung cuốn sách nào?',
+      text: isSearchPage
+        ? 'Xin chào! Bạn muốn tìm sách kiểu gì? Hãy nói với AI để AI tìm giúp bạn (ví dụ: sách dinh dưỡng cho người Việt, đốt sống cổ, thoát vị đĩa đệm, giải phẫu 3D...)'
+        : 'Xin chào! Tôi là Trợ lý Tra cứu Sách Y Khoa. Bạn cần tìm kiếm thông tin hay tóm tắt nội dung cuốn sách nào?',
     },
   ]);
+
+  // Cập nhật lời chào khi đổi trang
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        text: isSearchPage
+          ? 'Xin chào! Bạn muốn tìm sách kiểu gì? Hãy nói với AI để AI tìm giúp bạn (ví dụ: sách dinh dưỡng cho người Việt, đốt sống cổ, thoát vị đĩa đệm, giải phẫu 3D...)'
+          : 'Xin chào! Tôi là Trợ lý Tra cứu Sách Y Khoa. Bạn cần tìm kiếm thông tin hay tóm tắt nội dung cuốn sách nào?',
+      },
+    ]);
+  }, [isSearchPage]);
+
   const [isLoading, setIsLoading] = useState(false);
 
   // Vị trí tọa độ và điều khiển cử chỉ Giữ 2.5s để di chuyển
@@ -170,25 +190,36 @@ export default function FloatingAiButton() {
     };
   }, []);
 
-  // Nạp vị trí đã lưu từ localStorage
+  // Nạp vị trí đã lưu từ localStorage theo từng trang
   useEffect(() => {
+    const storageKey = isSearchPage ? 'floating_ai_btn_pos_search' : 'floating_ai_btn_pos_home';
     try {
-      const saved = localStorage.getItem('floating_ai_btn_pos');
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
-          const validX = Math.max(8, Math.min(window.innerWidth - 85, parsed.x));
+          const btnW = isSearchPage ? 145 : 85;
+          const validX = Math.max(8, Math.min(window.innerWidth - btnW, parsed.x));
           const validY = Math.max(8, Math.min(window.innerHeight - 45, parsed.y));
           setPos({ x: validX, y: validY });
           return;
         }
       }
     } catch {}
-    // Mặc định góc trên bên phải
+
+    // Vị trí mặc định thông minh
     if (typeof window !== 'undefined') {
-      setPos({ x: Math.max(10, window.innerWidth - 95), y: 14 });
+      if (isSearchPage) {
+        // Trên trang tìm kiếm: nổi thông minh ở góc dưới bên phải (trên BottomNav 56px)
+        const defaultX = Math.max(10, window.innerWidth - 150);
+        const defaultY = Math.max(10, window.innerHeight - 110);
+        setPos({ x: defaultX, y: defaultY });
+      } else {
+        // Trên trang chủ: góc trên bên phải
+        setPos({ x: Math.max(10, window.innerWidth - 95), y: 14 });
+      }
     }
-  }, []);
+  }, [isSearchPage]);
 
   const clearHoldTimers = () => {
     if (holdTimerRef.current) {
@@ -215,8 +246,8 @@ export default function FloatingAiButton() {
     startPointerRef.current = { x: clientX, y: clientY };
     hasMovedSignificantlyRef.current = false;
 
-    const currentX = pos?.x ?? Math.max(10, window.innerWidth - 95);
-    const currentY = pos?.y ?? 14;
+    const currentX = pos?.x ?? (isSearchPage ? Math.max(10, window.innerWidth - 150) : Math.max(10, window.innerWidth - 95));
+    const currentY = pos?.y ?? (isSearchPage ? Math.max(10, window.innerHeight - 110) : 14);
     dragOffsetRef.current = {
       x: clientX - currentX,
       y: clientY - currentY,
@@ -254,7 +285,7 @@ export default function FloatingAiButton() {
     }
 
     if (isDragging) {
-      const btnW = 85;
+      const btnW = isSearchPage ? 145 : 85;
       const btnH = 35;
       const newX = Math.max(8, Math.min(window.innerWidth - btnW - 8, e.clientX - dragOffsetRef.current.x));
       const newY = Math.max(8, Math.min(window.innerHeight - btnH - 8, e.clientY - dragOffsetRef.current.y));
@@ -275,7 +306,8 @@ export default function FloatingAiButton() {
     if (wasDragging) {
       if (pos) {
         try {
-          localStorage.setItem('floating_ai_btn_pos', JSON.stringify(pos));
+          const storageKey = isSearchPage ? 'floating_ai_btn_pos_search' : 'floating_ai_btn_pos_home';
+          localStorage.setItem(storageKey, JSON.stringify(pos));
         } catch {}
       }
       setIsDragging(false);
@@ -354,7 +386,15 @@ export default function FloatingAiButton() {
     }
   };
 
-  const quickTopics = [
+  const searchQuickTopics = [
+    '🥗 Dinh dưỡng người Việt',
+    '🩺 Thoát vị & Cột sống',
+    '🦴 Atlas giải phẫu 3D',
+    '🌿 Cẩm nang đốt sống cổ',
+    '🦠 Vi sinh đường ruột',
+  ];
+
+  const defaultTopics = [
     '✦ Tất cả chủ đề',
     '🦴 Giải phẫu 3D',
     '🥗 Dinh dưỡng tế bào',
@@ -366,9 +406,15 @@ export default function FloatingAiButton() {
     '📄 Bảng tra thần kinh',
   ];
 
+  const activeTopics = isSearchPage ? searchQuickTopics : defaultTopics;
+
+  if (!isSearchPage) {
+    return null;
+  }
+
   return (
     <>
-      {/* 1. NÚT AI BÁN TRONG SUỐT - GIỮ 2.5s LÀ DI CHUYỂN ĐƯỢC */}
+      {/* 1. NÚT AI BÁN TRONG SUỐT BÁM ĐUỔI - TỰ ĐỘNG DÀI HƠN THÀNH 'NHỜ AI TÌM SÁCH' KHI Ở TRANG TÌM KIẾM */}
       <button
         type="button"
         onPointerDown={handlePointerDown}
@@ -377,27 +423,30 @@ export default function FloatingAiButton() {
         onPointerCancel={handlePointerUp}
         style={{
           left: pos ? `${pos.x}px` : undefined,
-          top: pos ? `${pos.y}px` : '14px',
+          top: pos ? `${pos.y}px` : undefined,
           right: pos ? undefined : '14px',
+          bottom: pos ? undefined : (isSearchPage ? '74px' : undefined),
           touchAction: 'none',
         }}
-        className={`fixed z-40 px-2.5 py-1 rounded-full border shadow-[0_4px_16px_rgba(0,0,0,0.6)] backdrop-blur-md flex items-center gap-1.5 text-[11px] font-extrabold select-none transition-shadow ${
+        className={`fixed z-40 px-3 py-1.5 rounded-full border shadow-[0_4px_16px_rgba(0,0,0,0.6)] backdrop-blur-md flex items-center gap-1.5 text-[11px] font-extrabold select-none transition-all ${
           isDragging
             ? 'bg-amber-500 text-slate-950 border-amber-300 ring-4 ring-amber-400/40 scale-110 shadow-2xl cursor-grabbing'
             : isHolding
             ? 'bg-black/90 text-amber-300 border-amber-400 ring-2 ring-amber-400/50 scale-105'
+            : isSearchPage
+            ? 'bg-black/85 hover:bg-black text-amber-300 border-amber-400/70 ring-1 ring-amber-400/40 shadow-xl opacity-95 hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer'
             : 'bg-black/60 hover:bg-black/85 text-amber-300 border-amber-400/40 opacity-85 hover:opacity-100 hover:scale-105 active:scale-95 cursor-pointer'
         }`}
-        title="Bấm để Hỏi AI · Giữ 2.5s để di chuyển vị trí"
-        aria-label="Hỏi AI"
+        title={isSearchPage ? 'Bấm để Nhờ AI Tìm Sách · Giữ 2.5s để di chuyển' : 'Bấm để Hỏi AI · Giữ 2.5s để di chuyển vị trí'}
+        aria-label={isSearchPage ? 'Nhờ AI tìm sách' : 'Hỏi AI'}
       >
         {isDragging ? (
           <Move size={13} className="text-slate-950 animate-bounce shrink-0" />
         ) : (
           <Sparkles size={13} className="text-amber-400 animate-pulse shrink-0" />
         )}
-        <span className="tracking-wide">
-          {isDragging ? 'Thả để đặt' : 'Hỏi AI'}
+        <span className="tracking-wide whitespace-nowrap">
+          {isDragging ? 'Thả để đặt' : isSearchPage ? 'Nhờ AI tìm sách' : 'Hỏi AI'}
         </span>
 
         {/* Vòng đếm ngược trực quan 2.5s khi giữ ngón tay */}
@@ -426,10 +475,10 @@ export default function FloatingAiButton() {
                 </div>
                 <div className="flex flex-col">
                   <h3 className="text-xs font-bold text-stone-100 uppercase tracking-wide">
-                    Trợ lý Tra Cứu Sách Y Khoa
+                    {isSearchPage ? 'Nhờ AI Tìm Sách Thông Minh' : 'Trợ lý Tra Cứu Sách Y Khoa'}
                   </h3>
                   <span className="text-[10px] text-stone-400">
-                    Tra cứu nội dung & đọc sách trực tiếp
+                    {isSearchPage ? 'Mô tả nhu cầu, AI sẽ gợi ý đúng cuốn sách bạn cần' : 'Tra cứu nội dung & đọc sách trực tiếp'}
                   </span>
                 </div>
               </div>
@@ -446,7 +495,7 @@ export default function FloatingAiButton() {
 
             {/* Dải chủ đề đa dạng bao quát toàn bộ kho sách */}
             <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar bg-[#161311] border-b border-white/10">
-              {quickTopics.map((topic, idx) => (
+              {activeTopics.map((topic, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -574,6 +623,8 @@ export default function FloatingAiButton() {
                   placeholder={
                     isListening
                       ? 'Đang lắng nghe bạn nói...'
+                      : isSearchPage
+                      ? 'Nói với AI cuốn sách bạn cần tìm...'
                       : 'Nhập câu hỏi tra cứu...'
                   }
                   className={`w-full h-11 pl-4 pr-9 rounded-full bg-black/50 border ${

@@ -17,7 +17,6 @@ import {
   BookMarked,
   Check,
   HardDrive,
-  Zap,
   CheckCircle2,
   Download,
   FileText,
@@ -132,7 +131,7 @@ const DEFAULT_CURATED_SAVED: SavedItem[] = [
   },
   {
     id: 'curated-7',
-    title: 'Tóm Tắt Giải Phẫu Cột Sống (Văn Bản)',
+    title: 'Tóm Tắt Giải Phẫu Cột Sống',
     category: 'VĂN BẢN TXT',
     badgeType: 'book',
     badgeNumber: 'TXT',
@@ -527,8 +526,8 @@ export default function SavedBooksPage() {
         <h1 className="text-2xl sm:text-3xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight">
           Đã lưu
         </h1>
-        <p className="text-xs text-[#6E4223] dark:text-amber-100/70 font-medium">
-          Lưu sách, chuyên đề, dấu trang và sổ tay ghi chú trích dẫn để đọc lại bất cứ lúc nào.
+        <p className="text-xs text-[#6E4223] dark:text-amber-100/70 font-medium truncate whitespace-nowrap">
+          Tủ sách cá nhân, dấu trang và sổ tay ghi chú
         </p>
       </section>
 
@@ -852,27 +851,27 @@ export default function SavedBooksPage() {
       {/* 5. SECTION: SỔ TAY GHI CHÚ & TRÍCH DẪN Y KHOA */}
       {(activeTab === 'all' || activeTab === 'notes') && (
         <section className="flex flex-col gap-3 pt-2 border-t border-[#e6dcce] dark:border-[#553622]/60">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
-              <BookMarked size={15} className="text-[#8B4513] dark:text-amber-400" />
-              <span>SỔ TAY GHI CHÚ & TRÍCH DẪN</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {allNotes.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowFlashcardModal(true)}
-                  className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10.5px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
-                  title="Bắt đầu ôn tập Flashcard 3D"
-                >
-                  <Sparkles size={11} />
-                  <span>Ôn Flashcard ({allNotes.length})</span>
-                </button>
-              )}
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
-                {allNotes.length} trích đoạn
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <BookMarked size={14} className="text-[#8B4513] dark:text-amber-400 shrink-0" />
+              <h2 className="text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wider truncate">
+                SỔ TAY GHI CHÚ
+              </h2>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0">
+                {allNotes.length}
               </span>
             </div>
+            {allNotes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowFlashcardModal(true)}
+                className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10.5px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 shrink-0 whitespace-nowrap cursor-pointer"
+                title="Bắt đầu ôn tập Flashcard 3D"
+              >
+                <Sparkles size={11} />
+                <span>Ôn Flashcard</span>
+              </button>
+            )}
           </div>
 
           {allNotes.length === 0 ? (
@@ -954,28 +953,28 @@ export default function SavedBooksPage() {
                       <span className="text-[10px] text-[#8B4513]/60 dark:text-amber-200/50">
                         {new Date(note.createdAt).toLocaleDateString('vi-VN')}
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => setActiveQuoteNote(note)}
-                          className="px-2 py-1 rounded-lg bg-white/70 dark:bg-white/10 hover:bg-amber-500/20 text-[#6E4223] dark:text-amber-300 font-bold text-[10.5px] border border-amber-900/15 dark:border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                          className="px-2 py-1 rounded-lg bg-white/70 dark:bg-white/10 hover:bg-amber-500/20 text-[#6E4223] dark:text-amber-300 font-bold text-[10.5px] border border-amber-900/15 dark:border-white/10 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
                           title="Tạo ảnh trích dẫn nghệ thuật để chia sẻ"
                         >
                           <Share2 size={11} />
-                          <span>Ảnh trích dẫn</span>
+                          <span>Ảnh</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleOpenNote(note)}
-                          className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-[#4A2612] dark:text-amber-200 hover:text-slate-950 font-bold text-[11px] border border-amber-500/30 flex items-center gap-1 transition-all cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-[#4A2612] dark:text-amber-200 hover:text-slate-950 font-bold text-[11px] border border-amber-500/30 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap"
                         >
                           <BookOpen size={11} />
-                          <span>Đọc trang này</span>
+                          <span>Đọc lại</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteNote(note)}
-                          className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                           title="Xóa ghi chú này"
                         >
                           <Trash2 size={12} />
@@ -1087,14 +1086,6 @@ export default function SavedBooksPage() {
               ))}
             </div>
           )}
-
-          {/* Khối giải thích tiện ích ngoại tuyến */}
-          <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2.5">
-            <Zap size={14} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-[#6E4223] dark:text-amber-100/70 leading-relaxed">
-              <span className="font-bold text-[#2A160A] dark:text-amber-200">Tốc độ mở siêu tốc &lt; 0.1s:</span> Tệp sách được lưu trữ nguyên vẹn trong bộ nhớ đệm an toàn IndexedDB của trình duyệt. Bạn có thể đọc trơn tru ngay cả khi trên máy bay hoặc mất mạng.
-            </p>
-          </div>
         </section>
       )}
 

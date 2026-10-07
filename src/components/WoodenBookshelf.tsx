@@ -35,8 +35,14 @@ import {
   ArrowUpDown,
   CheckCircle2,
   Check,
+  HardDrive,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
+
+export type BookshelfThemeStyle = 'classic_wood' | 'dark_walnut' | 'minimal_white' | 'luxury_modern';
+export type BookshelfCols = 2 | 3 | 4 | 5;
+
+import SyncBackupModal from './SyncBackupModal';
 
 interface WoodenBookshelfProps {
   books: RecommendedBook[];
@@ -110,6 +116,7 @@ export default function WoodenBookshelf({
 
   // Menu Cài đặt & Tài khoản
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   // Tùy chọn chuyên sâu đọc sách (Đồng bộ với Reader 3D)
   const [readerPaperTheme, setReaderPaperTheme] = useState<'sepia' | 'dark' | 'ivory'>('dark');
@@ -117,8 +124,11 @@ export default function WoodenBookshelf({
   const [readerSoundEnabled, setReaderSoundEnabled] = useState<boolean>(true);
   const [readerAutoResume, setReaderAutoResume] = useState<boolean>(true);
 
-  // Kích thước đầu sách trên kệ gỗ: 2 (Lớn), 3 (Chuẩn), 4 (Gọn)
-  const [bookCols, setBookCols] = useState<2 | 3 | 4>(3);
+  // Kiểu giá sách: Cổ điển nâu ấm | Nâu đậm trầm | Trắng sứ tối giản | Mun đen hiện đại
+  const [bookshelfThemeStyle, setBookshelfThemeStyle] = useState<BookshelfThemeStyle>('classic_wood');
+
+  // Kích thước đầu sách trên kệ gỗ: 2 (Lớn), 3 (Chuẩn), 4 (Gọn), 5 (Mini)
+  const [bookCols, setBookCols] = useState<BookshelfCols>(3);
   const [zoomToast, setZoomToast] = useState<string | null>(null);
   const [lastReadBookTitle, setLastReadBookTitle] = useState<string | null>(null);
   const [lastReadPage, setLastReadPage] = useState<number>(1);
@@ -248,10 +258,16 @@ export default function WoodenBookshelf({
 
   const zoomInBooks = () => {
     setBookCols((prev) => {
-      const next = prev === 4 ? 3 : prev === 3 ? 2 : 2;
+      const next = (prev === 5 ? 4 : prev === 4 ? 3 : prev === 3 ? 2 : 2) as BookshelfCols;
       if (next !== prev) {
         try { localStorage.setItem('bookshelf_book_cols', String(next)); } catch {}
-        showToast(next === 2 ? 'Cỡ sách: Lớn (2 cuốn/tầng)' : 'Cỡ sách: Chuẩn (3 cuốn/tầng)');
+        const labels: Record<BookshelfCols, string> = {
+          2: 'Cỡ sách: Lớn (2 cuốn/tầng)',
+          3: 'Cỡ sách: Chuẩn (3 cuốn/tầng)',
+          4: 'Cỡ sách: Gọn (4 cuốn/tầng)',
+          5: 'Cỡ sách: Mini (5 cuốn/tầng)',
+        };
+        showToast(labels[next]);
       }
       return next;
     });
@@ -259,19 +275,45 @@ export default function WoodenBookshelf({
 
   const zoomOutBooks = () => {
     setBookCols((prev) => {
-      const next = prev === 2 ? 3 : prev === 3 ? 4 : 4;
+      const next = (prev === 2 ? 3 : prev === 3 ? 4 : prev === 4 ? 5 : 5) as BookshelfCols;
       if (next !== prev) {
         try { localStorage.setItem('bookshelf_book_cols', String(next)); } catch {}
-        showToast(next === 4 ? 'Cỡ sách: Gọn (4 cuốn/tầng)' : 'Cỡ sách: Chuẩn (3 cuốn/tầng)');
+        const labels: Record<BookshelfCols, string> = {
+          2: 'Cỡ sách: Lớn (2 cuốn/tầng)',
+          3: 'Cỡ sách: Chuẩn (3 cuốn/tầng)',
+          4: 'Cỡ sách: Gọn (4 cuốn/tầng)',
+          5: 'Cỡ sách: Mini (5 cuốn/tầng)',
+        };
+        showToast(labels[next]);
       }
       return next;
     });
   };
 
-  const setColsExplicit = (cols: 2 | 3 | 4) => {
+  const setColsExplicit = (cols: BookshelfCols) => {
     setBookCols(cols);
     try { localStorage.setItem('bookshelf_book_cols', String(cols)); } catch {}
-    showToast(cols === 2 ? 'Cỡ sách: Lớn (2 cuốn/tầng)' : cols === 3 ? 'Cỡ sách: Chuẩn (3 cuốn/tầng)' : 'Cỡ sách: Gọn (4 cuốn/tầng)');
+    const labels: Record<BookshelfCols, string> = {
+      2: 'Cỡ sách: Lớn (2 cuốn/tầng)',
+      3: 'Cỡ sách: Chuẩn (3 cuốn/tầng)',
+      4: 'Cỡ sách: Gọn (4 cuốn/tầng)',
+      5: 'Cỡ sách: Mini (5 cuốn/tầng)',
+    };
+    showToast(labels[cols]);
+  };
+
+  const handleChangeBookshelfTheme = (style: BookshelfThemeStyle) => {
+    setBookshelfThemeStyle(style);
+    try {
+      localStorage.setItem('bookshelf_theme_style', style);
+    } catch {}
+    const labels: Record<BookshelfThemeStyle, string> = {
+      classic_wood: 'Kệ sách: Gỗ cổ điển',
+      dark_walnut: 'Kệ sách: Nâu đậm trầm',
+      minimal_white: 'Kệ sách: Trắng sứ tối giản',
+      luxury_modern: 'Kệ sách: Mun đen sang trọng',
+    };
+    showToast(labels[style]);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -347,8 +389,15 @@ export default function WoodenBookshelf({
         setReaderAutoResume(savedResume !== 'false');
       }
       const savedCols = localStorage.getItem('bookshelf_book_cols');
-      if (savedCols && ['2', '3', '4'].includes(savedCols)) {
-        setBookCols(Number(savedCols) as 2 | 3 | 4);
+      if (savedCols && ['2', '3', '4', '5'].includes(savedCols)) {
+        setBookCols(Number(savedCols) as BookshelfCols);
+      }
+      const savedThemeStyle = localStorage.getItem('bookshelf_theme_style');
+      if (
+        savedThemeStyle &&
+        ['classic_wood', 'dark_walnut', 'minimal_white', 'luxury_modern'].includes(savedThemeStyle)
+      ) {
+        setBookshelfThemeStyle(savedThemeStyle as BookshelfThemeStyle);
       }
       const savedShowTitles = localStorage.getItem('bookshelf_show_book_titles');
       if (savedShowTitles !== null) {
@@ -537,7 +586,7 @@ export default function WoodenBookshelf({
     return null;
   }
 
-  // Chia danh sách sách thành các tầng kệ linh hoạt theo bookCols (2, 3, hoặc 4 cuốn / tầng)
+  // Chia danh sách sách thành các tầng kệ linh hoạt theo bookCols (2, 3, 4, hoặc 5 cuốn / tầng)
   const chunkSize = bookCols;
   const tiers: RecommendedBook[][] = [];
   for (let i = 0; i < activeBooks.length; i += chunkSize) {
@@ -547,6 +596,113 @@ export default function WoodenBookshelf({
       tiers.push(chunk);
     }
   }
+
+  // Cấu hình linh hoạt giao diện kệ sách (Bookshelf Themes: Cổ điển, Nâu đậm, Trắng sứ, Mun đen)
+  const getBookshelfContainerClass = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return 'bg-gradient-to-b from-[#FFFFFF] via-[#F8FAFC] to-[#F1F5F9] dark:from-[#0F172A] dark:via-[#090D16] dark:to-[#020617] border-[#CBD5E1] dark:border-[#1E293B] text-slate-800 dark:text-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.04)]';
+      case 'dark_walnut':
+        return 'bg-gradient-to-b from-[#E2D5C3] via-[#C5B097] to-[#B0977B] dark:from-[#150D07] dark:via-[#0D0703] dark:to-[#050201] border-[#7D4925] dark:border-[#2E180B] text-[#241307] dark:text-[#FBE8D3] shadow-[0_10px_30px_rgba(0,0,0,0.1)]';
+      case 'luxury_modern':
+        return 'bg-gradient-to-b from-[#252B36] via-[#1B202A] to-[#101319] dark:from-[#0D0F14] dark:via-[#07080B] dark:to-[#020304] border-[#3B4455] dark:border-[#1E2430] text-slate-100 dark:text-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.2)]';
+      case 'classic_wood':
+      default:
+        return 'bg-gradient-to-b from-[#FAF5EE] via-[#F3EADB] to-[#E8DBCA] dark:from-[#24170d] dark:via-[#1c1109] dark:to-[#110803] border-[#d8c5aa] dark:border-[#3d2817] text-[#29180c] dark:text-[#fdf7ee] shadow-[0_10px_30px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)]';
+    }
+  };
+
+  const getSpotlightGradient = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return isDark
+          ? 'radial-gradient(ellipse at 50% 0%, rgba(148, 163, 184, 0.16) 0%, transparent 75%)'
+          : 'radial-gradient(ellipse at 50% 0%, rgba(100, 116, 139, 0.10) 0%, transparent 75%)';
+      case 'dark_walnut':
+        return isDark
+          ? 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.14) 0%, transparent 75%)'
+          : 'radial-gradient(ellipse at 50% 0%, rgba(180, 83, 9, 0.12) 0%, transparent 75%)';
+      case 'luxury_modern':
+        return 'radial-gradient(ellipse at 50% 0%, rgba(245, 158, 11, 0.16) 0%, transparent 75%)';
+      case 'classic_wood':
+      default:
+        return isDark
+          ? 'radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.16) 0%, transparent 75%)'
+          : 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.10) 0%, transparent 75%)';
+    }
+  };
+
+  const getPlankTopBg = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return isDark
+          ? 'linear-gradient(180deg, #475569 0%, #334155 70%, #1E293B 100%)'
+          : 'linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 70%, #E2E8F0 100%)';
+      case 'dark_walnut':
+        return isDark
+          ? 'linear-gradient(180deg, #482611 0%, #321808 70%, #1f0d04 100%)'
+          : 'linear-gradient(180deg, #7c4822 0%, #5f3415 70%, #43230c 100%)';
+      case 'luxury_modern':
+        return isDark
+          ? 'linear-gradient(180deg, #333d4d 0%, #202732 70%, #141920 100%)'
+          : 'linear-gradient(180deg, #434e62 0%, #2d3544 70%, #1c222c 100%)';
+      case 'classic_wood':
+      default:
+        return isDark
+          ? 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)'
+          : 'linear-gradient(180deg, #c29562 0%, #a47643 70%, #83592a 100%)';
+    }
+  };
+
+  const getPlankFaceBg = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return isDark
+          ? 'linear-gradient(180deg, #334155 0%, #1E293B 50%, #0F172A 100%)'
+          : 'linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 50%, #CBD5E1 100%)';
+      case 'dark_walnut':
+        return isDark
+          ? 'linear-gradient(180deg, #5c3014 0%, #3d1c08 50%, #240e03 100%)'
+          : 'linear-gradient(180deg, #91552a 0%, #703f1b 50%, #4f290e 100%)';
+      case 'luxury_modern':
+        return isDark
+          ? 'linear-gradient(180deg, #242c38 0%, #171d25 50%, #0c0f14 100%)'
+          : 'linear-gradient(180deg, #343e4f 0%, #212833 50%, #14181f 100%)';
+      case 'classic_wood':
+      default:
+        return isDark
+          ? 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)'
+          : 'linear-gradient(180deg, #d4a773 0%, #b88a56 50%, #946937 100%)';
+    }
+  };
+
+  const getPlankTitleColor = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return isDark ? 'text-slate-100 drop-shadow-sm' : 'text-slate-800 drop-shadow-sm';
+      case 'dark_walnut':
+        return 'text-amber-100 drop-shadow-md';
+      case 'luxury_modern':
+        return 'text-amber-300 drop-shadow-md';
+      case 'classic_wood':
+      default:
+        return 'text-amber-50 dark:text-amber-100/95 drop-shadow-md';
+    }
+  };
+
+  const getShelfTitleHeaderColor = () => {
+    switch (bookshelfThemeStyle) {
+      case 'minimal_white':
+        return 'text-slate-800 dark:text-slate-100';
+      case 'dark_walnut':
+        return 'text-[#42220d] dark:text-amber-200';
+      case 'luxury_modern':
+        return 'text-amber-300 dark:text-amber-300';
+      case 'classic_wood':
+      default:
+        return 'text-[#4a250e] dark:text-amber-200/90';
+    }
+  };
 
   // Luôn đảm bảo tối thiểu 3 tầng kệ gỗ để tủ sách luôn đầy đặn, không bị khoảng trắng cắt ngang
   const minShelves = 3;
@@ -561,7 +717,7 @@ export default function WoodenBookshelf({
 
   return (
     <div
-      className="relative w-full min-h-[calc(100dvh-5.5rem)] flex flex-col justify-start rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF5EE] via-[#F3EADB] to-[#E8DBCA] dark:from-[#24170d] dark:via-[#1c1109] dark:to-[#110803] px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-8 sm:py-6 border-x-0 border-t-0 sm:border border-[#d8c5aa] dark:border-[#3d2817] shadow-[0_10px_30px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] text-[#29180c] dark:text-[#fdf7ee] select-none transition-colors duration-200"
+      className={`relative w-full min-h-[calc(100dvh-5.5rem)] flex flex-col justify-start rounded-none sm:rounded-2xl overflow-hidden px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-8 sm:py-6 border-x-0 border-t-0 sm:border select-none transition-colors duration-200 ${getBookshelfContainerClass()}`}
     >
       {/* Toast thông báo thay đổi kích cỡ sách khi vuốt / bấm */}
       {zoomToast && (
@@ -574,9 +730,7 @@ export default function WoodenBookshelf({
       <div
         className="absolute top-0 left-[10%] right-[10%] h-[180px] pointer-events-none z-0"
         style={{
-          background: isDark
-            ? 'radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.16) 0%, transparent 75%)'
-            : 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.10) 0%, transparent 75%)',
+          background: getSpotlightGradient(),
         }}
       />
 
@@ -779,7 +933,7 @@ export default function WoodenBookshelf({
       {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN KÍNH LÚP THU PHÓNG */}
       <div className="relative z-10 flex items-center justify-between mb-3 px-1 sm:px-2 gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <h2 className="text-[13px] sm:text-[14px] font-black tracking-wide text-[#4a250e] dark:text-amber-200/90 uppercase drop-shadow-xs truncate">
+          <h2 className={`text-[13px] sm:text-[14px] font-black tracking-wide uppercase drop-shadow-xs truncate ${getShelfTitleHeaderColor()}`}>
             GIAN TRƯNG BÀY
           </h2>
         </div>
@@ -819,9 +973,9 @@ export default function WoodenBookshelf({
             <button
               type="button"
               onClick={zoomOutBooks}
-              disabled={bookCols === 4}
+              disabled={bookCols === 5}
               className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-              title="Thu nhỏ đầu sách"
+              title="Thu nhỏ đầu sách (Mini)"
               aria-label="Thu nhỏ sách"
             >
               <ZoomOut size={13} strokeWidth={2.4} />
@@ -831,7 +985,7 @@ export default function WoodenBookshelf({
               onClick={zoomInBooks}
               disabled={bookCols === 2}
               className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-              title="Phóng to đầu sách"
+              title="Phóng to đầu sách (Lớn)"
               aria-label="Phóng to sách"
             >
               <ZoomIn size={13} strokeWidth={2.4} />
@@ -846,9 +1000,11 @@ export default function WoodenBookshelf({
           const cardMaxWidthClass =
             bookCols === 2
               ? 'max-w-[170px] sm:max-w-[210px]'
+              : bookCols === 3
+              ? 'max-w-[122px] sm:max-w-[150px]'
               : bookCols === 4
               ? 'max-w-[86px] sm:max-w-[110px]'
-              : 'max-w-[122px] sm:max-w-[150px]';
+              : 'max-w-[66px] sm:max-w-[88px]';
 
           const isPartialTier = tierBooks.length < bookCols;
 
@@ -1069,9 +1225,7 @@ export default function WoodenBookshelf({
                 <div
                   className="h-[8px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.32)]"
                   style={{
-                    background: isDark
-                      ? 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)'
-                      : 'linear-gradient(180deg, #c29562 0%, #a47643 70%, #83592a 100%)',
+                    background: getPlankTopBg(),
                   }}
                 />
                 {/* Gờ mép trước thanh gỗ dày nổi 3D cao cấp - nơi chứa nhãn tiêu đề sách */}
@@ -1080,9 +1234,7 @@ export default function WoodenBookshelf({
                     showBookTitles ? 'min-h-[20px] py-0.5' : 'h-[14px]'
                   }`}
                   style={{
-                    background: isDark
-                      ? 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)'
-                      : 'linear-gradient(180deg, #d4a773 0%, #b88a56 50%, #946937 100%)',
+                    background: getPlankFaceBg(),
                   }}
                 >
                   {/* TIÊU ĐỀ SÁCH TRÊN GỜ KỆ GỖ (TỰA CHÂN SÁCH, CHỈ 1 DÒNG DUY NHẤT, KHÔNG LÀM ĐẨY SÁCH) */}
@@ -1099,9 +1251,9 @@ export default function WoodenBookshelf({
                           key={`shelf-title-${b.id}`}
                           className={`${
                             isPartialTier ? cardMaxWidthClass + ' w-full' : 'flex-1 ' + cardMaxWidthClass
-                          } text-center px-1 overflow-hidden`}
+                          } text-center px-0.5 overflow-hidden`}
                         >
-                          <p className="text-[9.5px] sm:text-[10.5px] font-bold text-amber-50 dark:text-amber-100/95 truncate leading-none drop-shadow-md tracking-tight">
+                          <p className={`text-[9px] sm:text-[10px] font-bold truncate leading-none tracking-tight ${getPlankTitleColor()}`}>
                             {b.title}
                           </p>
                         </div>
@@ -1128,7 +1280,11 @@ export default function WoodenBookshelf({
           Array.from({ length: emptyShelvesCount }).map((_, emptyIdx) => (
             <div key={`empty-tier-${emptyIdx}`} className="relative pt-6 sm:pt-8">
               <div className="h-16 sm:h-24 flex items-center justify-center opacity-35 select-none pointer-events-none">
-                <span className="text-[10.5px] text-amber-700 dark:text-amber-400/40 font-serif italic tracking-widest">
+                <span className={`text-[10.5px] font-serif italic tracking-widest ${
+                  bookshelfThemeStyle === 'minimal_white'
+                    ? 'text-slate-400 dark:text-slate-500'
+                    : 'text-amber-700 dark:text-amber-400/40'
+                }`}>
                   ✦ TỦ SÁCH Y KHOA QBIZ ✦
                 </span>
               </div>
@@ -1137,17 +1293,13 @@ export default function WoodenBookshelf({
                 <div
                   className="h-[8px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.32)]"
                   style={{
-                    background: isDark
-                      ? 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)'
-                      : 'linear-gradient(180deg, #c29562 0%, #a47643 70%, #83592a 100%)',
+                    background: getPlankTopBg(),
                   }}
                 />
                 <div
                   className="h-[14px] rounded-b-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_22px_rgba(0,0,0,0.95)]"
                   style={{
-                    background: isDark
-                      ? 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)'
-                      : 'linear-gradient(180deg, #d4a773 0%, #b88a56 50%, #946937 100%)',
+                    background: getPlankFaceBg(),
                   }}
                 />
                 <div
@@ -1250,6 +1402,115 @@ export default function WoodenBookshelf({
             </div>
 
             <div className="flex flex-col gap-1.5 text-xs py-0.5">
+              {/* 0. KIỂU KỆ SÁCH (1 dòng tinh gọn 4 tùy chọn) */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
+                <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Kiểu kệ:</span>
+                <div className="flex items-center gap-1 bg-[#efe5d6] dark:bg-black/40 p-0.5 rounded-lg border border-[#e2d5c3] dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => handleChangeBookshelfTheme('classic_wood')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookshelfThemeStyle === 'classic_wood'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="Gỗ cổ điển nâu ấm"
+                  >
+                    Cổ điển
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeBookshelfTheme('dark_walnut')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookshelfThemeStyle === 'dark_walnut'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="Gỗ nâu đậm trầm"
+                  >
+                    Nâu đậm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeBookshelfTheme('minimal_white')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookshelfThemeStyle === 'minimal_white'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="Kệ trắng sứ tối giản"
+                  >
+                    Trắng sứ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeBookshelfTheme('luxury_modern')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookshelfThemeStyle === 'luxury_modern'
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="Kệ mun đen hiện đại"
+                  >
+                    Mun đen
+                  </button>
+                </div>
+              </div>
+
+              {/* 0.1 CỠ SÁCH TRÊN KỆ (1 dòng tinh gọn 4 nấc) */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
+                <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Cỡ sách:</span>
+                <div className="flex items-center gap-1 bg-[#efe5d6] dark:bg-black/40 p-0.5 rounded-lg border border-[#e2d5c3] dark:border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setColsExplicit(2)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookCols === 2
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="2 cuốn / tầng (Lớn)"
+                  >
+                    Lớn (2)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setColsExplicit(3)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookCols === 3
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="3 cuốn / tầng (Chuẩn)"
+                  >
+                    Chuẩn (3)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setColsExplicit(4)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookCols === 4
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="4 cuốn / tầng (Gọn)"
+                  >
+                    Gọn (4)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setColsExplicit(5)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                      bookCols === 5
+                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
+                    }`}
+                    title="5 cuốn / tầng (Mini)"
+                  >
+                    Mini (5)
+                  </button>
+                </div>
+              </div>
               {/* 1. TÔNG MÀU GIẤY ĐỌC SÁCH (1 dòng tinh gọn) */}
               <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
                 <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Giấy đọc:</span>
@@ -1474,8 +1735,24 @@ export default function WoodenBookshelf({
                   <span className="text-[11px] text-stone-500 dark:text-slate-300">Xem</span>
                 </button>
               )}
+ 
+              {/* 9. BỘ NHỚ & ĐỒNG BỘ GOOGLE DRIVE (CHỈ BỔ SUNG XUỐNG DƯỚI - APPEND ONLY) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsMenu(false);
+                  setShowSyncModal(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 cursor-pointer whitespace-nowrap"
+              >
+                <div className="flex items-center gap-2">
+                  <HardDrive size={16} className="text-amber-700 dark:text-amber-400" />
+                  <span>Bộ nhớ & Đồng bộ Google Drive</span>
+                </div>
+                <span className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">Drive</span>
+              </button>
 
-              {/* 9. KHỐI QUẢN TRỊ VIÊN (1 dòng) */}
+              {/* 10. KHỐI QUẢN TRỊ VIÊN (1 dòng) */}
               <div className="h-px bg-[#e8dccb] dark:bg-white/10 my-0.5" />
               {isAdmin ? (
                 <>
@@ -1718,6 +1995,12 @@ export default function WoodenBookshelf({
           </div>
         </div>
       )}
+
+      {/* MODAL BỘ NHỚ & ĐỒNG BỘ GOOGLE DRIVE */}
+      <SyncBackupModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+      />
     </div>
   );
 }

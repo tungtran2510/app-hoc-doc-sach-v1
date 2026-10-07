@@ -24,6 +24,8 @@ import {
   Search,
   BookMarked,
   Type,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
@@ -33,12 +35,14 @@ import ReaderAiCopilot from './ReaderAiCopilot';
 import ReaderNotesModal from './ReaderNotesModal';
 import ReaderSearchModal from './ReaderSearchModal';
 import ReaderTypographyModal from './ReaderTypographyModal';
+import ReaderSoundModal from './ReaderSoundModal';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import { readingNotesStorage } from '../lib/readingNotes';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 import { TypographySettings, getStoredTypography } from '../lib/typographyEngine';
 import { readingStreakEngine } from '../lib/readingStreak';
+import { pageSoundEngine } from '../lib/pageSoundEngine';
 import {
   detectEbookFormat,
   createPdfPageProvider,
@@ -83,6 +87,7 @@ export default function SideBooksReaderModal({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isPdfAudioOpen, setIsPdfAudioOpen] = useState<boolean>(false);
   const [audioNotice, setAudioNotice] = useState<string | null>(null);
+  const [showSoundModal, setShowSoundModal] = useState<boolean>(false);
 
   // State lưu ngoại tuyến (Offline IndexedDB)
   const [isOfflineCached, setIsOfflineCached] = useState<boolean>(false);
@@ -721,21 +726,7 @@ export default function SideBooksReaderModal({
 
   const playPaperSound = () => {
     try {
-      const soundPref = localStorage.getItem('reader_sound_pref');
-      if (soundPref === 'false') return;
-
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.08);
+      pageSoundEngine.playFlipSound();
     } catch {}
   };
 
@@ -1067,6 +1058,33 @@ export default function SideBooksReaderModal({
               <Bookmark size={16} strokeWidth={2.4} className={isBookmarked ? 'fill-current' : ''} />
             </button>
 
+            {/* Nút Cài đặt Âm thanh lật sách */}
+            <button
+              type="button"
+              onClick={() => setShowSoundModal(true)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+                pageSoundEngine.isMuted()
+                  ? readingTheme === 'ivory'
+                    ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#8c6b54] border border-[#cdbdab]'
+                    : 'bg-white/5 hover:bg-white/10 text-slate-400 border border-white/5'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-300 border border-white/10'
+              }`}
+              title={
+                pageSoundEngine.isMuted()
+                  ? 'Âm thanh lật sách (Đang tắt) - Bấm để chọn âm thanh'
+                  : 'Cài đặt âm thanh lật sách (Giấy thật, sách cổ, lướt gió, bìa gập...)'
+              }
+              aria-label="Cài đặt âm thanh lật sách"
+            >
+              {pageSoundEngine.isMuted() ? (
+                <VolumeX size={16} />
+              ) : (
+                <Volume2 size={16} />
+              )}
+            </button>
+
             {/* Nút Toàn màn hình (Fullscreen) */}
             <button
               type="button"
@@ -1157,9 +1175,13 @@ export default function SideBooksReaderModal({
               if (currentPage <= 0) {
                 setShowExitConfirm(true);
               } else {
+                playPaperSound();
                 readerRef.current?.flipPrev();
               }
             } else if (x > w * 0.82) {
+              if (currentPage < totalPages - 1) {
+                playPaperSound();
+              }
               readerRef.current?.flipNext();
             } else {
               toggleHud();
@@ -1263,6 +1285,7 @@ export default function SideBooksReaderModal({
                 if (currentPage <= 0) {
                   setShowExitConfirm(true);
                 } else {
+                  playPaperSound();
                   readerRef.current?.flipPrev();
                 }
               }}
@@ -1294,6 +1317,7 @@ export default function SideBooksReaderModal({
                 if (currentPage >= totalPages - 1) {
                   setShowExitConfirm(true);
                 } else {
+                  playPaperSound();
                   readerRef.current?.flipNext();
                 }
               }}
@@ -1458,6 +1482,13 @@ export default function SideBooksReaderModal({
         currentSettings={typographySettings}
         onChange={(newSettings) => setTypographySettings(newSettings)}
         readingTheme={readingTheme === 'dark' ? 'dark' : readingTheme === 'sepia' ? 'sepia' : 'light'}
+      />
+
+      {/* 9. MODAL CÀI ĐẶT HIỆU ỨNG ÂM THANH LẬT SÁCH */}
+      <ReaderSoundModal
+        isOpen={showSoundModal}
+        onClose={() => setShowSoundModal(false)}
+        readingTheme={readingTheme}
       />
     </div>
   );

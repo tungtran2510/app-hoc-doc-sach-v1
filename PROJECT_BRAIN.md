@@ -85,3 +85,24 @@ Hệ thống hỗ trợ đầy đủ **10 khối nội dung chuẩn**:
 - **Mô hình White-label (Bán cho đối tác theo tên miền riêng):**
   - Cung cấp web riêng với logo, thương hiệu và nội dung độc lập cho từng khách hàng hoặc phòng khám.
 
+---
+
+## 7. KIẾN TRÚC E-BOOK & KHO SÁCH TRỰC TUYẾN (BẢN V2 MỚI NHẤT)
+1. **Trợ lý AI Tìm Sách & Khuyến Nghị Tinh Gọn (Khắc phục triệt để lỗi giảng giải lê thê):**
+   - AI đóng vai trò Thủ thư hỗ trợ tra cứu sách, tuyệt đối KHÔNG đưa ra lời chẩn đoán bệnh, đơn thuốc hay các gạch đầu dòng triệu chứng bệnh học dài dòng.
+   - Lời dẫn AI cố định 1 câu súc tích: *"Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về [chủ đề] của tôi:"* kèm các thẻ sách thực tế (tựa đề, tác giả, loại sách đọc/nói, lý do khớp 1 dòng, nút mở đọc ngay 3D).
+2. **Bộ Xử Lý Tìm Kiếm Tự Nhiên (Smart NLP Keyword Matching):**
+   - Tự động tách câu văn hội thoại dài (ví dụ: *"Tôi thích một cuốn sách nói về dinh dưỡng và các chế độ ăn..."*), loại bỏ từ dừng tiếng Việt (`matchSmartKeywords` trong `onlineLibraryData.ts`), lọc ra các cặp từ và từ khóa trọng tâm để xếp hạng sách chính xác ở cả tab *Sách của bạn* và *Sách trực tuyến*.
+3. **Tải Sách Thực Tế & Lưu Trữ Ngoại Tuyến (Offline Storage):**
+   - Lưu trữ Blob trực tiếp vào `IndexedDB` của trình duyệt, có cơ chế `download-proxy` vượt tường lửa CORS từ các nguồn mở/Internet Archive/Project Gutenberg.
+   - Tải về thực tế hoàn tất sẽ chuyển nút sang màu xanh ngọc *"Đọc ngay"*, mở đọc trực tiếp trong SideBooks 3D Reader ngoại tuyến mà không cần đăng nhập.
+4. **Quy Tắc Đơn Dòng Tuyệt Đối Trên Mobile (390x844):**
+   - Toàn bộ thanh lọc (Tất cả, Sách đọc, Sách nói, Dán link), thẻ metadata và nút bấm bắt buộc 1 dòng duy nhất, cấm gãy thành 2 dòng.
+6. **Rà Soát Toàn Cục Ứng Dụng - Tối Giản, Tinh Gọn, Thông Minh & Đơn Dòng Tuyệt Đối (Global Polish):**
+   - **Trang Chủ (`/`):** Loại bỏ hoàn toàn nút Floating AI đè lên cụm nút Header Settings/Exit; giao diện Kệ sách gỗ 3D giữ trọn vẻ đẹp tự nhiên, sang trọng, tinh tế và không có thành phần thừa.
+   - **Trang Danh Mục (`/danh-muc`):** Khắc phục triệt để lỗi tiêu đề bị rớt 3 dòng ("Danh" / "Mục" / "Sách") trên màn hình 390x844; chuẩn hóa tiêu đề và nút thêm danh mục trên đúng 1 dòng duy nhất (`whitespace-nowrap`). Xóa bỏ hoàn toàn khối Hỏi đáp FAQ tĩnh cồng kềnh, loại bỏ lỗi lặp 2 lần tên tác giả trong thẻ sách.
+   - **Trang Đã Lưu (`/da-luu`):** Loại bỏ khối giải thích kỹ thuật IndexedDB dài dòng ở chân trang; rút gọn tiêu đề sách để không bị tràn dòng hoặc cắt chữ.
+   - **Trang Tìm Kiếm (`/tim-kiem`):** Tích hợp nút AI bám đuổi góc dưới bên phải ("✨ Nhờ AI tìm sách"), mở modal gợi ý đầu sách thông minh chuẩn xác; thân trang tìm kiếm sạch sẽ, tối giản tuyệt đối.
+
+
+

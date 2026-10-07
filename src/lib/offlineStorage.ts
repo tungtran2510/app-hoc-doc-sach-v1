@@ -134,6 +134,8 @@ class OfflineStorageEngine {
       fileName?: string | null;
       lastReadPage?: number;
       totalPages?: number;
+      fileBlob?: Blob | null;
+      coverBlob?: Blob | null;
     },
     onProgress?: (percent: number) => void
   ): Promise<{ success: boolean; size: number }> {
@@ -141,22 +143,39 @@ class OfflineStorageEngine {
     const id = this.normalizeBookId(book.id || book.fileUrl);
     const format = detectEbookFormat(book.fileName || book.fileUrl);
 
-    // 1. Tải tệp sách gốc với theo dõi tiến trình
-    onProgress?.(10);
-    const fileRes = await fetch(book.fileUrl);
-    if (!fileRes.ok) {
-      throw new Error(`Không thể tải tệp sách (Mã lỗi ${fileRes.status})`);
+    // 1. Tải tệp sách gốc (hoặc dùng Blob đã có sẵn)
+    let fileBlob: Blob;
+    if (book.fileBlob) {
+      fileBlob = book.fileBlob;
+      onProgress?.(70);
+    } else {
+      onProgress?.(10);
+      let fetchUrl = book.fileUrl;
+      if (typeof window !== 'undefined' && (fetchUrl.startsWith('http://') || fetchUrl.startsWith('https://'))) {
+        if (!fetchUrl.startsWith(window.location.origin)) {
+          fetchUrl = `/api/download-proxy?url=${encodeURIComponent(book.fileUrl)}`;
+        }
+      }
+      const fileRes = await fetch(fetchUrl);
+      if (!fileRes.ok) {
+        throw new Error(`Không thể tải tệp sách (Mã lỗi ${fileRes.status})`);
+      }
+      onProgress?.(50);
+      fileBlob = await fileRes.blob();
+      onProgress?.(70);
     }
 
-    onProgress?.(40);
-    const fileBlob = await fileRes.blob();
-    onProgress?.(75);
-
     // 2. Tải thêm ảnh bìa về máy (nếu có) để xem offline
-    let coverBlob: Blob | null = null;
-    if (book.coverUrl && !book.coverUrl.startsWith('data:')) {
+    let coverBlob: Blob | null = book.coverBlob || null;
+    if (!coverBlob && book.coverUrl && !book.coverUrl.startsWith('data:')) {
       try {
-        const coverRes = await fetch(book.coverUrl);
+        let coverFetchUrl = book.coverUrl;
+        if (typeof window !== 'undefined' && (coverFetchUrl.startsWith('http://') || coverFetchUrl.startsWith('https://'))) {
+          if (!coverFetchUrl.startsWith(window.location.origin)) {
+            coverFetchUrl = `/api/download-proxy?url=${encodeURIComponent(book.coverUrl)}`;
+          }
+        }
+        const coverRes = await fetch(coverFetchUrl);
         if (coverRes.ok) {
           coverBlob = await coverRes.blob();
         }
@@ -326,6 +345,66 @@ class OfflineStorageEngine {
         const req = store.delete(id);
 
         req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Xóa toàn bộ bộ nhớ cache sách ngoại tuyến
+   */
+  public async clearAllCache(): Promise<boolean> {
+    try {
+      const db = await this.getDB();
+      this.activeBlobUrls.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      });
+      this.activeBlobUrls.clear();
+
+      return new Promise<boolean>((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.clear();
+
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Cập nhật ảnh bìa tùy biến cho sách ngoại tuyến
+   */
+  public async updateBookCover(idOrUrl: string, coverUrl: string, coverBlob?: Blob): Promise<boolean> {
+    try {
+      const db = await this.getDB();
+      const id = this.normalizeBookId(idOrUrl);
+
+      return new Promise<boolean>((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+
+        req.onsuccess = () => {
+          const record: OfflineBookData = req.result;
+          if (!record) {
+            resolve(false);
+            return;
+          }
+          record.coverUrl = coverUrl;
+          if (coverBlob) {
+            record.coverBlob = coverBlob;
+          }
+          const putReq = store.put(record);
+          putReq.onsuccess = () => resolve(true);
+          putReq.onerror = () => resolve(false);
+        };
         req.onerror = () => resolve(false);
       });
     } catch {

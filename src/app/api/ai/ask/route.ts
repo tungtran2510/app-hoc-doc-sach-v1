@@ -538,15 +538,9 @@ const CURATED_QA = [
       'thoat vi dia dem phai lam sao',
       'sach thoat vi dia dem',
       'tim sach thoat vi',
+      'sach cot song',
     ],
-    answer:
-`Đối với tình trạng thoát vị đĩa đệm (đặc biệt vùng thắt lưng L4-L5), bạn cần chú ý các nguyên tắc bảo vệ sau:
-
-• Giữ thẳng trục thắt lưng: Tránh các động tác cúi gập cong lưng hoặc vặn xoắn đột ngột; khi nâng nhấc đồ vật luôn giữ lưng thẳng và hạ thấp trọng tâm.
-• Duy trì tư thế nằm chuẩn và ngồi chuẩn: Giữ cột sống ở trục sinh lý tự nhiên trong các sinh hoạt hàng ngày để giảm áp lực nội đĩa đệm.
-• Tránh tư thế tĩnh tại quá lâu: Không ngồi hoặc đứng liên tục quá 30 - 45 phút; nên đi lại nhẹ nhàng định kỳ để tăng cường tuần hoàn và nuôi dưỡng đĩa đệm.
-• Lắng nghe phản hồi của cơ thể: Do thể trạng và mức độ tổn thương của mỗi người là khác nhau, cần vận động nhẹ nhàng vừa sức và tránh các tư thế gây đau tăng.
-• Cảnh báo y tế cần khám ngay: Nếu xuất hiện cảm giác đau nhói buốt lan nhanh xuống chân, tê mất cảm giác bàn chân hoặc rối loạn đại tiểu tiện.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về cột sống & thoát vị đĩa đệm của tôi:',
     suggested_books: [
       {
         id: 'book-hieu-dung-cot-song',
@@ -628,13 +622,7 @@ const CURATED_QA = [
       'cam nang co',
       'hoi chung co rua',
     ],
-    answer:
-`Đối với tình trạng đau mỏi cổ vai gáy và tê bì tay, bạn nên thực hiện các lưu ý bảo vệ sau:
-
-• Giữ thẳng trục đốt sống cổ C1-C7: Đưa màn hình máy tính hoặc điện thoại ngang tầm mắt, tránh gập đầu cúi gằm quá mức làm tăng tải trọng lên đĩa đệm cổ.
-• Tránh tư thế tĩnh tại: Cứ sau 30-45 phút làm việc, hãy thả lỏng hai vai, vươn cằm nhẹ nhàng để giải nén cơ thang và cơ ức đòn chũm.
-• Chườm ấm nhẹ nhàng vùng gáy vào buổi tối để tăng cường tuần hoàn máu nuôi các rễ thần kinh cánh tay.
-• Cảnh báo y tế: Nếu tê mất cảm giác ngón tay kéo dài hoặc xuất hiện hoa mắt chóng mặt dữ dội, cần thăm khám y tế kịp thời.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về đốt sống cổ & vai gáy của tôi:',
     suggested_books: [
       {
         id: 'book-cam-nang-co',
@@ -699,6 +687,74 @@ const CURATED_QA = [
   },
   {
     keywords: [
+      'dinh duong phu hop voi nguoi viet nam',
+      'dinh duong nguoi viet',
+      'che do an nguoi viet',
+      'che do an phu hop voi nguoi viet',
+      'sach noi ve dinh duong va cac che do an',
+      'toi thich mot cuon sach ve dinh duong',
+      'toi thich mot cuon sach',
+      'sach dinh duong thuc don',
+      'dinh duong va cac che do an',
+      'che do an phu hop',
+      'sach ve dinh duong',
+      'dinh duong nguoi viet nam',
+      'sach dinh duong cho nguoi viet',
+      'tim sach dinh duong',
+    ],
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về dinh dưỡng & chế độ ăn uống cho người Việt của tôi:',
+    suggested_books: [
+      {
+        id: 'book-dinh-duong-phuc-hoi',
+        title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        badge_tag: 'ĐỀ XUẤT SỐ 1',
+        target_page: 2,
+        target_index: 1,
+        reason: 'Sách chuyên sâu hướng dẫn cơ chế kháng viêm sinh học và thực đơn ăn uống điều chỉnh riêng cho thể trạng người Việt.',
+      },
+      {
+        id: 'online-audio-2',
+        title: 'Sách Nói: Dinh Dưỡng Kháng Viêm Tự Nhiên',
+        author: 'Tùng Dinh Dưỡng',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        badge_tag: 'SÁCH NÓI 🎧',
+        target_page: 1,
+        target_index: 0,
+        reason: 'Audiobook 35 phút phân tích chi tiết nguyên lý lựa chọn thực phẩm lành mạnh và chế độ ăn chống thoái hóa khớp.',
+      },
+    ],
+    in_book_snippets: [
+      {
+        id: 'snip-6',
+        book_id: 'book-dinh-duong-phuc-hoi',
+        book_title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+        cover_url: '/documents/covers/cover_dinh_duong_khang_viem.png',
+        chapter: 'Chương 1: Cơ Chế Kháng Viêm Sinh Học Tế Bào',
+        page_number: 2,
+        page_index: 1,
+        excerpt:
+          'Axit béo Omega-3 tỷ lệ EPA/DHA cao kết hợp Curcumin sinh khả dụng cao và Polyphenol thực vật giúp ức chế enzyme gây viêm, dập tắt ổ viêm âm thầm tại sụn khớp an toàn.',
+        relevance_reason: 'Nguyên lý xây dựng bữa ăn kháng viêm từ nguyên liệu quen thuộc hàng ngày.',
+      },
+    ],
+    suggested_pages: [
+      {
+        title: 'Dinh dưỡng kháng viêm',
+        topic_title: 'Dinh Dưỡng',
+        topic_slug: 'dinh-duong',
+        page_slug: 'dinh-duong-khang-viem',
+        reason: 'Thực đơn mẫu 7 ngày phù hợp với văn hóa ẩm thực Việt Nam.',
+      },
+    ],
+    follow_up_questions: [
+      'Thực đơn 7 ngày kháng viêm cho người Việt?',
+      'Cách uống nước và cấp ẩm đĩa đệm chuẩn y khoa?',
+    ],
+  },
+  {
+    keywords: [
       'dinh duong cho khop',
       'dinh duong cot song',
       'an gi tot cho xuong khop',
@@ -707,12 +763,7 @@ const CURATED_QA = [
       'sach dinh duong khop',
       'tai tao sun khop',
     ],
-    answer:
-`Dinh dưỡng khoa học giúp giảm viêm âm thầm và nuôi dưỡng sụn khớp từ gốc:
-
-• Thực phẩm kháng viêm: Tăng cường cá béo (cá hồi, cá thu giàu Omega-3), dầu ô liu, quả mọng, nghệ, gừng và các loại rau lá xanh đậm.
-• Dưỡng chất xây dựng mô: Bổ sung đủ đạm chất lượng cao, vitamin C, kẽm, canxi và vitamin D3/K2 để tái tạo mô liên kết và sụn xương.
-• Cần cắt giảm: Hạn chế đường tinh luyện, đồ ngọt, thực phẩm siêu chế biến, dầu chiên đi chiên lại và nước ngọt có gas.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về dinh dưỡng kháng viêm & phục hồi sụn khớp của tôi:',
     suggested_books: [
       {
         id: 'book-dinh-duong-phuc-hoi',
@@ -784,12 +835,7 @@ const CURATED_QA = [
       'tim tai lieu trong sach',
       'nuoi duong dia dem',
     ],
-    answer:
-`Tài liệu trong sách chuyên khảo giải thích cơ chế nuôi dưỡng đĩa đệm như sau:
-
-• Đĩa đệm không có mạch máu trực tiếp: Nhân nhầy đĩa đệm chứa đến 80% là nước, nhận chất dinh dưỡng và đào thải cặn bã qua cơ chế thẩm thấu áp suất.
-• Chu trình bơm hút dịch tự nhiên: Ban ngày khi đứng ngồi chịu tải, dịch nhầy bị ép ra ngoài; ban đêm khi nằm ngủ giải áp, đĩa đệm hút ngược dịch nước giàu khoáng chất để tái tạo độ đàn hồi.
-• Điều kiện tối ưu: Cần uống đủ nước trong ngày và duy trì tư thế nằm chuẩn để đĩa đệm được giải nén trọn vẹn.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về cơ chế bơm hút dịch nhân nhầy đĩa đệm của tôi:',
     suggested_books: [
       {
         id: 'book-nuoc-va-khoang-chat',
@@ -866,13 +912,7 @@ const CURATED_QA = [
       'tu the sinh hoat',
       'chu y tu the',
     ],
-    answer:
-`Để bảo vệ cột sống và đĩa đệm, bạn cần chú ý các nguyên tắc tư thế chuẩn chung sau:
-
-• Duy trì tư thế ngồi chuẩn, nằm chuẩn: Giữ các đường cong sinh lý tự nhiên của cột sống thẳng trục, tránh gù lưng hoặc vẹo lệch một bên.
-• Khi nâng nhấc vật nặng: Luôn giữ lưng thẳng, hạ thấp trọng tâm và dùng lực từ đùi để nâng lên, tuyệt đối không cúi gập cong lưng.
-• Tránh tư thế tĩnh tại: Không ngồi hoặc đứng yên một chỗ quá 45 - 60 phút; hãy đứng dậy vươn người nhẹ nhàng để giải tỏa áp lực cho đĩa đệm.
-• Lắng nghe cơ thể: Do thể trạng và cơ địa mỗi người khác nhau, không có một tư thế cố định áp dụng cho tất cả; hãy điều chỉnh tư thế sao cho cột sống được nâng đỡ thoải mái và tự nhiên nhất.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về tư thế chuẩn & bài tập phục hồi tại nhà của tôi:',
     suggested_books: [
       {
         id: 'book-hieu-dung-cot-song',
@@ -944,13 +984,7 @@ const CURATED_QA = [
       'uong bao nhieu nuoc',
       'sach nuoc',
     ],
-    answer:
-`Uống nước đúng cách giúp nuôi dưỡng tế bào và duy trì độ đàn hồi cho đĩa đệm:
-
-• Uống từng ngụm nhỏ: Ngồi uống thong thả để nước kịp thẩm thấu vào tế bào, tránh uống ừng ực lượng lớn khi đang đứng.
-• Thời điểm vàng: 1 ly nước ấm ngay khi thức dậy để kích hoạt tuần hoàn, 1 ly trước bữa ăn 30 phút, và uống rải rác đều trong ngày.
-• Lượng nước chuẩn: Khoảng 0.04 lít trên mỗi kg cân nặng (ví dụ: người 50kg cần khoảng 2 lít nước/ngày), tăng nhẹ khi vận động nhiều mồ hôi.
-• Chọn nguồn nước: Ưu tiên nước sạch, giàu khoáng và có tính kiềm tự nhiên để trung hòa axit dư thừa.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về nước & khoáng chất cho cơ thể của tôi:',
     suggested_books: [
       {
         id: 'book-nuoc-va-khoang-chat',
@@ -1010,12 +1044,7 @@ const CURATED_QA = [
       'cau tao cot song',
       'tong quan ve cot song',
     ],
-    answer:
-`Cột sống là trục nâng đỡ và bảo vệ hệ thần kinh trung ương của cơ thể:
-
-• Cấu tạo tổng thể: Gồm 33-34 đốt sống xếp chồng lên nhau, tạo thành 4 đường cong sinh lý tự nhiên (cổ, ngực, thắt lưng, cùng cụt) giúp phân tán lực khi vận động.
-• Đĩa đệm giảm xóc: Nằm giữa các đốt sống, đóng vai trò như đệm sinh học giảm chấn động và giúp cơ thể cúi, ngửa, xoay chuyển linh hoạt.
-• Cơ chế nuôi dưỡng: Đĩa đệm nhận dinh dưỡng qua cơ chế thẩm thấu khi vận động đúng trục sinh học tự nhiên.`,
+    answer: 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về atlas giải phẫu 3D của tôi:',
     suggested_books: [
       {
         id: 'book-atlas-cot-song',
@@ -1203,22 +1232,22 @@ function fastFallbackSearch(query: string, catalog: LessonCatalogItem[], dynamic
   let answerText = '';
   const lowerQ = query.toLowerCase();
 
-  if (lowerQ.includes('cổ') || lowerQ.includes('vai') || lowerQ.includes('gáy') || lowerQ.includes('ngực') || lowerQ.includes('tay')) {
-    answerText = `• Duy trì tư thế ngồi chuẩn, nằm chuẩn để bảo vệ trục cột sống cổ C1-C7 tự nhiên.\n• Tránh giữ nguyên một tư thế quá lâu; nghỉ ngơi và thả lỏng cơ định kỳ.\n• Chườm ấm nhẹ nhàng vùng cổ vai gáy vào buổi tối để tăng cường tuần hoàn máu nuôi các rễ thần kinh cánh tay.`;
+  if (lowerQ.includes('cổ') || lowerQ.includes('vai') || lowerQ.includes('gáy') || lowerQ.includes('tay')) {
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về đốt sống cổ & vai gáy của tôi:';
   } else if (lowerQ.includes('lưng') || lowerQ.includes('đĩa đệm') || lowerQ.includes('thoát vị') || lowerQ.includes('tọa') || lowerQ.includes('l4') || lowerQ.includes('l5')) {
-    answerText = `• Duy trì tư thế nằm chuẩn, ngồi chuẩn để bảo vệ trục sinh lý cột sống và giảm áp lực cho đĩa đệm.\n• Tránh ngồi tĩnh tại liên tục một chỗ quá lâu, nên đứng dậy đi lại nhẹ nhàng sau mỗi 30 - 45 phút.\n• Khi nâng nhấc đồ vật, luôn giữ thẳng lưng và hạ thấp trọng tâm, tránh cúi gập vặn xoắn đột ngột.`;
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về cột sống & thoát vị đĩa đệm của tôi:';
   } else if (lowerQ.includes('nước') || lowerQ.includes('uống') || lowerQ.includes('bơm dịch')) {
-    answerText = `• Uống từng ngụm nhỏ, rải đều trong suốt cả ngày thay vì uống dồn một lượng lớn.\n• Bổ sung nước ấm vào buổi sáng sau khi thức dậy để kích hoạt nhu động đường tiêu hóa.\n• Uống đủ nước để hỗ trợ quá trình bơm hút dịch dinh dưỡng tự nhiên của đĩa đệm khi ngủ.`;
-  } else if (lowerQ.includes('ăn') || lowerQ.includes('tiêu hóa') || lowerQ.includes('dạ dày') || lowerQ.includes('đầy bụng') || lowerQ.includes('ruột')) {
-    answerText = `• Ăn chậm, nhai kỹ để giảm gánh nặng co bóp và tiết acid cho dạ dày.\n• Hạn chế đồ ăn quá nhiều dầu mỡ, đồ cay nóng hoặc nằm ngay sau khi ăn no.\n• Duy trì khoảng cách tối thiểu 2 - 3 giờ giữa bữa tối và giờ đi ngủ.`;
-  } else if (lowerQ.includes('dinh dưỡng') || lowerQ.includes('kháng viêm') || lowerQ.includes('sụn') || lowerQ.includes('khớp')) {
-    answerText = `• Tăng cường thực phẩm giàu Omega-3, nghệ, gừng và rau lá xanh đậm để giảm phản ứng viêm âm thầm.\n• Bổ sung đủ protein chất lượng cao, vitamin C, canxi và D3/K2 để hỗ trợ tái tạo mô liên kết và sụn khớp.\n• Cắt giảm đường tinh luyện, đồ ngọt và thực phẩm siêu chế biến.`;
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về nước & khoáng chất cho cơ thể của tôi:';
+  } else if (lowerQ.includes('dinh dưỡng') || lowerQ.includes('kháng viêm') || lowerQ.includes('ăn') || lowerQ.includes('việt')) {
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về dinh dưỡng & chế độ ăn cho người Việt của tôi:';
+  } else if (lowerQ.includes('tiêu hóa') || lowerQ.includes('dạ dày') || lowerQ.includes('ruột')) {
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất về tiêu hóa & vi sinh đường ruột của tôi:';
   } else {
-    answerText = `• Lắng nghe các tín hiệu của cơ thể, duy trì lối sống điều độ và chế độ dinh dưỡng lành mạnh.\n• Duy trì vận động nhịp nhàng mỗi ngày để tăng cường tuần hoàn và trao đổi chất.\n• Xem chi tiết cuốn sách y khoa và đoạn trích tài liệu bên dưới để nắm rõ cơ chế và cách ứng dụng.`;
+    answerText = 'Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất của tôi:';
   }
 
   return {
-    answer: `Hướng dẫn chăm sóc sức khỏe chủ động:\n\n${answerText}`,
+    answer: answerText,
     suggested_books: matchedBooks,
     in_book_snippets: matchedSnippets,
     suggested_pages: selectedPages.map((s) => ({
@@ -1291,7 +1320,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (matchedFaq && matchedFaq.answer) {
-        // Nếu người dùng KHÔNG hỏi DoctorLoan nhưng FAQ chứa DoctorLoan, bỏ qua để AI sinh nội dung chuẩn
         if (isAskingDoctorLoan || !/doctor\s*loan/i.test(matchedFaq.answer)) {
           const selectedPages = rankCatalogPages(question, catalog);
 
@@ -1340,7 +1368,7 @@ export async function POST(req: NextRequest) {
       .map((s, idx) => `[Trích đoạn ${idx + 1}] ID: "${s.id}" | Sách: "${s.book_title}" (ID: ${s.book_id}) | Chương: "${s.chapter}" | Trang ${s.page_number} (Index ${s.page_index}): "${s.excerpt}"`)
       .join('\n');
 
-    // 4. HỆ THỐNG PROMPT TỐI ƯU CHO EBOOK & THỦ THƯ TRA CỨU Y KHOA
+    // 4. HỆ THỐNG PROMPT TỐI ƯU CHO GỢI Ý ĐẦU SÁCH THÔNG MINH
     const contextPrefix = bookContext
       ? `BỐI CẢNH ĐỌC SÁCH HIỆN TẠI (TỦ SÁCH QBIZ BOOKS):
 - Tên cuốn sách: "${bookContext.title || 'Sách chuyên đề'}" ${bookContext.author ? `(Tác giả: ${bookContext.author})` : ''}
@@ -1349,36 +1377,32 @@ ${bookContext.excerpt ? `- Trích đoạn / Nội dung trang sách đang đọc:
 NHIỆM VỤ ĐẶC BIỆT: Bạn đóng vai trò Trợ lý AI Đồng hành Đọc sách (Interactive Reading Copilot). Hãy ưu tiên trực tiếp giải thích, làm sáng tỏ các thuật ngữ chuyên sâu, tóm tắt hoặc giải đáp thắc mắc của độc giả dựa trên chính xác nội dung trang sách được cung cấp ở trên một cách dễ hiểu, sinh động, chuẩn y khoa.\n\n`
       : '';
 
-    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Sức Khỏe AI và Thủ Thư Tra Cứu Thông Minh trong Tủ Sách Điện Tử Qbiz Books (Tác giả: Tùng Dinh Dưỡng).
+    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Tìm Kiếm & Thủ Thư Gợi Ý Sách Thông Minh (Book Recommendation Copilot) trong Tủ Sách Qbiz Books (Tác giả: Tùng Dinh Dưỡng).
 
 NGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT):
-1. ĐÚNG TRỌNG TÂM CÂU HỎI (P0):
-   - Người đọc hỏi vấn đề gì, hãy trả lời trực diện, chính xác vào đúng vấn đề đó.
-   - Ngắn gọn & súc tích: 60 đến 90 từ (tối đa 110 từ). Trình bày thông thoáng bằng 3 đến 4 gạch đầu dòng rõ ràng, dễ hiểu.
-   - TUYỆT ĐỐI KHÔNG lan man sang các chủ đề không liên quan.
+1. GỢI Ý ĐÚNG ĐẦU SÁCH (P0):
+   - Khi người đọc hỏi tìm sách, mô tả nhu cầu hoặc chủ đề quan tâm: TUYỆT ĐỐI KHÔNG viết các bài luận dài dòng chẩn đoán bệnh hay giải thích y khoa lê thê.
+   - Trường "answer" PHẢI BẮT ĐẦU BẰNG: "Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất của tôi:" (kèm 1 câu ngắn gọn nêu rõ vì sao các sách này giải quyết đúng nhu cầu).
+   - Chọn đúng các đầu sách phù hợp nhất đưa vào "suggested_books".
 
-2. NGUYÊN TẮC QUAN TRỌNG VỀ TƯ THẾ & VẬN ĐỘNG (TUYỆT ĐỐI TUÂN THỦ THEO TÁC GIẢ):
-   - CẤM TIỂU TƯ VẤN NẰM/NGỒI CHI TIẾT (không chỉ định nằm nghiêng trái, nằm ngửa, kê đầu giường 15-20cm, không quy định góc tay 90 độ, mắt cách bàn bao nhiêu cm).
-   - CẤM TƯ VẤN GỐI & GHẾ (loại gối, kê gối, chọn gối, loại ghế, chỉnh ghế...).
-   - CẤM TƯ VẤN BÀI TẬP CỤ THỂ (không kê toa squat, plank, bơi lội, đu xà...).
-   - CHỈ ĐƯỢC NÓI CHUNG theo nguyên tắc: "Duy trì tư thế nằm chuẩn, ngồi chuẩn để bảo vệ trục cột sống và độ cong sinh lý tự nhiên", "tránh duy trì tư thế tĩnh tại một chỗ quá lâu, nên đứng dậy đi lại nhẹ nhàng định kỳ", "vận động nhẹ nhàng phù hợp với thể trạng của bản thân".
+2. NGUYÊN TẮC VỀ TƯ THẾ & VẬN ĐỘNG:
+   - CẤM TIỂU TƯ VẤN NẰM/NGỒI CHI TIẾT, CẤM TƯ VẤN GỐI & GHẾ, CẤM KÊ TOA BÀI TẬP.
 
-3. TUYỆT ĐỐI CẤM KHÁC:
-   - CẤM TUYỆT ĐỐI nhắc đến thương hiệu DoctorLoan, ghế DoctorLoan hay bất kỳ sản phẩm bán hàng nào (trừ khi người dùng đích thân hỏi từ "DoctorLoan").
+3. TUYỆT ĐỐI CẤM:
+   - CẤM TUYỆT ĐỐI nhắc đến DoctorLoan trừ khi được hỏi đích danh.
    - CẤM các từ: "chữa bệnh", "khám chữa bệnh", "điều trị dứt điểm", "bác sĩ".
-   - CẤM các câu trần tình như "tôi không phải bác sĩ", "tác giả không phải bác sĩ".
 
-4. NHIỆM VỤ TRA CỨU SÁCH & TRÍCH ĐOẠN (SIÊU THÔNG MINH):
+4. NHIỆM VỤ TRA CỨU SÁCH & TRÍCH ĐOẠN:
    - TÌM SÁCH CHÍNH XÁC (suggested_books): Chọn 1-2 cuốn sách phù hợp nhất từ danh mục Tủ Sách Ebook dưới đây:
 ${booksText}
-   - TRÍCH XUẤT TÀI LIỆU TRANG SÁCH (in_book_snippets): Chọn 1-2 đoạn trích sâu trong trang sách phù hợp nhất từ kho trích đoạn dưới đây:
+   - TRÍCH XUẤT TÀI LIỆU TRANG SÁCH (in_book_snippets): Chọn 1-2 đoạn trích sâu trong trang sách phù hợp nhất:
 ${snippetsText}
-   - ĐỊNH HƯỚNG BÀI HỌC (suggested_pages): Chọn 1-2 bài học liên quan từ danh mục dưới đây:
+   - ĐỊNH HƯỚNG BÀI HỌC (suggested_pages):
 ${catalogText}
 
 BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
 {
-  "answer": "Nội dung trả lời ngắn gọn theo 3-4 gạch đầu dòng...",
+  "answer": "Sau khi đã hiểu rõ nhu cầu của bạn, đây là những gợi ý đầu sách phù hợp nhất của tôi:",
   "suggested_books": [
     {
       "id": "book-id-chinh-xac",

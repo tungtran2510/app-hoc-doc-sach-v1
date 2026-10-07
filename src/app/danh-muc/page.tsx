@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -15,8 +14,6 @@ import {
   X,
   Layers,
   Sparkles,
-  HelpCircle,
-  ChevronDown,
   BookMarked,
   FolderPlus,
 } from 'lucide-react';
@@ -116,45 +113,12 @@ const DEFAULT_CATEGORIES: BookCategory[] = [
   },
 ];
 
-const FAQS = [
-  {
-    id: 'faq-1',
-    category: 'Cột sống',
-    question: 'Tư thế sinh hoạt đúng cần chú ý gì?',
-    answer:
-      'Giữ lưng thẳng, vai thả lỏng, màn hình ngang tầm mắt; khi nhấc vật nặng luôn gập gối hạ hông thay vì gập lưng. Cứ sau 45–60 phút nên đứng dậy vận động nhẹ 1–2 phút để đĩa đệm được bơm hút dinh dưỡng.',
-  },
-  {
-    id: 'faq-2',
-    category: 'Cột sống',
-    question: 'Cách phân biệt đau mỏi thông thường và thoát vị đĩa đệm?',
-    answer:
-      'Đau mỏi cơ thường âm ỉ khu trú tại chỗ, giảm khi nghỉ ngơi. Còn tổn thương đĩa đệm chèn ép rễ thần kinh sẽ đau buốt lan dọc tay hoặc chân, kèm tê bì châm chích.',
-  },
-  {
-    id: 'faq-3',
-    category: 'Dinh dưỡng',
-    question: 'Người hay đau mỏi xương khớp thì dinh dưỡng cần bổ sung gì?',
-    answer:
-      'Cần ưu tiên đạm chất lượng cao, omega-3 kháng viêm, canxi, magie, vitamin D3, K2 và chăm sóc hệ vi sinh đường ruột để tăng hấp thu dưỡng chất.',
-  },
-  {
-    id: 'faq-4',
-    category: 'Nước & Tế bào',
-    question: 'Nước uống chất lượng có vai trò thế nào với tế bào?',
-    answer:
-      'Nước chiếm 60–70% cơ thể. Nước sạch giàu ion kiềm tự nhiên và hydrogen hòa tan giúp trung hòa gốc tự do, hỗ trợ đào thải cặn bã và tăng tốc độ trao đổi chất.',
-  },
-];
-
 export default function CategoriesPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<BookCategory[]>(DEFAULT_CATEGORIES);
   const [allBooks, setAllBooks] = useState<RecommendedBook[]>(DEFAULT_RECOMMENDED_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const [selectedFaqCat, setSelectedFaqCat] = useState<string>('Tất cả');
-  const [expandedFaqId, setExpandedFaqId] = useState<string | null>(null);
 
   // Modal Thêm / Chỉnh sửa danh mục
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -385,13 +349,6 @@ export default function CategoriesPage() {
     );
   }, [allBooks, selectedCategoryId, activeCategory, searchQuery]);
 
-  // Lọc FAQs
-  const faqCategories = ['Tất cả', 'Cột sống', 'Dinh dưỡng', 'Nước & Tế bào'];
-  const filteredFaqs = useMemo(() => {
-    if (selectedFaqCat === 'Tất cả') return FAQS;
-    return FAQS.filter((f) => f.category === selectedFaqCat);
-  }, [selectedFaqCat]);
-
   return (
     <main className="flex-1 flex flex-col px-3 sm:px-4 pt-3 pb-24 gap-4 max-w-[640px] w-full mx-auto select-none">
       {/* THÔNG BÁO TOAST KHI LƯU / THÊM DANH MỤC */}
@@ -402,42 +359,27 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* 1. HEADER CHUYÊN ĐỀ & NÚT THÊM DANH MỤC Ở NGAY TRÊN ĐẦU */}
-      <section className="flex items-center justify-between gap-2 pt-1 border-b border-amber-900/10 dark:border-white/10 pb-3">
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight">
-              Danh Mục Sách
-            </h1>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold text-[11px] shrink-0">
-              {categories.length} danh mục
-            </span>
-          </div>
-          <p className="text-xs text-[#6E4223] dark:text-amber-100/70 mt-0.5 font-medium truncate">
-            Phân loại chuyên đề & quản lý tủ sách dễ tra cứu
-          </p>
+      {/* 1. HEADER CHUYÊN ĐỀ & NÚT THÊM DANH MỤC */}
+      <section className="flex items-center justify-between gap-2 pt-1 border-b border-amber-900/10 dark:border-white/10 pb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-lg sm:text-xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight whitespace-nowrap">
+            Danh Mục Sách
+          </h1>
+          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold text-[10.5px] shrink-0 whitespace-nowrap">
+            {categories.length} danh mục
+          </span>
         </div>
 
-        {/* NÚT THÊM DANH MỤC NẰM NGAY TRÊN ĐẦU - DỄ NHÌN TRÊN ĐIỆN THOẠI */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleOpenAddCategoryModal}
-            className="px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-950/20 active:scale-95 transition-all cursor-pointer"
-            title="Thêm danh mục mới"
-          >
-            <FolderPlus size={15} strokeWidth={2.5} />
-            <span>Thêm danh mục</span>
-          </button>
-
-          <Link
-            href="/"
-            className="w-9 h-9 rounded-xl bg-[#F5EFE6] dark:bg-white/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-900/15 dark:border-white/10 flex items-center justify-center transition-all shadow-2xs shrink-0"
-            title="Về Kệ sách chính"
-          >
-            <BookOpen size={16} />
-          </Link>
-        </div>
+        {/* NÚT THÊM DANH MỤC - GỌN GÀNG ĐƠN DÒNG */}
+        <button
+          type="button"
+          onClick={handleOpenAddCategoryModal}
+          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
+          title="Thêm danh mục mới"
+        >
+          <FolderPlus size={14} strokeWidth={2.5} />
+          <span>Thêm mục</span>
+        </button>
       </section>
 
       {/* 2. THANH CUỘN TAB NHANH CÁC DANH MỤC (MOBILE-FIRST 1-CHẠM CHUYỂN DANH MỤC) */}
@@ -676,13 +618,15 @@ export default function CategoriesPage() {
                     {book.title}
                   </h3>
 
-                  <p className="text-[10.5px] text-[#6E4223] dark:text-amber-100/60 line-clamp-1 mt-0.5">
-                    {book.description || `Tác giả: ${book.author || 'Tùng Dinh Dưỡng'}`}
-                  </p>
+                  {book.description ? (
+                    <p className="text-[10.5px] text-[#6E4223] dark:text-amber-100/60 line-clamp-1 mt-0.5">
+                      {book.description}
+                    </p>
+                  ) : null}
 
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[10px] text-slate-500 dark:text-amber-200/60 font-medium">
-                      Tác giả: {book.author || 'Tùng Dinh Dưỡng'}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] text-slate-500 dark:text-amber-200/60 font-medium truncate">
+                      Tác giả: {book.author || 'Tủ Sách Y Khoa'}
                     </span>
                   </div>
                 </div>
@@ -704,85 +648,6 @@ export default function CategoriesPage() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* 6. VẤN ĐỀ THƯỜNG GẶP (FAQ ACCORDIONS) */}
-      <section className="mt-2 p-3.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm dark:shadow-md flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400">
-              <HelpCircle size={15} />
-            </div>
-            <div>
-              <h2 className="text-xs font-bold text-[#2A160A] dark:text-amber-200 uppercase tracking-wide">
-                Hỏi đáp y khoa & thói quen
-              </h2>
-              <p className="text-[10px] text-[#6E4223] dark:text-amber-100/60">
-                Kiến thức chăm sóc sức khỏe chủ động từ tác giả
-              </p>
-            </div>
-          </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 dark:bg-white/10 text-amber-800 dark:text-amber-300">
-            {filteredFaqs.length} câu hỏi
-          </span>
-        </div>
-
-        {/* Tab lọc danh mục FAQ */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-          {faqCategories.map((catName) => (
-            <button
-              key={catName}
-              type="button"
-              onClick={() => setSelectedFaqCat(catName)}
-              className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-                selectedFaqCat === catName
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
-                  : 'bg-[#F5EFE6] dark:bg-white/5 hover:bg-[#ebe3d7] dark:hover:bg-white/10 text-[#5C381E] dark:text-amber-100/80 border border-amber-900/10 dark:border-white/5'
-              }`}
-            >
-              {catName}
-            </button>
-          ))}
-        </div>
-
-        {/* Danh sách câu hỏi */}
-        <div className="flex flex-col gap-2 pt-1">
-          {filteredFaqs.map((faq) => {
-            const isExpanded = expandedFaqId === faq.id;
-            return (
-              <div
-                key={faq.id}
-                className="rounded-xl bg-[#FAF6F0] dark:bg-[#1c1109] border border-[#e6dcce] dark:border-white/5 overflow-hidden transition-all"
-              >
-                <button
-                  type="button"
-                  onClick={() => setExpandedFaqId(isExpanded ? null : faq.id)}
-                  className="w-full p-2.5 text-left flex items-center justify-between gap-2 cursor-pointer hover:bg-amber-500/5 dark:hover:bg-white/5 transition-colors"
-                >
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[9.5px] uppercase font-bold text-amber-700 dark:text-amber-400/80 tracking-wider">
-                      {faq.category}
-                    </span>
-                    <span className="text-xs font-bold text-[#2A160A] dark:text-amber-100 leading-snug mt-0.5">
-                      {faq.question}
-                    </span>
-                  </div>
-                  <ChevronDown
-                    size={15}
-                    className={`text-amber-600 dark:text-amber-400 shrink-0 transition-transform ${
-                      isExpanded ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-                {isExpanded && (
-                  <div className="px-3 pb-3 pt-1 text-xs text-[#5C381E] dark:text-amber-100/80 leading-relaxed border-t border-[#e6dcce] dark:border-white/5">
-                    {faq.answer}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </section>
 
       {/* =========================================================================

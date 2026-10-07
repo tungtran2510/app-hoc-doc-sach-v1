@@ -30,3 +30,5 @@ scripts/test_*.js
 
 .vercel
 .env*
+server_runner.js
+scripts/audit_*.js
