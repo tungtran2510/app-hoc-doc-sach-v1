@@ -118,6 +118,132 @@ export default function SideBooksReaderModal({
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [cbzPages, setCbzPages] = useState<string[]>([]);
 
+  // Refs theo dõi trạng thái đồng bộ cho Browser History & PopState
+  const hasPushedHistoryRef = useRef<boolean>(false);
+  const showExitConfirmRef = useRef<boolean>(showExitConfirm);
+  showExitConfirmRef.current = showExitConfirm;
+  const isAiCopilotOpenRef = useRef<boolean>(isAiCopilotOpen);
+  isAiCopilotOpenRef.current = isAiCopilotOpen;
+  const showNotesModalRef = useRef<boolean>(showNotesModal);
+  showNotesModalRef.current = showNotesModal;
+  const showSearchModalRef = useRef<boolean>(showSearchModal);
+  showSearchModalRef.current = showSearchModal;
+  const showTypographyModalRef = useRef<boolean>(showTypographyModal);
+  showTypographyModalRef.current = showTypographyModal;
+  const showTocModalRef = useRef<boolean>(showTocModal);
+  showTocModalRef.current = showTocModal;
+  const currentPageRef = useRef<number>(currentPage);
+  currentPageRef.current = currentPage;
+  const titleRef = useRef<string>(title);
+  titleRef.current = title;
+  const onCloseRef = useRef<() => void>(onClose);
+  onCloseRef.current = onClose;
+
+  // Quản lý Lịch sử Trình duyệt (Browser History & PopState) khi đọc sách
+  // Giúp nút Quay lại của điện thoại (Android Back gesture/button, Swipe Back, Browser Back)
+  // đóng sách an toàn và quay về Kệ Sách - TUYỆT ĐỐI KHÔNG ĐỂ THOÁT KHỎI ỨNG DỤNG!
+  useEffect(() => {
+    if (!isOpen) {
+      if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+        hasPushedHistoryRef.current = false;
+        try {
+          window.history.back();
+        } catch {}
+      }
+      return;
+    }
+
+    // Đẩy hash vào history khi mở sách để chặn nút Back của điện thoại
+    if (!hasPushedHistoryRef.current && typeof window !== 'undefined') {
+      hasPushedHistoryRef.current = true;
+      try {
+        const nextState = {
+          ...(window.history.state || {}),
+          qbiz_sidebooks_reader: true,
+          book_title: title,
+        };
+        const currentPath = window.location.pathname + window.location.search;
+        window.history.pushState(nextState, '', currentPath + '#doc-sach');
+      } catch {}
+    }
+
+    const repushHistory = () => {
+      try {
+        const nextState = {
+          ...(window.history.state || {}),
+          qbiz_sidebooks_reader: true,
+          book_title: titleRef.current,
+        };
+        const currentPath = window.location.pathname + window.location.search;
+        window.history.pushState(nextState, '', currentPath + '#doc-sach');
+        hasPushedHistoryRef.current = true;
+      } catch {}
+    };
+
+    const handlePopState = () => {
+      // Khi người dùng bấm nút Back của điện thoại hoặc vuốt mép màn hình:
+
+      // A. Nếu đang mở bất kỳ modal con nào -> đóng modal đó trước và giữ sách!
+      if (showExitConfirmRef.current) {
+        setShowExitConfirm(false);
+        repushHistory();
+        return;
+      }
+
+      if (showTypographyModalRef.current) {
+        setShowTypographyModal(false);
+        repushHistory();
+        return;
+      }
+
+      if (showSearchModalRef.current) {
+        setShowSearchModal(false);
+        repushHistory();
+        return;
+      }
+
+      if (showNotesModalRef.current) {
+        setShowNotesModal(false);
+        repushHistory();
+        return;
+      }
+
+      if (isAiCopilotOpenRef.current) {
+        setIsAiCopilotOpen(false);
+        repushHistory();
+        return;
+      }
+
+      if (showTocModalRef.current) {
+        setShowTocModal(false);
+        repushHistory();
+        return;
+      }
+
+      // B. Không còn modal con nào -> Đóng sách an toàn và quay về Kệ Sách (KHÔNG THOÁT APP)
+      hasPushedHistoryRef.current = false;
+      bookAudioPlayer.stop();
+      setIsPdfAudioOpen(false);
+      try {
+        localStorage.setItem(`last_read_page_${titleRef.current}`, currentPageRef.current.toString());
+        localStorage.setItem('last_read_book_title', titleRef.current);
+      } catch {}
+      onCloseRef.current();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+        hasPushedHistoryRef.current = false;
+        try {
+          window.history.back();
+        } catch {}
+      }
+    };
+  }, [isOpen, title]);
+
   // Kiểm tra trạng thái đã lưu ngoại tuyến của cuốn sách
   useEffect(() => {
     if (!isOpen || !activeFileUrl) return;
@@ -501,7 +627,17 @@ export default function SideBooksReaderModal({
       localStorage.setItem('last_read_book_title', title);
     } catch {}
     setShowExitConfirm(false);
-    onClose();
+
+    if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+      hasPushedHistoryRef.current = false;
+      try {
+        window.history.back();
+      } catch {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
   };
 
   const playPaperSound = () => {
@@ -549,7 +685,7 @@ export default function SideBooksReaderModal({
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => setShowExitConfirm(true)}
+            onClick={handleExitBook}
             className="h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-amber-300 hover:text-white flex items-center gap-1 text-[12px] font-bold cursor-pointer"
             title="Đóng sách & Về kệ"
             aria-label="Thoát về kệ sách"

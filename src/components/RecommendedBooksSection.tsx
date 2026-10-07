@@ -627,6 +627,11 @@ export default function RecommendedBooksSection({
         hotline={hotline}
         zaloUrl={zaloUrl}
         onClose={() => setSelectedBook(null)}
+        onReadBook3D={() => {
+          const b = selectedBook;
+          setSelectedBook(null);
+          if (b) setSideBooksModalBook(b);
+        }}
         onEdit={() => {
           const b = selectedBook;
           setSelectedBook(null);
