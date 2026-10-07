@@ -691,7 +691,7 @@ export default function SideBooksReaderModal({
     >
       {/* ================= 1. THANH ĐIỀU HƯỚNG ĐỈNH (STICKY HUD TRÊN CÙNG) ================= */}
       <header
-        className={`sticky top-0 z-40 backdrop-blur-md px-3 sm:px-4 py-2 flex items-center justify-between transition-all duration-300 transform gap-2 ${
+        className={`sticky top-0 z-40 backdrop-blur-md flex flex-col transition-all duration-300 transform ${
           showHud ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         } ${
           readingTheme === 'ivory'
@@ -701,318 +701,319 @@ export default function SideBooksReaderModal({
             : 'bg-black/90 text-slate-100 border-b border-white/10 shadow-xl'
         }`}
       >
-        {/* Bên trái: Nút Đóng / Thoát về kệ sách - Ưu tiên vị trí z-30 không bao giờ bị đè */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-30">
-          <button
-            type="button"
-            onClick={handleExitBook}
-            className="h-8 px-2 sm:px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white flex items-center gap-1 text-[12px] font-bold cursor-pointer transition-all border border-amber-500/30 active:scale-95 shadow-xs"
-            title="Đóng sách & Về kệ"
-            aria-label="Thoát về kệ sách"
-          >
-            <ArrowLeft size={16} strokeWidth={2.4} />
-            <span className="hidden xs:inline">Kệ sách</span>
-          </button>
+        {/* TẦNG 1: TIÊU ĐỀ CUỐN SÁCH NẰM SÁT MÉP TRÊN CÙNG */}
+        <div className="w-full px-3 py-1 flex items-center justify-center border-b border-white/5 bg-black/25">
+          <span className="text-[11px] sm:text-[12px] font-bold text-amber-200/90 tracking-wide truncate max-w-[360px] sm:max-w-xl text-center">
+            {title} {author ? `· ${author}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
+          </span>
         </div>
 
-        {/* Ở giữa: Tiêu đề cuốn sách & Chế độ lật trang (CURL, ROLL, SCROLL) */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 justify-center">
-          <div className="text-center min-w-0 max-w-[180px] sm:max-w-[280px]">
-            <h1 className="text-[12px] sm:text-[13px] font-black truncate text-amber-100 leading-tight">
-              {title}
-            </h1>
-            <p className="text-[9.5px] sm:text-[10px] text-amber-300/70 truncate hidden xs:block">
-              {author || 'Tài Liệu Chuyên Sâu'} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
-            </p>
+        {/* TẦNG 2: TOÀN BỘ CÀI ĐẶT CŨ ĐẦY ĐỦ 100% (CÀI ĐẶT CHẾ ĐỘ VUỐT SÁCH + TẤT CẢ THANH CÔNG CỤ) */}
+        <div className="w-full px-2 sm:px-4 py-1.5 flex items-center justify-between gap-1.5 sm:gap-2">
+          {/* Cụm trái: Nút Kệ sách + Cài đặt các chế độ vuốt lật sách (CURL 3D, ROLL 3D, SCROLL) */}
+          <div className="flex items-center gap-1.5 shrink-0 z-20">
+            <button
+              type="button"
+              onClick={handleExitBook}
+              className="h-8 px-2 sm:px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all border border-amber-500/30 active:scale-95 shadow-xs shrink-0"
+              title="Đóng sách & Về kệ"
+              aria-label="Thoát về kệ sách"
+            >
+              <ArrowLeft size={16} strokeWidth={2.4} />
+              <span className="hidden xs:inline">Kệ sách</span>
+            </button>
+
+            {/* CỤM CÀI ĐẶT 3 CHẾ ĐỘ VUỐT SÁCH: LẬT 3D · TRƯỢT 3D · CUỘN DỌC */}
+            {!isEpub && (
+              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReadingMode('curl');
+                    try {
+                      localStorage.setItem('reader_mode_pref', 'curl');
+                    } catch {}
+                  }}
+                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                    readingMode === 'curl'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Lật cong nón 3D (Chuẩn SideBooks Tokyo Interplay)"
+                  aria-label="Lật 3D"
+                >
+                  <BookOpen size={15} strokeWidth={2.2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReadingMode('roll');
+                    try {
+                      localStorage.setItem('reader_mode_pref', 'roll');
+                    } catch {}
+                  }}
+                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                    readingMode === 'roll'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Vuốt trượt trang ngang 3D"
+                  aria-label="Trượt 3D"
+                >
+                  <ArrowLeftRight size={15} strokeWidth={2.2} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReadingMode('scroll');
+                    try {
+                      localStorage.setItem('reader_mode_pref', 'scroll');
+                    } catch {}
+                  }}
+                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                    readingMode === 'scroll'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Cuộn trang dọc liên tục"
+                  aria-label="Cuộn dọc"
+                >
+                  <ArrowUpDown size={15} strokeWidth={2.2} />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Cụm 3 nút chuyển chế độ đọc (CURL 3D, ROLL 3D, SCROLL) - Chỉ hiện trên màn hình lớn từ sm trở lên để mobile tinh gọn */}
-          {!isEpub && (
-            <div className="hidden sm:flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setReadingMode('curl');
-                  try {
-                    localStorage.setItem('reader_mode_pref', 'curl');
-                  } catch {}
-                }}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-                  readingMode === 'curl'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Lật cong nón 3D (Chuẩn SideBooks Tokyo Interplay)"
-                aria-label="Lật 3D"
-              >
-                <BookOpen size={16} strokeWidth={2.2} />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReadingMode('roll');
-                  try {
-                    localStorage.setItem('reader_mode_pref', 'roll');
-                  } catch {}
-                }}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-                  readingMode === 'roll'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Vuốt trượt trang ngang 3D"
-                aria-label="Trượt 3D"
-              >
-                <ArrowLeftRight size={16} strokeWidth={2.2} />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setReadingMode('scroll');
-                  try {
-                    localStorage.setItem('reader_mode_pref', 'scroll');
-                  } catch {}
-                }}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-                  readingMode === 'scroll'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Cuộn trang dọc liên tục"
-                aria-label="Cuộn dọc"
-              >
-                <ArrowUpDown size={16} strokeWidth={2.2} />
-              </button>
-            </div>
-          )}
-        </div>
+          {/* Cụm phải: TOÀN BỘ CÁC CÁCH CÀI ĐẶT CŨ ĐẦY ĐỦ 100% (Cuộn ngang mượt mà, không bị mất bất kỳ nút nào) */}
+          <div className="flex-1 flex items-center justify-end gap-1.5 overflow-x-auto no-scrollbar pl-1.5">
+            {/* Cụm Thu phóng Zoom */}
+            {!isEpub && (
+              <div className="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => readerRef.current?.zoomOut?.()}
+                  className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-200 active:scale-95 transition-all cursor-pointer"
+                  title="Thu nhỏ trang sách"
+                  aria-label="Thu nhỏ"
+                >
+                  <ZoomOut size={15} strokeWidth={2.4} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => readerRef.current?.zoomIn?.()}
+                  className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-300 active:scale-95 transition-all cursor-pointer"
+                  title="Phóng to trang sách"
+                  aria-label="Phóng to"
+                >
+                  <ZoomIn size={15} strokeWidth={2.4} />
+                </button>
+              </div>
+            )}
 
-        {/* Bên phải: Zoom + Bookmark + Toàn màn hình + Tông màu giấy */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 relative z-30">
-          {!isEpub && (
-            <div className="hidden md:flex items-center bg-white/10 p-0.5 rounded-lg border border-white/10">
+            {/* Nút Sách Nói (Audio Book) cho tài liệu PDF */}
+            {isPdf && (
               <button
                 type="button"
-                onClick={() => readerRef.current?.zoomOut?.()}
-                className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-200 active:scale-95 transition-all cursor-pointer"
-                title="Thu nhỏ trang sách"
-                aria-label="Thu nhỏ"
+                onClick={togglePdfAudio}
+                className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                  isPdfAudioOpen
+                    ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                    : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+                }`}
+                title={isPdfAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc văn bản trang PDF)'}
+                aria-label="Sách nói AI"
               >
-                <ZoomOut size={16} strokeWidth={2.4} />
+                <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-400'} />
+                <span className="hidden sm:inline">Sách nói</span>
               </button>
-              <button
-                type="button"
-                onClick={() => readerRef.current?.zoomIn?.()}
-                className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-300 active:scale-95 transition-all cursor-pointer"
-                title="Phóng to trang sách"
-                aria-label="Phóng to"
-              >
-                <ZoomIn size={16} strokeWidth={2.4} />
-              </button>
-            </div>
-          )}
+            )}
 
-          {/* Nút Sách Nói (Audio Book) cho tài liệu PDF */}
-          {isPdf && (
+            {/* Nút Trợ lý AI Đồng hành Đọc Sách (Reading Copilot) */}
             <button
               type="button"
-              onClick={togglePdfAudio}
-              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
-                isPdfAudioOpen
-                  ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+              onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
+              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                isAiCopilotOpen
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
                   : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
               }`}
-              title={isPdfAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc văn bản trang PDF)'}
-              aria-label="Sách nói AI"
+              title={isAiCopilotOpen ? 'Đóng Trợ lý AI' : 'Hỏi Trợ lý AI về trang sách này (Tóm tắt, giải thích thuật ngữ, hỏi đáp)'}
+              aria-label="Hỏi AI"
             >
-              <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-400'} />
-              <span className="hidden sm:inline">Sách nói</span>
+              <Sparkles size={14} className={isAiCopilotOpen ? 'animate-spin text-slate-950' : 'text-amber-400'} />
+              <span className="hidden sm:inline">Hỏi AI</span>
             </button>
-          )}
 
-          {/* Nút Trợ lý AI Đồng hành Đọc Sách (Reading Copilot) */}
-          <button
-            type="button"
-            onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
-            className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
-              isAiCopilotOpen
-                ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
-                : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
-            }`}
-            title={isAiCopilotOpen ? 'Đóng Trợ lý AI' : 'Hỏi Trợ lý AI về trang sách này (Tóm tắt, giải thích thuật ngữ, hỏi đáp)'}
-            aria-label="Hỏi AI"
-          >
-            <Sparkles size={14} className={isAiCopilotOpen ? 'animate-spin text-slate-950' : 'text-amber-400'} />
-            <span className="hidden sm:inline">Hỏi AI</span>
-          </button>
-
-          {/* Nút Tìm kiếm toàn văn trong sách (Hiện từ màn hình md) */}
-          <button
-            type="button"
-            onClick={() => setShowSearchModal(true)}
-            className="hidden md:flex w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold"
-            title="Tìm kiếm từ khóa trong cuốn sách"
-            aria-label="Tìm kiếm trong sách"
-          >
-            <Search size={15} />
-          </button>
-
-          {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D (Hiện từ màn hình md) */}
-          <button
-            type="button"
-            onClick={() => {
-              setNotesModalInitialText(null);
-              setShowNotesModal(true);
-            }}
-            className="hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative"
-            title="Sổ tay ghi chú & Thẻ ghi nhớ Flashcard 3D"
-            aria-label="Sổ tay và Flashcard"
-          >
-            <BookMarked size={14} className="text-amber-400" />
-            <span className="hidden md:inline">Sổ tay</span>
-            {notesCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold text-[9px] leading-none">
-                {notesCount}
-              </span>
-            )}
-          </button>
-
-          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa (Hiện từ màn hình md) */}
-          <button
-            type="button"
-            onClick={() => setShowTypographyModal(true)}
-            className={`hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative ${
-              typographySettings.bionicReading
-                ? 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
-                : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
-            }`}
-            title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
-            aria-label="Cài đặt phông chữ và Bionic reading"
-          >
-            <Type size={14} className="text-amber-400" />
-            <span className="font-serif">Aa</span>
-            {typographySettings.bionicReading && (
-              <Sparkles size={11} className="text-amber-400 animate-pulse" />
-            )}
-          </button>
-
-          {/* Nút Lưu Ngoại Tuyến (Hiện từ màn hình md) */}
-          {Boolean(activeFileUrl) && (
+            {/* Nút Tìm kiếm toàn văn trong sách */}
             <button
               type="button"
-              onClick={isOfflineCached ? handleRemoveOffline : handleSaveOffline}
-              disabled={isSavingOffline}
-              className={`hidden md:flex h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
-                isOfflineCached
-                  ? 'bg-emerald-600/90 text-white shadow-md border border-emerald-400/40'
-                  : isSavingOffline
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'
-              }`}
-              title={
-                isOfflineCached
-                  ? 'Đã lưu ngoại tuyến vào máy (Nhấn để xóa cache)'
-                  : 'Lưu sách về bộ nhớ máy để đọc ngoại tuyến không cần mạng'
-              }
-              aria-label="Lưu ngoại tuyến"
+              onClick={() => setShowSearchModal(true)}
+              className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
+              title="Tìm kiếm từ khóa trong cuốn sách"
+              aria-label="Tìm kiếm trong sách"
             >
-              {isSavingOffline ? (
-                <>
-                  <Loader2 size={13} className="animate-spin text-amber-400" />
-                  <span className="hidden sm:inline font-mono">{offlineSaveProgress}%</span>
-                </>
-              ) : isOfflineCached ? (
-                <>
-                  <CheckCircle2 size={14} className="text-emerald-300" />
-                  <span className="hidden sm:inline">Offline ✓</span>
-                </>
-              ) : (
-                <>
-                  <Zap size={14} className="text-amber-400" />
-                  <span className="hidden sm:inline">Lưu máy</span>
-                </>
+              <Search size={15} />
+            </button>
+
+            {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D */}
+            <button
+              type="button"
+              onClick={() => {
+                setNotesModalInitialText(null);
+                setShowNotesModal(true);
+              }}
+              className="h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0"
+              title="Sổ tay ghi chú & Thẻ ghi nhớ Flashcard 3D"
+              aria-label="Sổ tay và Flashcard"
+            >
+              <BookMarked size={14} className="text-amber-400" />
+              <span className="hidden md:inline">Sổ tay</span>
+              {notesCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold text-[9px] leading-none">
+                  {notesCount}
+                </span>
               )}
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={toggleBookmark}
-            className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
-              isBookmarked
-                ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                : 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10'
-            }`}
-            title={isBookmarked ? 'Bỏ đánh dấu trang này' : 'Đánh dấu trang này'}
-            aria-label="Lưu trang"
-          >
-            <Bookmark size={16} strokeWidth={2.4} className={isBookmarked ? 'fill-current' : ''} />
-          </button>
-
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            className={`hidden md:flex w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg items-center justify-center transition-all cursor-pointer active:scale-95 ${
-              isFullscreen
-                ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
-                : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
-            }`}
-            title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình (F)'}
-            aria-label="Toàn màn hình"
-          >
-            {isFullscreen ? <Minimize size={16} strokeWidth={2.4} /> : <Maximize size={16} strokeWidth={2.4} />}
-          </button>
-
-          {/* 3 Tông màu đọc sách */}
-          <div className="flex items-center gap-1 bg-black/45 p-1 rounded-lg border border-white/15">
+            {/* Nút Cài đặt Phông chữ & Bionic Reading Aa */}
             <button
               type="button"
-              onClick={() => {
-                setReadingTheme('sepia');
-                localStorage.setItem('reader_theme_pref', 'sepia');
-              }}
-              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
-                readingTheme === 'sepia'
-                  ? 'bg-[#3d3327] text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
-                  : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+              onClick={() => setShowTypographyModal(true)}
+              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
+                typographySettings.bionicReading
+                  ? 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
               }`}
-              title="Vàng ấm Sepia"
-              aria-label="Màu Sepia"
+              title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
+              aria-label="Cài đặt phông chữ và Bionic reading"
             >
-              ☕
+              <Type size={14} className="text-amber-400" />
+              <span className="font-serif">Aa</span>
+              {typographySettings.bionicReading && (
+                <Sparkles size={11} className="text-amber-400 animate-pulse" />
+              )}
             </button>
+
+            {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
+            {Boolean(activeFileUrl) && (
+              <button
+                type="button"
+                onClick={isOfflineCached ? handleRemoveOffline : handleSaveOffline}
+                disabled={isSavingOffline}
+                className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                  isOfflineCached
+                    ? 'bg-emerald-600/90 text-white shadow-md border border-emerald-400/40'
+                    : isSavingOffline
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
+                    : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'
+                }`}
+                title={
+                  isOfflineCached
+                    ? 'Đã lưu ngoại tuyến vào máy (Nhấn để xóa cache)'
+                    : 'Lưu sách về bộ nhớ máy để đọc ngoại tuyến không cần mạng'
+                }
+                aria-label="Lưu ngoại tuyến"
+              >
+                {isSavingOffline ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin text-amber-400" />
+                    <span className="hidden sm:inline font-mono">{offlineSaveProgress}%</span>
+                  </>
+                ) : isOfflineCached ? (
+                  <>
+                    <CheckCircle2 size={14} className="text-emerald-300" />
+                    <span className="hidden sm:inline">Offline ✓</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={14} className="text-amber-400" />
+                    <span className="hidden sm:inline">Lưu máy</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Nút Đánh dấu trang (Bookmark) */}
             <button
               type="button"
-              onClick={() => {
-                setReadingTheme('dark');
-                localStorage.setItem('reader_theme_pref', 'dark');
-              }}
-              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
-                readingTheme === 'dark'
-                  ? 'bg-slate-900 text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
-                  : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+              onClick={toggleBookmark}
+              className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+                isBookmarked
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10'
               }`}
-              title="Đen OLED ban đêm"
-              aria-label="Màu Tối Đêm"
+              title={isBookmarked ? 'Bỏ đánh dấu trang này' : 'Đánh dấu trang này'}
+              aria-label="Lưu trang"
             >
-              🌑
+              <Bookmark size={16} strokeWidth={2.4} className={isBookmarked ? 'fill-current' : ''} />
             </button>
+
+            {/* Nút Toàn màn hình (Fullscreen) */}
             <button
               type="button"
-              onClick={() => {
-                setReadingTheme('ivory');
-                localStorage.setItem('reader_theme_pref', 'ivory');
-              }}
-              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
-                readingTheme === 'ivory'
-                  ? 'bg-amber-100 text-slate-900 ring-1.5 ring-amber-500 shadow-sm'
-                  : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+              onClick={toggleFullscreen}
+              className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+                isFullscreen
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
               }`}
-              title="Trắng sáng / Ngà"
-              aria-label="Màu Sáng Ngà"
+              title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình (F)'}
+              aria-label="Toàn màn hình"
             >
-              📜
+              {isFullscreen ? <Minimize size={16} strokeWidth={2.4} /> : <Maximize size={16} strokeWidth={2.4} />}
             </button>
+
+            {/* 3 Tông màu đọc sách (Sepia ☕ / Dark 🌑 / Ivory 📜) */}
+            <div className="flex items-center gap-1 bg-black/45 p-1 rounded-lg border border-white/15 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setReadingTheme('sepia');
+                  localStorage.setItem('reader_theme_pref', 'sepia');
+                }}
+                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                  readingTheme === 'sepia'
+                    ? 'bg-[#3d3327] text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
+                    : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+                }`}
+                title="Vàng ấm Sepia"
+                aria-label="Màu Sepia"
+              >
+                ☕
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReadingTheme('dark');
+                  localStorage.setItem('reader_theme_pref', 'dark');
+                }}
+                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                  readingTheme === 'dark'
+                    ? 'bg-slate-900 text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
+                    : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+                }`}
+                title="Đen OLED ban đêm"
+                aria-label="Màu Tối Đêm"
+              >
+                🌑
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReadingTheme('ivory');
+                  localStorage.setItem('reader_theme_pref', 'ivory');
+                }}
+                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                  readingTheme === 'ivory'
+                    ? 'bg-amber-100 text-slate-900 ring-1.5 ring-amber-500 shadow-sm'
+                    : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
+                }`}
+                title="Trắng sáng / Ngà"
+                aria-label="Màu Sáng Ngà"
+              >
+                📜
+              </button>
+            </div>
           </div>
         </div>
       </header>
