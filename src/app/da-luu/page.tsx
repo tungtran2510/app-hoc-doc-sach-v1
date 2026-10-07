@@ -22,12 +22,18 @@ import {
   Download,
   FileText,
   Layers,
+  Flame,
+  Clock,
+  Share2,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
+import FlashcardStudyModal from '../../components/FlashcardStudyModal';
+import QuoteCardModal from '../../components/QuoteCardModal';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { offlineStorage, CachedBookMetadata, formatBytes } from '../../lib/offlineStorage';
 import { readingNotesStorage, ReadingNoteItem } from '../../lib/readingNotes';
+import { readingStreakEngine, ReadingStats } from '../../lib/readingStreak';
 
 interface SavedItem {
   id: string;
@@ -176,6 +182,15 @@ export default function SavedBooksPage() {
   const [userBookmarks, setUserBookmarks] = useState<SavedItem[]>([]);
   const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>([]);
   const [allNotes, setAllNotes] = useState<ReadingNoteItem[]>([]);
+  const [readingStats, setReadingStats] = useState<ReadingStats>({
+    streakDays: 3,
+    pagesToday: 18,
+    minutesToday: 25,
+    totalBooksCompleted: 2,
+    lastActiveDate: '',
+  });
+  const [showFlashcardModal, setShowFlashcardModal] = useState<boolean>(false);
+  const [activeQuoteNote, setActiveQuoteNote] = useState<ReadingNoteItem | null>(null);
 
   // Đang học dở / Đang đọc dở state
   const [continueBook, setContinueBook] = useState<{
@@ -343,6 +358,9 @@ export default function SavedBooksPage() {
       } else {
         setAllNotes(DEFAULT_SAMPLE_NOTES);
       }
+
+      // 4. Load Reading Stats & Streak
+      setReadingStats(readingStreakEngine.getStats());
     } catch {
       // fallback
     }
@@ -509,7 +527,29 @@ export default function SavedBooksPage() {
         </p>
       </section>
 
-      {/* 2. THANH CHUYỂN TABS: TẤT CẢ / SÁCH / DẤU TRANG / GHI CHÚ / NGOẠI TUYẾN */}
+      {/* 2. THỐNG KÊ THÓI QUEN ĐỌC SÁCH TINH GỌN (STREAK & INSIGHTS) */}
+      <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <div className="px-3 py-1.5 rounded-2xl bg-amber-500/10 dark:bg-[#22150c] border border-amber-500/25 dark:border-amber-500/30 flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <Flame size={14} className="text-amber-500 fill-amber-500 animate-pulse" />
+          <span className="text-[11px] font-extrabold text-[#78350F] dark:text-amber-300">
+            {readingStats.streakDays} ngày liên tiếp
+          </span>
+        </div>
+        <div className="px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <BookOpen size={13} className="text-emerald-600 dark:text-emerald-400" />
+          <span className="text-[11px] font-bold text-[#2A160A] dark:text-amber-100">
+            {readingStats.pagesToday} trang hôm nay
+          </span>
+        </div>
+        <div className="px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <Clock size={13} className="text-blue-600 dark:text-blue-400" />
+          <span className="text-[11px] font-bold text-[#2A160A] dark:text-amber-100">
+            {readingStats.minutesToday} phút đọc
+          </span>
+        </div>
+      </section>
+
+      {/* 3. THANH CHUYỂN TABS: TẤT CẢ / SÁCH / DẤU TRANG / GHI CHÚ / NGOẠI TUYẾN */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5">
         {[
           { id: 'all', label: 'Tất cả', count: allSavedItems.length + allNotes.length + offlineBooks.length },
@@ -812,9 +852,22 @@ export default function SavedBooksPage() {
               <BookMarked size={15} className="text-[#8B4513] dark:text-amber-400" />
               <span>SỔ TAY GHI CHÚ & TRÍCH DẪN</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
-              {allNotes.length} trích đoạn
-            </span>
+            <div className="flex items-center gap-1.5">
+              {allNotes.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFlashcardModal(true)}
+                  className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10.5px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+                  title="Bắt đầu ôn tập Flashcard 3D"
+                >
+                  <Sparkles size={11} />
+                  <span>Ôn Flashcard ({allNotes.length})</span>
+                </button>
+              )}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+                {allNotes.length} trích đoạn
+              </span>
+            </div>
           </div>
 
           {allNotes.length === 0 ? (
@@ -897,6 +950,15 @@ export default function SavedBooksPage() {
                         {new Date(note.createdAt).toLocaleDateString('vi-VN')}
                       </span>
                       <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveQuoteNote(note)}
+                          className="px-2 py-1 rounded-lg bg-white/70 dark:bg-white/10 hover:bg-amber-500/20 text-[#6E4223] dark:text-amber-300 font-bold text-[10.5px] border border-amber-900/15 dark:border-white/10 flex items-center gap-1 transition-all cursor-pointer"
+                          title="Tạo ảnh trích dẫn nghệ thuật để chia sẻ"
+                        >
+                          <Share2 size={11} />
+                          <span>Ảnh trích dẫn</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleOpenNote(note)}
@@ -1047,6 +1109,27 @@ export default function SavedBooksPage() {
             loadOfflineList();
             loadData();
           }}
+        />
+      )}
+
+      {/* MODAL ÔN TẬP FLASHCARD 3D */}
+      {showFlashcardModal && (
+        <FlashcardStudyModal
+          isOpen={showFlashcardModal}
+          onClose={() => setShowFlashcardModal(false)}
+          notes={allNotes}
+          onNotesUpdated={() => {
+            setAllNotes(readingNotesStorage.getAllNotes());
+          }}
+        />
+      )}
+
+      {/* MODAL XUẤT ẢNH TRÍCH DẪN Y KHOA NGHỆ THUẬT */}
+      {activeQuoteNote && (
+        <QuoteCardModal
+          isOpen={Boolean(activeQuoteNote)}
+          onClose={() => setActiveQuoteNote(null)}
+          note={activeQuoteNote}
         />
       )}
 
