@@ -568,7 +568,7 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
         fromIdx: number,
         toIdx: number,
         startProgress: number,
-        duration: number = 320
+        duration: number = 400
       ) => {
         const state = stateRef.current;
         if (state.animId) cancelAnimationFrame(state.animId);
@@ -658,18 +658,18 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
       () => ({
         flipNext: () => {
           if (currentPage >= totalPages) return;
-          animateToTarget('next', currentPage - 1, currentPage, 0, 360);
+          animateToTarget('next', currentPage - 1, currentPage, 0, 450);
         },
         flipPrev: () => {
           if (currentPage <= 1) return;
-          animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 360);
+          animateToTarget('prev', currentPage - 1, currentPage - 2, 0, 450);
         },
         turnToPage: (targetIdx: number) => {
           if (targetIdx === currentPage - 1) return;
           if (targetIdx > currentPage - 1) {
-            animateToTarget('next', currentPage - 1, targetIdx, 0, 360);
+            animateToTarget('next', currentPage - 1, targetIdx, 0, 450);
           } else {
-            animateToTarget('prev', currentPage - 1, targetIdx, 0, 360);
+            animateToTarget('prev', currentPage - 1, targetIdx, 0, 450);
           }
         },
       }),
@@ -928,18 +928,18 @@ const SideBooksFlipEngine = forwardRef<SideBooksFlipEngineRef, SideBooksFlipEngi
           // 1. Vuốt búng nhanh sang trái (v < -0.28 px/ms) HOẶC
           // 2. Kéo chậm đã qua 16% chiều rộng trang (p > 0.16)
           if ((v < -0.28 || p > 0.16) && currentPage < totalPages) {
-            animateToTarget('next', state.fromIdx, state.toIdx, p, 300);
+            animateToTarget('next', state.fromIdx, state.toIdx, p, 380);
           } else {
-            animateCancel('next', state.fromIdx, state.toIdx, p, 180);
+            animateCancel('next', state.fromIdx, state.toIdx, p, 230);
           }
         } else if (state.direction === 'prev') {
           // Điều kiện lật ngược về trang trước:
           // 1. Vuốt búng nhanh sang phải (v > 0.28 px/ms) HOẶC
           // 2. Kéo chậm đã qua 16% chiều rộng trang (p > 0.16)
           if ((v > 0.28 || p > 0.16) && currentPage > 1) {
-            animateToTarget('prev', state.fromIdx, state.toIdx, p, 300);
+            animateToTarget('prev', state.fromIdx, state.toIdx, p, 380);
           } else {
-            animateCancel('prev', state.fromIdx, state.toIdx, p, 180);
+            animateCancel('prev', state.fromIdx, state.toIdx, p, 230);
           }
         }
       }

@@ -171,20 +171,33 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const imgBottom = imagesRef.current[Math.min(curIdx + 1, totalPages - 1)];
 
         const p = Math.max(0, Math.min(1, progress));
+        const paperTint =
+          readingTheme === 'sepia'
+            ? '#F4ECD8'
+            : readingTheme === 'dark'
+            ? '#141416'
+            : '#FAF8F3';
+
         if (p <= 0.001) {
           drawStaticPage(curIdx);
           return;
         }
         if (p >= 0.999) {
           ctx.clearRect(0, 0, W, H);
-          if (imgBottom && imgBottom.complete) ctx.drawImage(imgBottom, 0, 0, W, H);
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
+          if (imgBottom && imgBottom.complete && imgBottom.naturalWidth > 0) {
+            ctx.drawImage(imgBottom, 0, 0, W, H);
+          }
           drawSpineGutter(ctx, W, H);
           return;
         }
 
-        // 1. Vẽ trang phẳng bên dưới (Page N+1)
+        // 1. Vẽ trang phẳng bên dưới (Page N+1) với nền giấy bảo vệ chống nháy
         ctx.clearRect(0, 0, W, H);
-        if (imgBottom && imgBottom.complete) {
+        ctx.fillStyle = paperTint;
+        ctx.fillRect(0, 0, W, H);
+        if (imgBottom && imgBottom.complete && imgBottom.naturalWidth > 0) {
           ctx.drawImage(imgBottom, 0, 0, W, H);
         }
 
@@ -251,8 +264,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         }
         ctx.closePath();
         ctx.clip();
-        if (imgTop && imgTop.complete) {
+        if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
           ctx.drawImage(imgTop, 0, 0, W, H);
+        } else {
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
         }
         ctx.restore();
 
@@ -345,13 +361,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         }
 
         // 5.2 Lớp nền giấy mờ ngà theo theme
-        const paperTint =
+        const curlBackTint =
           readingTheme === 'sepia'
             ? 'rgba(244, 236, 216, 0.88)'
             : readingTheme === 'dark'
             ? 'rgba(30, 35, 45, 0.88)'
             : 'rgba(250, 248, 243, 0.88)';
-        ctx.fillStyle = paperTint;
+        ctx.fillStyle = curlBackTint;
         ctx.fill();
 
         // 5.3 Dải sáng 3D uốn cong gân giấy (Specular Crest & Real Paper Shading)
@@ -391,19 +407,31 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const imgTop = imagesRef.current[Math.max(0, curIdx - 1)]; // Page trước (đang mở ra đè lên)
 
         const p = Math.max(0, Math.min(1, progress));
+        const paperTint =
+          readingTheme === 'sepia'
+            ? '#F4ECD8'
+            : readingTheme === 'dark'
+            ? '#141416'
+            : '#FAF8F3';
+
         if (p <= 0.001) {
           drawStaticPage(curIdx);
           return;
         }
 
         ctx.clearRect(0, 0, W, H);
-        if (imgUnder && imgUnder.complete) {
+        ctx.fillStyle = paperTint;
+        ctx.fillRect(0, 0, W, H);
+        if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
           ctx.drawImage(imgUnder, 0, 0, W, H);
         }
 
         if (p >= 0.999) {
-          if (imgTop && imgTop.complete) {
+          if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
             ctx.drawImage(imgTop, 0, 0, W, H);
+          } else {
+            ctx.fillStyle = paperTint;
+            ctx.fillRect(0, 0, W, H);
           }
           drawSpineGutter(ctx, W, H);
           return;
@@ -422,8 +450,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.lineTo(0, H);
         ctx.closePath();
         ctx.clip();
-        if (imgTop && imgTop.complete) {
+        if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
           ctx.drawImage(imgTop, 0, 0, W, H);
+        } else {
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
         }
         ctx.restore();
 
@@ -504,13 +535,13 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
           }
 
           // 3.2 Lớp giấy ngà mờ theo theme
-          const paperTint =
+          const curlBackTint =
             readingTheme === 'sepia'
               ? 'rgba(244, 236, 216, 0.88)'
               : readingTheme === 'dark'
               ? 'rgba(30, 35, 45, 0.88)'
               : 'rgba(250, 248, 243, 0.88)';
-          ctx.fillStyle = paperTint;
+          ctx.fillStyle = curlBackTint;
           ctx.fill();
 
           // 3.3 Dải sáng 3D uốn cong gân giấy (Specular 3D highlight & Paper Shading)
@@ -551,13 +582,22 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const imgUnder = imagesRef.current[Math.min(curIdx + 1, totalPages - 1)];
 
         const p = Math.max(0, Math.min(1, progress));
+        const paperTint =
+          readingTheme === 'sepia'
+            ? '#F4ECD8'
+            : readingTheme === 'dark'
+            ? '#141416'
+            : '#FAF8F3';
+
         if (p <= 0.001) {
           drawStaticPage(curIdx);
           return;
         }
 
         ctx.clearRect(0, 0, W, H);
-        if (imgUnder && imgUnder.complete) {
+        ctx.fillStyle = paperTint;
+        ctx.fillRect(0, 0, W, H);
+        if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
           ctx.drawImage(imgUnder, 0, 0, W, H);
         }
 
@@ -578,8 +618,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.lineTo(0, H);
         ctx.closePath();
         ctx.clip();
-        if (imgTop && imgTop.complete) {
+        if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
           ctx.drawImage(imgTop, 0, 0, W, H);
+        } else {
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
         }
         ctx.restore();
 
@@ -645,19 +688,31 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const imgTop = imagesRef.current[Math.max(0, curIdx - 1)];
 
         const p = Math.max(0, Math.min(1, progress));
+        const paperTint =
+          readingTheme === 'sepia'
+            ? '#F4ECD8'
+            : readingTheme === 'dark'
+            ? '#141416'
+            : '#FAF8F3';
+
         if (p <= 0.001) {
           drawStaticPage(curIdx);
           return;
         }
 
         ctx.clearRect(0, 0, W, H);
-        if (imgUnder && imgUnder.complete) {
+        ctx.fillStyle = paperTint;
+        ctx.fillRect(0, 0, W, H);
+        if (imgUnder && imgUnder.complete && imgUnder.naturalWidth > 0) {
           ctx.drawImage(imgUnder, 0, 0, W, H);
         }
 
         if (p >= 0.999) {
-          if (imgTop && imgTop.complete) {
+          if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
             ctx.drawImage(imgTop, 0, 0, W, H);
+          } else {
+            ctx.fillStyle = paperTint;
+            ctx.fillRect(0, 0, W, H);
           }
           drawSpineGutter(ctx, W, H);
           return;
@@ -675,8 +730,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         ctx.lineTo(0, H);
         ctx.closePath();
         ctx.clip();
-        if (imgTop && imgTop.complete) {
+        if (imgTop && imgTop.complete && imgTop.naturalWidth > 0) {
           ctx.drawImage(imgTop, 0, 0, W, H);
+        } else {
+          ctx.fillStyle = paperTint;
+          ctx.fillRect(0, 0, W, H);
         }
         ctx.restore();
 
@@ -766,8 +824,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Giảm tốc độ lật trang thêm 13.6% (tăng duration từ 440ms lên 500ms) cho độ đầm tay tự nhiên
-        const dur = Math.max(250, 500 * (1 - startProgress * 0.6));
+        // Giảm tốc độ lật trang thêm 20% (tăng duration lên 620ms) cho độ đầm tay tự nhiên như sách thật
+        const dur = Math.max(340, 620 * (1 - startProgress * 0.55));
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -801,8 +859,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Giảm tốc độ rơi về vị trí cũ thêm 15% (345ms)
-        const dur = Math.max(185, 345 * startProgress);
+        // Giảm tốc độ rơi về vị trí cũ thêm 20% (420ms)
+        const dur = Math.max(220, 420 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -835,8 +893,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
 
         const startTime = performance.now();
-        // Giảm tốc độ lật trang thêm 13.6% (500ms)
-        const dur = Math.max(250, 500 * (1 - startProgress * 0.6));
+        // Giảm tốc độ lật trang thêm 20% (620ms)
+        const dur = Math.max(340, 620 * (1 - startProgress * 0.55));
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -870,8 +928,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         isAnimatingRef.current = true;
         const curIdx = curIndexRef.current;
         const startTime = performance.now();
-        // Giảm tốc độ rơi về thêm 15% (345ms)
-        const dur = Math.max(185, 345 * startProgress);
+        // Giảm tốc độ rơi về thêm 20% (420ms)
+        const dur = Math.max(220, 420 * startProgress);
 
         function step(now: number) {
           const elapsed = now - startTime;
@@ -1049,11 +1107,21 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
               markReady();
             }
           };
-          img.onload = onFinish;
+          img.onload = () => {
+            if (typeof img.decode === 'function' && idx <= 3) {
+              img.decode().then(onFinish).catch(onFinish);
+            } else {
+              onFinish();
+            }
+          };
           img.onerror = onFinish;
           img.src = src;
           if (img.complete) {
-            onFinish();
+            if (typeof img.decode === 'function' && idx <= 3) {
+              img.decode().then(onFinish).catch(onFinish);
+            } else {
+              onFinish();
+            }
           }
           imagesRef.current[idx] = img;
         });

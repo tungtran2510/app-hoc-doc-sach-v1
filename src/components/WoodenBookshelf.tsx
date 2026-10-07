@@ -94,7 +94,7 @@ export default function WoodenBookshelf({
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   // Tùy chọn chuyên sâu đọc sách (Đồng bộ với Reader 3D)
-  const [readerPaperTheme, setReaderPaperTheme] = useState<'sepia' | 'dark' | 'ivory'>('sepia');
+  const [readerPaperTheme, setReaderPaperTheme] = useState<'sepia' | 'dark' | 'ivory'>('dark');
   const [readerDefaultMode, setReaderDefaultMode] = useState<'curl' | 'roll' | 'scroll'>('curl');
   const [readerSoundEnabled, setReaderSoundEnabled] = useState<boolean>(true);
   const [readerAutoResume, setReaderAutoResume] = useState<boolean>(true);
@@ -301,6 +301,8 @@ export default function WoodenBookshelf({
       const savedPaper = localStorage.getItem('reader_theme_pref');
       if (savedPaper && ['sepia', 'dark', 'ivory'].includes(savedPaper)) {
         setReaderPaperTheme(savedPaper as any);
+      } else {
+        setReaderPaperTheme('dark');
       }
       const savedMode = localStorage.getItem('reader_mode_pref');
       if (savedMode && ['curl', 'roll', 'scroll'].includes(savedMode)) {

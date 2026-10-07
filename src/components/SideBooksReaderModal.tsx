@@ -73,7 +73,7 @@ export default function SideBooksReaderModal({
   const readerRef = useRef<SideBooksReaderEngineRef>(null);
 
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
-  const [readingTheme, setReadingTheme] = useState<'dark' | 'sepia' | 'ivory'>('sepia');
+  const [readingTheme, setReadingTheme] = useState<'dark' | 'sepia' | 'ivory'>('dark');
   const [readingMode, setReadingMode] = useState<'curl' | 'roll' | 'scroll'>('curl');
   const [showHud, setShowHud] = useState<boolean>(true);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
@@ -138,16 +138,19 @@ export default function SideBooksReaderModal({
   titleRef.current = title;
   const onCloseRef = useRef<() => void>(onClose);
   onCloseRef.current = onClose;
+  const isClosingRef = useRef<boolean>(false);
 
   // Quản lý Lịch sử Trình duyệt (Browser History & PopState) khi đọc sách
   // Giúp nút Quay lại của điện thoại (Android Back gesture/button, Swipe Back, Browser Back)
   // đóng sách an toàn và quay về Kệ Sách - TUYỆT ĐỐI KHÔNG ĐỂ THOÁT KHỎI ỨNG DỤNG!
   useEffect(() => {
     if (!isOpen) {
-      if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+      isClosingRef.current = false;
+      if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
         hasPushedHistoryRef.current = false;
         try {
-          window.history.back();
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
         } catch {}
       }
       return;
@@ -221,6 +224,8 @@ export default function SideBooksReaderModal({
       }
 
       // B. Không còn modal con nào -> Đóng sách an toàn và quay về Kệ Sách (KHÔNG THOÁT APP)
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
       hasPushedHistoryRef.current = false;
       bookAudioPlayer.stop();
       setIsPdfAudioOpen(false);
@@ -235,10 +240,11 @@ export default function SideBooksReaderModal({
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+      if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
         hasPushedHistoryRef.current = false;
         try {
-          window.history.back();
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
         } catch {}
       }
     };
@@ -523,6 +529,8 @@ export default function SideBooksReaderModal({
       const savedTheme = localStorage.getItem('reader_theme_pref');
       if (savedTheme && ['dark', 'sepia', 'ivory'].includes(savedTheme)) {
         setReadingTheme(savedTheme as any);
+      } else {
+        setReadingTheme('dark');
       }
       const savedMode = localStorage.getItem('reader_mode_pref');
       if (savedMode && ['curl', 'roll', 'scroll'].includes(savedMode)) {
@@ -640,6 +648,8 @@ export default function SideBooksReaderModal({
   };
 
   const handleExitBook = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
     bookAudioPlayer.stop();
     setIsPdfAudioOpen(false);
     try {
@@ -648,16 +658,14 @@ export default function SideBooksReaderModal({
     } catch {}
     setShowExitConfirm(false);
 
-    if (hasPushedHistoryRef.current && typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
-      hasPushedHistoryRef.current = false;
+    if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
       try {
-        window.history.back();
-      } catch {
-        onClose();
-      }
-    } else {
-      onClose();
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState(null, '', cleanUrl);
+      } catch {}
     }
+    hasPushedHistoryRef.current = false;
+    onClose();
   };
 
   const playPaperSound = () => {
@@ -687,7 +695,13 @@ export default function SideBooksReaderModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Đang đọc sách ${title}`}
-      className="fixed inset-0 z-50 flex flex-col bg-slate-950 select-none overflow-hidden animate-in fade-in duration-200"
+      className={`fixed inset-0 z-50 flex flex-col select-none overflow-hidden animate-in fade-in duration-200 ${
+        readingTheme === 'ivory'
+          ? 'bg-[#ede5d8] text-[#2c180c]'
+          : readingTheme === 'sepia'
+          ? 'bg-[#1c130d] text-[#f4ecd8]'
+          : 'bg-[#0a0705] text-slate-100'
+      }`}
     >
       {/* ================= 1. THANH ĐIỀU HƯỚNG ĐỈNH (STICKY HUD TRÊN CÙNG) ================= */}
       <header
@@ -695,7 +709,7 @@ export default function SideBooksReaderModal({
           showHud ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         } ${
           readingTheme === 'ivory'
-            ? 'bg-[#f4efe4]/95 text-slate-900 border-b border-black/10 shadow-md'
+            ? 'bg-[#ede5d8] text-[#2c180c] border-b border-[#cdbdab] shadow-sm'
             : readingTheme === 'sepia'
             ? 'bg-[#1c130d]/95 text-[#f4ecd8] border-b border-amber-900/40 shadow-xl'
             : 'bg-black/90 text-slate-100 border-b border-white/10 shadow-xl'
@@ -703,10 +717,10 @@ export default function SideBooksReaderModal({
       >
         {/* TẦNG 1: TIÊU ĐỀ CUỐN SÁCH NẰM SÁT MÉP TRÊN CÙNG */}
         <div className={`w-full px-3 py-1 flex items-center justify-center border-b ${
-          readingTheme === 'ivory' ? 'border-black/5 bg-[#ece5d8]' : 'border-white/5 bg-black/25'
+          readingTheme === 'ivory' ? 'border-[#dfcfbd] bg-[#e6dac7]' : 'border-white/5 bg-black/25'
         }`}>
           <span className={`text-[11px] sm:text-[12px] font-bold tracking-wide truncate max-w-[360px] sm:max-w-xl text-center ${
-            readingTheme === 'ivory' ? 'text-[#3d2210]' : 'text-amber-200/90'
+            readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-200/90'
           }`}>
             {title} {author ? `· ${author}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
           </span>
@@ -719,7 +733,11 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={handleExitBook}
-              className="h-8 px-2 sm:px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all border border-amber-500/30 active:scale-95 shadow-xs shrink-0"
+              className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
+                readingTheme === 'ivory'
+                  ? 'bg-[#d8c8b2] hover:bg-[#cbb89e] text-[#2c180c] border border-[#bfae97]'
+                  : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/30'
+              }`}
               title="Đóng sách & Về kệ"
               aria-label="Thoát về kệ sách"
             >
@@ -729,7 +747,9 @@ export default function SideBooksReaderModal({
 
             {/* CỤM CÀI ĐẶT 3 CHẾ ĐỘ VUỐT SÁCH: LẬT 3D · TRƯỢT 3D · CUỘN DỌC */}
             {!isEpub && (
-              <div className="flex items-center bg-black/40 p-0.5 rounded-lg border border-white/10 shrink-0">
+              <div className={`flex items-center p-0.5 rounded-lg border shrink-0 ${
+                readingTheme === 'ivory' ? 'bg-[#e2d5c3] border-[#cdbdab]' : 'bg-black/40 border-white/10'
+              }`}>
                 <button
                   type="button"
                   onClick={() => {
@@ -738,15 +758,19 @@ export default function SideBooksReaderModal({
                       localStorage.setItem('reader_mode_pref', 'curl');
                     } catch {}
                   }}
-                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                     readingMode === 'curl'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      ? readingTheme === 'ivory'
+                        ? 'bg-[#2c180c] text-white shadow-sm font-bold'
+                        : 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : readingTheme === 'ivory'
+                      ? 'text-[#5c4028] hover:text-[#2c180c]'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Lật cong nón 3D (Chuẩn SideBooks Tokyo Interplay)"
                   aria-label="Lật 3D"
                 >
-                  <BookOpen size={15} strokeWidth={2.2} />
+                  <BookOpen size={16} strokeWidth={2.2} />
                 </button>
                 <button
                   type="button"
@@ -756,15 +780,19 @@ export default function SideBooksReaderModal({
                       localStorage.setItem('reader_mode_pref', 'roll');
                     } catch {}
                   }}
-                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                     readingMode === 'roll'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      ? readingTheme === 'ivory'
+                        ? 'bg-[#2c180c] text-white shadow-sm font-bold'
+                        : 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : readingTheme === 'ivory'
+                      ? 'text-[#5c4028] hover:text-[#2c180c]'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Vuốt trượt trang ngang 3D"
                   aria-label="Trượt 3D"
                 >
-                  <ArrowLeftRight size={15} strokeWidth={2.2} />
+                  <ArrowLeftRight size={16} strokeWidth={2.2} />
                 </button>
                 <button
                   type="button"
@@ -774,15 +802,19 @@ export default function SideBooksReaderModal({
                       localStorage.setItem('reader_mode_pref', 'scroll');
                     } catch {}
                   }}
-                  className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                     readingMode === 'scroll'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      ? readingTheme === 'ivory'
+                        ? 'bg-[#2c180c] text-white shadow-sm font-bold'
+                        : 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : readingTheme === 'ivory'
+                      ? 'text-[#5c4028] hover:text-[#2c180c]'
                       : 'text-slate-400 hover:text-white'
                   }`}
                   title="Cuộn trang dọc liên tục"
                   aria-label="Cuộn dọc"
                 >
-                  <ArrowUpDown size={15} strokeWidth={2.2} />
+                  <ArrowUpDown size={16} strokeWidth={2.2} />
                 </button>
               </div>
             )}
@@ -792,24 +824,30 @@ export default function SideBooksReaderModal({
           <div className="flex-1 flex items-center justify-end gap-1.5 overflow-x-auto no-scrollbar pl-1.5">
             {/* Cụm Thu phóng Zoom */}
             {!isEpub && (
-              <div className="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/10 shrink-0">
+              <div className={`flex items-center p-0.5 rounded-lg border shrink-0 ${
+                readingTheme === 'ivory' ? 'bg-[#e2d5c3] border-[#cdbdab]' : 'bg-white/10 border-white/10'
+              }`}>
                 <button
                   type="button"
                   onClick={() => readerRef.current?.zoomOut?.()}
-                  className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-200 active:scale-95 transition-all cursor-pointer"
+                  className={`w-8 h-8 rounded-md flex items-center justify-center active:scale-95 transition-all cursor-pointer ${
+                    readingTheme === 'ivory' ? 'text-[#2c180c] hover:bg-black/5' : 'text-amber-200 hover:bg-white/20'
+                  }`}
                   title="Thu nhỏ trang sách"
                   aria-label="Thu nhỏ"
                 >
-                  <ZoomOut size={15} strokeWidth={2.4} />
+                  <ZoomOut size={16} strokeWidth={2.4} />
                 </button>
                 <button
                   type="button"
                   onClick={() => readerRef.current?.zoomIn?.()}
-                  className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md hover:bg-white/20 flex items-center justify-center text-amber-300 active:scale-95 transition-all cursor-pointer"
+                  className={`w-8 h-8 rounded-md flex items-center justify-center active:scale-95 transition-all cursor-pointer ${
+                    readingTheme === 'ivory' ? 'text-[#2c180c] hover:bg-black/5' : 'text-amber-300 hover:bg-white/20'
+                  }`}
                   title="Phóng to trang sách"
                   aria-label="Phóng to"
                 >
-                  <ZoomIn size={15} strokeWidth={2.4} />
+                  <ZoomIn size={16} strokeWidth={2.4} />
                 </button>
               </div>
             )}
@@ -819,15 +857,17 @@ export default function SideBooksReaderModal({
               <button
                 type="button"
                 onClick={togglePdfAudio}
-                className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
                   isPdfAudioOpen
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                    : readingTheme === 'ivory'
+                    ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                     : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
                 }`}
                 title={isPdfAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc văn bản trang PDF)'}
                 aria-label="Sách nói AI"
               >
-                <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-400'} />
+                <Headphones size={16} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
                 <span className="hidden sm:inline">Sách nói</span>
               </button>
             )}
@@ -836,15 +876,17 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
-              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+              className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
                 isAiCopilotOpen
                   ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                   : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
               }`}
               title={isAiCopilotOpen ? 'Đóng Trợ lý AI' : 'Hỏi Trợ lý AI về trang sách này (Tóm tắt, giải thích thuật ngữ, hỏi đáp)'}
               aria-label="Hỏi AI"
             >
-              <Sparkles size={14} className={isAiCopilotOpen ? 'animate-spin text-slate-950' : 'text-amber-400'} />
+              <Sparkles size={16} className={isAiCopilotOpen ? 'animate-spin text-slate-950' : readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
               <span className="hidden sm:inline">Hỏi AI</span>
             </button>
 
@@ -852,11 +894,15 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => setShowSearchModal(true)}
-              className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+              }`}
               title="Tìm kiếm từ khóa trong cuốn sách"
               aria-label="Tìm kiếm trong sách"
             >
-              <Search size={15} />
+              <Search size={16} />
             </button>
 
             {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D */}
@@ -866,14 +912,20 @@ export default function SideBooksReaderModal({
                 setNotesModalInitialText(null);
                 setShowNotesModal(true);
               }}
-              className="h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0"
+              className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
+                readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+              }`}
               title="Sổ tay ghi chú & Thẻ ghi nhớ Flashcard 3D"
               aria-label="Sổ tay và Flashcard"
             >
-              <BookMarked size={14} className="text-amber-400" />
+              <BookMarked size={16} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
               <span className="hidden md:inline">Sổ tay</span>
               {notesCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold text-[9px] leading-none">
+                <span className={`px-1.5 py-0.2 rounded-full font-mono font-bold text-[9px] leading-none ${
+                  readingTheme === 'ivory' ? 'bg-[#2c180c] text-white' : 'bg-amber-500 text-slate-950'
+                }`}>
                   {notesCount}
                 </span>
               )}
@@ -883,18 +935,22 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => setShowTypographyModal(true)}
-              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
+              className={`h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
                 typographySettings.bionicReading
-                  ? 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
+                  ? readingTheme === 'ivory'
+                    ? 'bg-[#d8c8b2] text-[#2c180c] border-[#bfae97]'
+                    : 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                   : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
               }`}
               title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
               aria-label="Cài đặt phông chữ và Bionic reading"
             >
-              <Type size={14} className="text-amber-400" />
-              <span className="font-serif">Aa</span>
+              <Type size={16} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
+              <span className="font-serif font-bold text-[13px]">Aa</span>
               {typographySettings.bionicReading && (
-                <Sparkles size={11} className="text-amber-400 animate-pulse" />
+                <Sparkles size={11} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400 animate-pulse'} />
               )}
             </button>
 
@@ -904,11 +960,15 @@ export default function SideBooksReaderModal({
                 type="button"
                 onClick={isOfflineCached ? handleRemoveOffline : handleSaveOffline}
                 disabled={isSavingOffline}
-                className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
                   isOfflineCached
                     ? 'bg-emerald-600/90 text-white shadow-md border border-emerald-400/40'
                     : isSavingOffline
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
+                    ? readingTheme === 'ivory'
+                      ? 'bg-[#d8c8b2] text-[#2c180c] border border-[#bfae97] cursor-wait'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
+                    : readingTheme === 'ivory'
+                    ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                     : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'
                 }`}
                 title={
@@ -920,17 +980,17 @@ export default function SideBooksReaderModal({
               >
                 {isSavingOffline ? (
                   <>
-                    <Loader2 size={13} className="animate-spin text-amber-400" />
+                    <Loader2 size={16} className={`animate-spin ${readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'}`} />
                     <span className="hidden sm:inline font-mono">{offlineSaveProgress}%</span>
                   </>
                 ) : isOfflineCached ? (
                   <>
-                    <CheckCircle2 size={14} className="text-emerald-300" />
+                    <CheckCircle2 size={16} className="text-emerald-300" />
                     <span className="hidden sm:inline">Offline ✓</span>
                   </>
                 ) : (
                   <>
-                    <Zap size={14} className="text-amber-400" />
+                    <Zap size={16} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
                     <span className="hidden sm:inline">Lưu máy</span>
                   </>
                 )}
@@ -941,9 +1001,13 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={toggleBookmark}
-              className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
                 isBookmarked
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  ? readingTheme === 'ivory'
+                    ? 'bg-[#2c180c] text-white shadow-md font-bold'
+                    : 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                   : 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10'
               }`}
               title={isBookmarked ? 'Bỏ đánh dấu trang này' : 'Đánh dấu trang này'}
@@ -956,9 +1020,13 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 ${
                 isFullscreen
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  ? readingTheme === 'ivory'
+                    ? 'bg-[#2c180c] text-white shadow-md font-bold'
+                    : 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                   : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
               }`}
               title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình (F)'}
@@ -968,16 +1036,20 @@ export default function SideBooksReaderModal({
             </button>
 
             {/* 3 Tông màu đọc sách (Sepia ☕ / Dark 🌑 / Ivory 📜) */}
-            <div className="flex items-center gap-1 bg-black/45 p-1 rounded-lg border border-white/15 shrink-0">
+            <div className={`flex items-center gap-1 p-1 rounded-lg border shrink-0 ${
+              readingTheme === 'ivory' ? 'bg-[#e2d5c3] border-[#cdbdab]' : 'bg-black/45 border-white/15'
+            }`}>
               <button
                 type="button"
                 onClick={() => {
                   setReadingTheme('sepia');
                   localStorage.setItem('reader_theme_pref', 'sepia');
                 }}
-                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
                   readingTheme === 'sepia'
                     ? 'bg-[#3d3327] text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
+                    : readingTheme === 'ivory'
+                    ? 'text-[#6a4224] hover:text-[#2c180c] opacity-70 hover:opacity-100'
                     : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
                 }`}
                 title="Vàng ấm Sepia"
@@ -991,9 +1063,11 @@ export default function SideBooksReaderModal({
                   setReadingTheme('dark');
                   localStorage.setItem('reader_theme_pref', 'dark');
                 }}
-                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
                   readingTheme === 'dark'
                     ? 'bg-slate-900 text-amber-300 ring-1.5 ring-amber-400 shadow-sm'
+                    : readingTheme === 'ivory'
+                    ? 'text-[#6a4224] hover:text-[#2c180c] opacity-70 hover:opacity-100'
                     : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
                 }`}
                 title="Đen OLED ban đêm"
@@ -1007,9 +1081,9 @@ export default function SideBooksReaderModal({
                   setReadingTheme('ivory');
                   localStorage.setItem('reader_theme_pref', 'ivory');
                 }}
-                className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
+                className={`w-8 h-8 rounded-md flex items-center justify-center text-[13px] transition-all cursor-pointer active:scale-95 ${
                   readingTheme === 'ivory'
-                    ? 'bg-amber-100 text-slate-900 ring-1.5 ring-amber-500 shadow-sm'
+                    ? 'bg-[#ede5d8] text-[#2c180c] ring-2 ring-[#8c5a2b] shadow-sm font-bold'
                     : 'text-slate-400 hover:text-white opacity-60 hover:opacity-100'
                 }`}
                 title="Trắng sáng / Ngà"
@@ -1041,7 +1115,13 @@ export default function SideBooksReaderModal({
             }
           }
         }}
-        className="flex-1 flex flex-col items-center justify-center relative w-full h-[calc(100vh-84px)] overflow-hidden cursor-pointer"
+        className={`flex-1 flex flex-col items-center justify-center relative w-full h-[calc(100vh-84px)] overflow-hidden cursor-pointer transition-colors duration-200 ${
+          readingTheme === 'ivory'
+            ? 'bg-[#ede5d8]'
+            : readingTheme === 'sepia'
+            ? 'bg-[#1c130d]'
+            : 'bg-[#0a0705]'
+        }`}
       >
         {isEpub && activeFileUrl ? (
           /* TRÌNH ĐỌC EPUB HIỆN ĐẠI */
@@ -1116,7 +1196,7 @@ export default function SideBooksReaderModal({
             showHud ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
           } ${
             readingTheme === 'ivory'
-              ? 'bg-[#f4efe4]/95 text-slate-900 border-t border-black/10 shadow-md'
+              ? 'bg-[#ede5d8] text-[#2c180c] border-t border-[#cdbdab] shadow-sm'
               : readingTheme === 'sepia'
               ? 'bg-[#1c130d]/95 text-[#f4ecd8] border-t border-amber-900/40 shadow-xl'
               : 'bg-black/90 text-slate-100 border-t border-white/10 shadow-xl'
@@ -1135,7 +1215,7 @@ export default function SideBooksReaderModal({
               }}
               className={`px-3 py-1 rounded-full ${
                 readingTheme === 'ivory'
-                  ? 'bg-[#ece4d6] hover:bg-[#e2d8c7] text-[#3d2210] border-[#d8ccba]'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border-[#cdbdab]'
                   : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
               } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
               title={currentPage <= 0 ? 'Thoát về kệ sách' : 'Về trang trước'}
@@ -1147,7 +1227,7 @@ export default function SideBooksReaderModal({
 
             <div className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full ${
               readingTheme === 'ivory'
-                ? 'bg-[#ece4d6] border-[#d8ccba] text-[#3d2210]'
+                ? 'bg-[#e2d5c3] border-[#cdbdab] text-[#2c180c]'
                 : 'bg-white/10 border-white/10 text-amber-200'
             } border text-xs font-mono font-bold shadow-inner`}>
               <span>Trang {currentPage + 1}</span>
@@ -1166,7 +1246,7 @@ export default function SideBooksReaderModal({
               }}
               className={`px-3 py-1 rounded-full ${
                 readingTheme === 'ivory'
-                  ? 'bg-[#ece4d6] hover:bg-[#e2d8c7] text-[#3d2210] border-[#d8ccba]'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border-[#cdbdab]'
                   : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
               } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
               title={currentPage >= totalPages - 1 ? 'Hoàn thành & Thoát sách' : 'Mở trang sau'}
@@ -1195,7 +1275,7 @@ export default function SideBooksReaderModal({
                 readerRef.current?.goToPage(val);
               }}
               className={`flex-1 accent-amber-600 h-1.5 ${
-                readingTheme === 'ivory' ? 'bg-[#d8ccba]' : 'bg-slate-700/80'
+                readingTheme === 'ivory' ? 'bg-[#cdbdab]' : 'bg-slate-700/80'
               } rounded-lg cursor-pointer`}
               aria-label="Xem nhanh trang"
             />
