@@ -1,6 +1,16 @@
 # DỰ ÁN: APP HỌC CƠ THỂ & GIẢI PHẪU (APP-HOC-CO-THE)
 > **Bộ nhớ dùng chung & Bối cảnh phát triển toàn diện (Project Brain)**  
-> Cập nhật lần cuối: 04/10/2026
+> Cập nhật lần cuối: 07/10/2026
+
+---
+
+## 0. QUY TẮC BẤT KHẢ XÂM PHẠM (MANDATORY SUPREME RULES)
+1. **NGHIỆM THU BẰNG MẮT THỰC TẾ TRÊN MOBILE 390x844:**
+   - Sau BẤT KỲ một thao tác, tính năng, sửa lỗi, căn chỉnh nút bấm hay văn bản nào: Agent BẮT BUỘC phải dùng trình duyệt (Playwright mobile viewport 390x844) chụp ảnh màn hình giao diện thực tế và GỬI TRỰC TIẾP HÌNH ÁNH ĐÓ VÀO ĐOẠN CHAT (dùng định dạng Markdown `![Mô tả ảnh](file:///...)`) để người dùng nghiệm thu bằng mắt thường.
+   - Tuyệt đối CẤM báo cáo chay bằng chữ hay chỉ đưa tên file.
+2. **TIÊU CHUẨN TINH GỌN TRÊN ĐIỆN THOẠI (STRICT MOBILE-FIRST MINIMALISM):**
+   - Mỗi tính năng hoàn thiện BẮT BUỘC phải chuẩn tinh gọn trên điện thoại.
+   - CẤM TUYỆT ĐỐI các dòng thừa, từ thừa, nhãn thừa gây rối mắt, phình trang hoặc xô lệch bố cục màn hình dọc.
 
 ---
 
