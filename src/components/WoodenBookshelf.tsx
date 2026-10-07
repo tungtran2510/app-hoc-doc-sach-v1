@@ -353,13 +353,20 @@ export default function WoodenBookshelf({
         setSortBy(savedSort as any);
       }
 
-      // Nạp tiến độ đọc của từng cuốn sách từ bộ nhớ
+      // Nạp tiến độ đọc của từng cuốn sách từ bộ nhớ (hỗ trợ cả PDF, EPUB, CBZ, Flipbook)
       const pMap: Record<string, { page: number; total: number; percent: number }> = {};
       books.forEach((b) => {
         const saved =
           localStorage.getItem(`last_read_page_${b.title}`) ||
           localStorage.getItem(`bookmark_page_${b.title}`);
-        const total = (b.gallery_images && b.gallery_images.length > 0) ? b.gallery_images.length : 7;
+        const storedTotal = localStorage.getItem(`total_pages_${b.title}`);
+        const total = storedTotal
+          ? Math.max(1, parseInt(storedTotal, 10) || 7)
+          : (b.gallery_images && b.gallery_images.length > 0)
+          ? b.gallery_images.length
+          : (b as any).pages_count || ((b as any).pages && (b as any).pages.length > 0)
+          ? (b as any).pages_count || (b as any).pages.length
+          : 7;
         if (saved !== null) {
           const p = parseInt(saved, 10);
           if (!isNaN(p) && p >= 0) {

@@ -93,6 +93,7 @@ export default function RecommendedBooksSection({
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<RecommendedBook | null>(null);
   const [sideBooksModalBook, setSideBooksModalBook] = useState<RecommendedBook | null>(null);
+  const [sideBooksInitialPage, setSideBooksInitialPage] = useState<number>(0);
   const [flipbookPreviewBook, setFlipbookPreviewBook] = useState<RecommendedBook | null>(null);
   const [editingSingleBook, setEditingSingleBook] = useState<RecommendedBook | null>(null);
 
@@ -146,6 +147,29 @@ export default function RecommendedBooksSection({
       );
     }
   }, [initialTitle, initialSubtitle, initialBooks, initialLayout]);
+
+  // Lắng nghe sự kiện mở sách trực tiếp từ Trợ lý AI
+  useEffect(() => {
+    const handleOpenBookFromAi = (e: any) => {
+      const detail = e.detail;
+      if (!detail) return;
+      const target =
+        books.find((b) => b.id === detail.id) ||
+        books.find((b) => b.title.toLowerCase().includes((detail.title || '').toLowerCase())) ||
+        books[0];
+
+      if (target) {
+        const pageIdx = detail.target_index ?? (detail.target_page ? detail.target_page - 1 : 0);
+        setSideBooksInitialPage(Math.max(0, pageIdx));
+        setSideBooksModalBook(target);
+      }
+    };
+
+    window.addEventListener('open_book_from_ai', handleOpenBookFromAi);
+    return () => {
+      window.removeEventListener('open_book_from_ai', handleOpenBookFromAi);
+    };
+  }, [books]);
 
   const handleSaved = (data: {
     title: string;
@@ -674,11 +698,15 @@ export default function RecommendedBooksSection({
         title={sideBooksModalBook?.title || 'Tài Liệu Y Khoa'}
         author={sideBooksModalBook?.author}
         pages={sideBooksModalBook ? getBookReaderPageUrls(sideBooksModalBook) : []}
+        initialPage={sideBooksInitialPage}
         pdfUrl={sideBooksModalBook?.pdf_url || sideBooksModalBook?.file_url}
         fileUrl={sideBooksModalBook?.file_url || sideBooksModalBook?.pdf_url}
         fileName={sideBooksModalBook?.file_name}
         coverUrl={sideBooksModalBook?.cover_url}
-        onClose={() => setSideBooksModalBook(null)}
+        onClose={() => {
+          setSideBooksModalBook(null);
+          setSideBooksInitialPage(0);
+        }}
       />
     </section>
   );

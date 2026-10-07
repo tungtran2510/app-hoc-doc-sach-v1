@@ -38,6 +38,7 @@ import { readingNotesStorage } from '../lib/readingNotes';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 import { TypographySettings, getStoredTypography } from '../lib/typographyEngine';
+import { readingStreakEngine } from '../lib/readingStreak';
 import {
   detectEbookFormat,
   createPdfPageProvider,
@@ -571,6 +572,26 @@ export default function SideBooksReaderModal({
       bookAudioPlayer.stop();
       setIsPdfAudioOpen(false);
     }
+  }, [isOpen]);
+
+  // Đồng bộ tổng số trang vào bộ nhớ phục vụ tính % tiến độ chuẩn xác
+  useEffect(() => {
+    if (isOpen && title && totalPages > 1) {
+      try {
+        localStorage.setItem(`total_pages_${title}`, totalPages.toString());
+      } catch {}
+    }
+  }, [isOpen, title, totalPages]);
+
+  // Cứ mỗi 60s mở đọc sách, tự động ghi nhận 1 phút đọc vào Reading Streak
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => {
+      try {
+        readingStreakEngine.recordMinutes(1);
+      } catch {}
+    }, 60000);
+    return () => clearInterval(timer);
   }, [isOpen]);
 
   const startPdfPageAudio = async (pageNum1Based: number) => {
@@ -1175,6 +1196,9 @@ export default function SideBooksReaderModal({
             onPageChange={(page) => {
               if (page !== currentPage) {
                 playPaperSound();
+                try {
+                  readingStreakEngine.recordPageRead(1);
+                } catch {}
               }
               setCurrentPage(page);
               try {

@@ -498,7 +498,7 @@ export default function AiAssistantPage() {
   return (
     <div className="flex flex-col min-h-screen bg-bg">
       {/* 1. THANH TIÊU ĐỀ TRÊN CÙNG (STICKY) */}
-      <header className="sticky top-0 z-20 flex items-center justify-between px-3 sm:px-4 py-2.5 bg-white/95 dark:bg-[#100922]/95 backdrop-blur-md border-b border-line dark:border-[#2A184D] shadow-2xs gap-2">
+      <header className="sticky top-0 z-20 flex items-center justify-between px-3 sm:px-4 py-2.5 bg-white/95 dark:bg-[#160e08]/95 backdrop-blur-md border-b border-line dark:border-[#3d2617] shadow-2xs gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <Link
             href="/"
@@ -509,9 +509,9 @@ export default function AiAssistantPage() {
           </Link>
 
           <div className="flex items-center gap-2 min-w-0">
-            <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-amber-50 dark:bg-purple-950/60 text-amber-700 dark:text-[#F8DF7B] flex items-center justify-center shrink-0 border border-amber-200 dark:border-purple-800/40">
+            <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-amber-50 dark:bg-[#2b1b10] text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-700/40">
               <Sparkles size={16} className="animate-pulse" />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#160D30]" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#160e08]" />
             </div>
 
             <div className="flex flex-col min-w-0">
@@ -585,31 +585,31 @@ export default function AiAssistantPage() {
         {messages.length === 0 ? (
           <div className="flex flex-col gap-3.5 pt-1 animate-in fade-in duration-300">
             {/* Thẻ giới thiệu Trợ lý */}
-            <div className="p-3.5 sm:p-4 rounded-[18px] bg-white dark:bg-[#160D30] border border-slate-200 dark:border-purple-800/40 shadow-xs flex flex-col gap-2">
+            <div className="p-3.5 sm:p-4 rounded-[18px] bg-white dark:bg-[#22150c] border border-slate-200 dark:border-[#3d2617] shadow-xs flex flex-col gap-2">
               <div className="flex items-center gap-2.5">
-                {/* Logo Trợ lý AI y khoa chuyên nghiệp viền hoàng kim phát sáng nhẹ */}
-                <div className="relative w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#3B1262] via-[#5B21B6] to-[#7C3AED] text-white flex items-center justify-center shrink-0 shadow-md shadow-purple-950/30 ring-2 ring-amber-400/50">
+                {/* Logo Trợ lý AI y khoa chuyên nghiệp viền hoàng kim */}
+                <div className="relative w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#451a03] via-[#78350f] to-[#b45309] text-white flex items-center justify-center shrink-0 shadow-md ring-2 ring-amber-400/50">
                   <Sparkles size={20} className="text-amber-300 drop-shadow-xs" />
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-[#160D30]" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-[#22150c]" />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-[14.5px] sm:text-[15.5px] font-extrabold text-slate-900 dark:text-white leading-snug">
                     Trợ lý Sức Khỏe AI đồng hành 24/7
                   </h2>
-                  <p className="text-[11.5px] text-slate-500 dark:text-purple-300/70 truncate">
+                  <p className="text-[11.5px] text-slate-500 dark:text-amber-200/70 truncate">
                     Hỏi đáp giải phẫu, cơ xương khớp & vận động khoa học
                   </p>
                 </div>
               </div>
 
-              <p className="text-[12.5px] text-slate-600 dark:text-purple-100/90 leading-snug pt-1 border-t border-slate-100 dark:border-purple-800/30">
+              <p className="text-[12.5px] text-slate-600 dark:text-amber-100/90 leading-snug pt-1 border-t border-slate-100 dark:border-[#3d2617]">
                 Tra cứu nhanh cấu trúc cơ thể, thói quen sinh hoạt đúng, bài tập an toàn hoặc tìm bài học trong ứng dụng!
               </p>
             </div>
 
             {/* Gợi ý câu hỏi nhanh súc tích, thân thiện (chỉ 3 câu ngắn gọn) */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-purple-300/70 px-1 flex items-center gap-1.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-amber-200/70 px-1 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-amber-500" />
                 <span>Câu hỏi gợi ý (chạm để hỏi ngay):</span>
               </span>
@@ -620,10 +620,10 @@ export default function AiAssistantPage() {
                     key={idx}
                     type="button"
                     onClick={() => handleSendMessage(prompt)}
-                    className="text-left px-3.5 py-2.5 rounded-[13px] bg-white dark:bg-[#160D30] hover:bg-purple-50/70 dark:hover:bg-purple-900/40 border border-slate-200/90 dark:border-purple-800/40 hover:border-purple-500/50 text-[12.5px] font-bold text-slate-800 dark:text-white leading-snug transition-all cursor-pointer shadow-2xs group flex items-center justify-between gap-2 active:scale-[0.99]"
+                    className="text-left px-3.5 py-2.5 rounded-[13px] bg-white dark:bg-[#22150c] hover:bg-amber-950/20 dark:hover:bg-[#2b1b10] border border-slate-200/90 dark:border-[#3d2617] hover:border-amber-500/40 text-[12.5px] font-bold text-slate-800 dark:text-white leading-snug transition-all cursor-pointer shadow-2xs group flex items-center justify-between gap-2 active:scale-[0.99]"
                   >
                     <span className="truncate">{prompt}</span>
-                    <ChevronRight size={14} className="text-slate-400 group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight size={14} className="text-slate-400 group-hover:text-amber-500 dark:group-hover:text-amber-300 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </button>
                 ))}
               </div>
@@ -645,8 +645,8 @@ export default function AiAssistantPage() {
                   <div
                     className={`max-w-[94%] sm:max-w-[88%] shadow-2xs transition-all ${
                       isUser
-                        ? 'px-3.5 py-2 rounded-[16px] rounded-br-[4px] bg-gradient-to-r from-purple-800 to-indigo-900 text-white text-[13.5px] font-medium leading-snug'
-                        : 'p-3 sm:p-3.5 rounded-[16px] rounded-tl-[4px] bg-white dark:bg-[#160D30] border border-slate-200 dark:border-purple-800/40 text-slate-900 dark:text-white'
+                        ? 'px-3.5 py-2 rounded-[16px] rounded-br-[4px] bg-amber-600 dark:bg-[#2b1b10] dark:border dark:border-stone-700/40 text-white text-[13.5px] font-medium leading-snug'
+                        : 'p-3 sm:p-3.5 rounded-[16px] rounded-tl-[4px] bg-white dark:bg-[#22150c] border border-slate-200 dark:border-[#3d2617] text-slate-900 dark:text-white'
                     }`}
                   >
                     {isUser ? (
@@ -690,7 +690,7 @@ export default function AiAssistantPage() {
                         {msg.suggested_books.map((b, bIdx) => (
                           <div
                             key={bIdx}
-                            className="flex items-start gap-2.5 p-2.5 rounded-[15px] bg-white dark:bg-[#160D30] border border-amber-200/90 dark:border-purple-800/40 shadow-2xs hover:shadow-xs transition-all"
+                            className="flex items-start gap-2.5 p-2.5 rounded-[15px] bg-white dark:bg-[#22150c] border border-amber-200/90 dark:border-[#3d2617] shadow-2xs hover:shadow-xs transition-all"
                           >
                             <div className="w-12 h-16 rounded-[8px] overflow-hidden shrink-0 border border-amber-300/40 shadow-2xs bg-slate-100 dark:bg-black/40">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -706,7 +706,7 @@ export default function AiAssistantPage() {
                                   <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300">
                                     {b.badge_tag || 'NÊN ĐỌC'}
                                   </span>
-                                  <span className="text-[10px] text-slate-500 dark:text-purple-300/70 truncate">
+                                  <span className="text-[10px] text-slate-500 dark:text-amber-200/70 truncate">
                                     {b.author || 'Tùng Dinh Dưỡng'}
                                   </span>
                                 </div>
@@ -714,7 +714,7 @@ export default function AiAssistantPage() {
                                   {b.title}
                                 </h4>
                                 {b.reason && (
-                                  <p className="text-[11px] text-slate-600 dark:text-purple-200/80 line-clamp-2 mt-0.5 leading-tight">
+                                  <p className="text-[11px] text-slate-600 dark:text-amber-200/80 line-clamp-2 mt-0.5 leading-tight">
                                     {b.reason}
                                   </p>
                                 )}
@@ -748,7 +748,7 @@ export default function AiAssistantPage() {
                         {msg.in_book_snippets.map((snip, sIdx) => (
                           <div
                             key={sIdx}
-                            className="p-2.5 rounded-[15px] bg-white dark:bg-[#160D30] border border-amber-300/60 dark:border-purple-800/40 shadow-2xs flex flex-col gap-1.5"
+                            className="p-2.5 rounded-[15px] bg-white dark:bg-[#22150c] border border-amber-300/60 dark:border-[#3d2617] shadow-2xs flex flex-col gap-1.5"
                           >
                             <div className="flex items-center justify-between gap-1 text-[11px]">
                               <span className="font-extrabold text-slate-900 dark:text-amber-200 truncate">
@@ -758,7 +758,7 @@ export default function AiAssistantPage() {
                                 Trang {snip.page_number}
                               </span>
                             </div>
-                            <p className="text-[11.5px] text-slate-700 dark:text-purple-100/90 italic leading-relaxed line-clamp-3 pl-2 border-l-2 border-amber-500/50">
+                            <p className="text-[11.5px] text-slate-700 dark:text-amber-100/90 italic leading-relaxed line-clamp-3 pl-2 border-l-2 border-amber-500/50">
                               &ldquo;{snip.excerpt}&rdquo;
                             </p>
                             <div className="flex items-center justify-end pt-0.5">
@@ -797,10 +797,10 @@ export default function AiAssistantPage() {
                             <Link
                               key={sIdx}
                               href={lessonUrl}
-                              className="group flex items-center gap-3 p-2.5 rounded-[15px] bg-white hover:bg-purple-50/60 dark:bg-[#160D30] border border-slate-200/90 dark:border-purple-800/40 hover:border-purple-600/50 dark:hover:border-[#F8DF7B]/60 shadow-xs hover:shadow-md transition-all cursor-pointer"
+                              className="group flex items-center gap-3 p-2.5 rounded-[15px] bg-white hover:bg-amber-950/20 dark:bg-[#22150c] border border-slate-200/90 dark:border-[#3d2617] hover:border-amber-500/40 dark:hover:border-amber-400/50 shadow-xs hover:shadow-md transition-all cursor-pointer"
                             >
                               {/* Logo Chuyên đề 3D đầy đủ */}
-                              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-[11px] bg-slate-50 dark:bg-purple-950/70 border border-slate-200 dark:border-purple-800/50 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
+                              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-[11px] bg-slate-50 dark:bg-[#2b1b10] border border-slate-200 dark:border-amber-700/40 p-1 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform overflow-hidden">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                   src={topicIcon}
@@ -812,28 +812,28 @@ export default function AiAssistantPage() {
                                     if (fallback) fallback.style.display = 'flex';
                                   }}
                                 />
-                                <div className="hidden w-full h-full items-center justify-center text-purple-700 dark:text-[#F8DF7B]">
+                                <div className="hidden w-full h-full items-center justify-center text-amber-600 dark:text-amber-300">
                                   <BookOpen size={16} />
                                 </div>
                               </div>
 
                               {/* Tiêu đề & Thông tin bài học (Font to rõ ràng) */}
                               <div className="flex-1 min-w-0">
-                                <div className="text-[10px] sm:text-[10.5px] font-black uppercase text-purple-800 dark:text-[#F8DF7B] tracking-wider truncate">
+                                <div className="text-[10px] sm:text-[10.5px] font-black uppercase text-amber-600 dark:text-amber-300 tracking-wider truncate">
                                   {sp.topic_title}
                                 </div>
-                                <h4 className="text-[13.5px] sm:text-[14.5px] font-black text-slate-900 dark:text-white leading-snug truncate group-hover:text-purple-700 dark:group-hover:text-[#F8DF7B] transition-colors mt-0.5">
+                                <h4 className="text-[13.5px] sm:text-[14.5px] font-black text-slate-900 dark:text-white leading-snug truncate group-hover:text-amber-500 dark:group-hover:text-amber-300 transition-colors mt-0.5">
                                   {sp.title}
                                 </h4>
                                 {sp.reason && (
-                                  <p className="text-[11.5px] text-slate-500 dark:text-purple-300/80 leading-tight truncate mt-0.5 font-medium">
+                                  <p className="text-[11.5px] text-slate-500 dark:text-amber-200/80 leading-tight truncate mt-0.5 font-medium">
                                     {sp.reason}
                                   </p>
                                 )}
                               </div>
 
                               {/* Nút hành động */}
-                              <div className="shrink-0 flex items-center gap-1 text-[11px] sm:text-[11.5px] font-black text-purple-800 bg-purple-50 group-hover:bg-purple-800 group-hover:text-white dark:bg-purple-950/80 dark:text-[#F8DF7B] dark:group-hover:bg-[#F8DF7B] dark:group-hover:text-slate-900 px-2.5 py-1.5 rounded-[8px] border border-purple-200/80 dark:border-purple-800/50 transition-colors whitespace-nowrap shadow-2xs">
+                              <div className="shrink-0 flex items-center gap-1 text-[11px] sm:text-[11.5px] font-black text-amber-800 bg-amber-50 group-hover:bg-amber-600 group-hover:text-white dark:bg-[#2b1b10] dark:text-amber-300 dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950 px-2.5 py-1.5 rounded-[8px] border border-amber-300/50 dark:border-amber-700/40 transition-colors whitespace-nowrap shadow-2xs">
                                 <span>Học ngay</span>
                                 <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
                               </div>
@@ -857,7 +857,7 @@ export default function AiAssistantPage() {
                             key={fIdx}
                             type="button"
                             onClick={() => handleSendMessage(fq)}
-                            className="px-2.5 py-1 rounded-full bg-white dark:bg-[#160D30] hover:bg-primary hover:text-white border border-primary/20 dark:border-purple-800/40 hover:border-primary text-[11px] font-bold text-ink-2 hover:text-white text-left transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1 leading-tight group"
+                            className="px-2.5 py-1 rounded-full bg-white dark:bg-[#22150c] hover:bg-primary hover:text-white border border-primary/20 dark:border-[#3d2617] hover:border-primary text-[11px] font-bold text-ink-2 hover:text-white text-left transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1 leading-tight group"
                           >
                             <span className="text-primary group-hover:text-white text-[10px]">💬</span>
                             <span className="line-clamp-1">{fq}</span>
@@ -872,7 +872,7 @@ export default function AiAssistantPage() {
 
             {/* TRẠNG THÁI ĐANG TRẢ LỜI */}
             {isLoading && (
-              <div className="flex items-center gap-2 max-w-[85%] p-2 px-3 rounded-[12px] bg-white dark:bg-[#160D30] border border-primary/20 dark:border-purple-800/40 shadow-2xs text-[12px] text-muted animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 max-w-[85%] p-2 px-3 rounded-[12px] bg-white dark:bg-[#22150c] border border-primary/20 dark:border-[#3d2617] shadow-2xs text-[12px] text-muted animate-in fade-in duration-200">
                 <Loader2 size={13} className="animate-spin text-primary shrink-0" />
                 <span className="truncate">Trợ lý Sức Khỏe đang tra cứu bài học...</span>
               </div>
@@ -884,7 +884,7 @@ export default function AiAssistantPage() {
       </main>
 
       {/* 3. THANH NHẬP CÂU HỎI Ở ĐÁY MÀN HÌNH (CỐ ĐỊNH TRÊN BOTTOM NAV) */}
-      <div className="fixed bottom-[72px] sm:bottom-[76px] left-0 right-0 z-20 flex flex-col items-center bg-white/95 dark:bg-[#100922]/95 backdrop-blur-md border-t border-line dark:border-[#2A184D] px-3 sm:px-4 py-2">
+      <div className="fixed bottom-[72px] sm:bottom-[76px] left-0 right-0 z-20 flex flex-col items-center bg-white/95 dark:bg-[#160e08]/95 backdrop-blur-md border-t border-line dark:border-[#3d2617] px-3 sm:px-4 py-2">
         {speechError && (
           <div className="w-full max-w-[640px] mb-1.5 px-3 py-1.5 rounded-[10px] bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/50 text-[11.5px] font-semibold text-amber-800 dark:text-amber-200">
             ⚠️ {speechError}
@@ -903,11 +903,11 @@ export default function AiAssistantPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? "Đang nghe bạn nói liên tục..." : "Hỏi về cơ thể, thói quen đúng, bài tập..."}
               disabled={isLoading}
-              className={`w-full h-10 sm:h-11 pl-3.5 pr-9 rounded-[14px] bg-surface dark:bg-[#160D30] border ${
+              className={`w-full h-10 sm:h-11 pl-3.5 pr-9 rounded-[14px] bg-surface dark:bg-[#22150c] border ${
                 isListening
                   ? 'border-red-500 ring-2 ring-red-400/40'
-                  : 'border-line dark:border-purple-900/50'
-              } text-[13.5px] sm:text-[14px] text-ink placeholder:text-muted focus:border-primary dark:focus:bg-[#160D30] focus:outline-hidden transition-all shadow-inner-xs`}
+                  : 'border-line dark:border-[#3d2617]'
+              } text-[13.5px] sm:text-[14px] text-ink placeholder:text-muted focus:border-primary dark:focus:bg-[#22150c] focus:outline-hidden transition-all shadow-inner-xs`}
             />
             {input && !isListening && (
               <button

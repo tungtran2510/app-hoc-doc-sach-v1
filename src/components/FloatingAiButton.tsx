@@ -4,12 +4,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, Send, BookOpen, Loader2, Move, Mic, MicOff } from 'lucide-react';
 import { playTapSound } from '../lib/audioFeedback';
 
+interface FloatingAiBook {
+  id: string;
+  title: string;
+  author?: string;
+  cover_url?: string;
+  badge_tag?: string;
+  target_page?: number;
+  target_index?: number;
+  reason?: string;
+}
+
+interface FloatingChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  suggested_books?: FloatingAiBook[];
+}
+
 export default function FloatingAiButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [messages, setMessages] = useState<
-    Array<{ id: string; role: 'user' | 'assistant'; text: string }>
-  >([
+  const [messages, setMessages] = useState<FloatingChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
@@ -299,7 +315,12 @@ export default function FloatingAiButton() {
 
       setMessages((prev) => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', text: botReply },
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          text: botReply,
+          suggested_books: data.suggested_books || [],
+        },
       ]);
     } catch {
       setMessages((prev) => [
@@ -315,10 +336,34 @@ export default function FloatingAiButton() {
     }
   };
 
-  const quickChips = [
-    'Tóm tắt Cẩm nang Đốt sống cổ',
-    'Chế độ dinh dưỡng kháng viêm khớp',
-    'Bài tập phục hồi cột sống thắt lưng',
+  const handleOpenBook = (book: FloatingAiBook) => {
+    playTapSound();
+    setIsOpen(false);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('open_book_from_ai', {
+          detail: {
+            id: book.id,
+            title: book.title,
+            cover_url: book.cover_url,
+            target_page: book.target_page ?? 1,
+            target_index: book.target_index ?? (book.target_page ? book.target_page - 1 : 0),
+          },
+        })
+      );
+    }
+  };
+
+  const quickTopics = [
+    '✦ Tất cả chủ đề',
+    '🦴 Giải phẫu 3D',
+    '🥗 Dinh dưỡng tế bào',
+    '🩺 Cột sống & Thoát vị',
+    '🌿 Phục hồi Lưng & Cổ',
+    '🦠 Tiêu hóa & Vi sinh',
+    '💧 Nước & Khoáng chất',
+    '⚠️ Dấu hiệu cờ đỏ',
+    '📄 Bảng tra thần kinh',
   ];
 
   return (
@@ -363,35 +408,35 @@ export default function FloatingAiButton() {
         )}
       </button>
 
-      {/* 2. MODAL TRỢ LÝ AI TRA CỨU SÁCH */}
+      {/* 2. MODAL TRỢ LÝ AI TRA CỨU SÁCH - 1 TÔNG MÀU TỐI DUY NHẤT (#161311) */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="w-full sm:max-w-md h-[78vh] sm:h-[620px] max-h-[85vh] rounded-t-2xl sm:rounded-2xl bg-[#1c1109] border border-[#4a2e1b] text-[#fdf7ee] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+            className="w-full sm:max-w-md h-[80vh] sm:h-[630px] max-h-[85vh] rounded-t-2xl sm:rounded-2xl bg-[#161311] border border-white/10 text-stone-200 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/10 bg-[#24160d]">
+            {/* Header - 1 màu tối đồng bộ #161311 */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/10 bg-[#161311]">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
-                  <Sparkles size={13} />
+                <div className="w-7 h-7 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-stone-200">
+                  <Sparkles size={14} />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="text-xs font-bold text-amber-200 uppercase tracking-wide">
+                  <h3 className="text-xs font-bold text-stone-100 uppercase tracking-wide">
                     Trợ lý Tra Cứu Sách Y Khoa
                   </h3>
-                  <span className="text-[10px] text-amber-300/70">
-                    Hỏi đáp trực tiếp nội dung các cuốn sách
+                  <span className="text-[10px] text-stone-400">
+                    Tra cứu nội dung & đọc sách trực tiếp
                   </span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/10 cursor-pointer transition-colors"
                 title="Đóng trợ lý AI"
                 aria-label="Đóng"
               >
@@ -399,45 +444,103 @@ export default function FloatingAiButton() {
               </button>
             </div>
 
-            {/* Quick Chips */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto no-scrollbar bg-[#160e08]/60 border-b border-white/5">
-              {quickChips.map((chip, idx) => (
+            {/* Dải chủ đề đa dạng bao quát toàn bộ kho sách */}
+            <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar bg-[#161311] border-b border-white/10">
+              {quickTopics.map((topic, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => handleSend(chip)}
-                  className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300/90 border border-amber-500/25 text-[10.5px] font-medium whitespace-nowrap cursor-pointer transition-colors"
+                  onClick={() => {
+                    const prompt = topic.startsWith('✦')
+                      ? 'Tổng quan các chủ đề và đầu sách chính trong thư viện'
+                      : `Tóm tắt nội dung và sách về chủ đề: ${topic}`;
+                    handleSend(prompt);
+                  }}
+                  className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/15 text-stone-300 border border-white/10 text-[11px] font-medium whitespace-nowrap cursor-pointer transition-all active:scale-95"
                 >
-                  {chip}
+                  {topic}
                 </button>
               ))}
             </div>
 
-            {/* Message Area */}
-            <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2.5 text-xs">
+            {/* Vùng tin nhắn - Đồng bộ 1 màu tối #161311 */}
+            <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 text-xs bg-[#161311]">
               {messages.map((m) => {
                 const isUser = m.role === 'user';
                 return (
                   <div
                     key={m.id}
-                    className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                    className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : 'items-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-xl px-3 py-2 leading-relaxed ${
+                      className={`max-w-[88%] rounded-xl px-3.5 py-2.5 leading-relaxed ${
                         isUser
-                          ? 'bg-amber-500 text-slate-950 font-semibold rounded-br-xs'
-                          : 'bg-[#2a1a10] border border-[#4d3220] text-amber-100/95 rounded-bl-xs'
+                          ? 'bg-[#241c16] border border-stone-700/40 text-stone-100 font-medium rounded-br-xs'
+                          : 'bg-[#1c1611] border border-white/10 text-stone-200 rounded-bl-xs'
                       }`}
                     >
                       {m.text}
                     </div>
+
+                    {/* Hiển thị thẻ sách gợi ý có nút Mở đọc sách ngay */}
+                    {!isUser && m.suggested_books && m.suggested_books.length > 0 && (
+                      <div className="w-full max-w-[92%] flex flex-col gap-2 mt-1">
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-1">
+                          📖 Sách đề xuất đọc ngay:
+                        </span>
+                        {m.suggested_books.slice(0, 2).map((book, bIdx) => (
+                          <div
+                            key={bIdx}
+                            className="p-2.5 rounded-xl bg-[#1c1611] border border-white/10 flex items-start gap-2.5 shadow-sm"
+                          >
+                            <img
+                              src={book.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
+                              alt={book.title}
+                              className="w-11 h-15 rounded-md object-cover border border-white/10 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  {book.badge_tag && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-stone-300">
+                                      {book.badge_tag}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] text-stone-400 truncate">
+                                    {book.author || 'Tùng Dinh Dưỡng'}
+                                  </span>
+                                </div>
+                                <h4 className="text-xs font-bold text-stone-100 truncate mt-0.5">
+                                  {book.title}
+                                </h4>
+                                {book.reason && (
+                                  <p className="text-[10.5px] text-stone-400 line-clamp-2 mt-0.5 leading-snug">
+                                    {book.reason}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="pt-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenBook(book)}
+                                  className="px-2.5 py-1 rounded-lg bg-stone-200 hover:bg-white text-stone-900 text-[11px] font-bold flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
+                                >
+                                  <BookOpen size={12} />
+                                  <span>Mở đọc sách (3D)</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="px-3 py-2 rounded-xl bg-[#2a1a10] border border-[#4d3220] text-amber-300 flex items-center gap-1.5 text-xs">
-                    <Loader2 size={13} className="animate-spin" />
+                  <div className="px-3 py-2 rounded-xl bg-[#1c1611] border border-white/10 text-stone-300 flex items-center gap-1.5 text-xs">
+                    <Loader2 size={13} className="animate-spin text-stone-400" />
                     <span>Đang tra cứu trang sách...</span>
                   </div>
                 </div>
@@ -446,7 +549,7 @@ export default function FloatingAiButton() {
 
             {/* Thông báo lỗi Micro nếu có */}
             {speechError && (
-              <div className="px-3.5 py-1.5 bg-red-950/90 border-t border-red-500/40 text-[11px] text-red-200 flex items-center justify-between">
+              <div className="px-3.5 py-1.5 bg-red-950/90 border-t border-red-500/30 text-[11px] text-red-200 flex items-center justify-between">
                 <span>{speechError}</span>
                 <button
                   type="button"
@@ -458,8 +561,8 @@ export default function FloatingAiButton() {
               </div>
             )}
 
-            {/* Input Bar - Chuẩn khung chat hiện đại, nút Micro & nút Gửi to rõ ràng */}
-            <div className="p-2.5 sm:p-3 border-t border-white/10 bg-[#24160d] flex items-center gap-2">
+            {/* Input Bar - Đồng bộ 1 màu tối #161311 */}
+            <div className="p-2.5 sm:p-3 border-t border-white/10 bg-[#161311] flex items-center gap-2">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -476,14 +579,14 @@ export default function FloatingAiButton() {
                   className={`w-full h-11 pl-4 pr-9 rounded-full bg-black/50 border ${
                     isListening
                       ? 'border-red-500 ring-2 ring-red-400/40'
-                      : 'border-amber-500/30 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40'
-                  } text-white text-[13.5px] placeholder:text-slate-400 focus:outline-none transition-all shadow-inner`}
+                      : 'border-white/15 focus:border-stone-400 focus:ring-1 focus:ring-stone-400/30'
+                  } text-stone-100 text-[13.5px] placeholder:text-stone-500 focus:outline-none transition-all shadow-inner`}
                 />
                 {query && !isListening && (
                   <button
                     type="button"
                     onClick={() => setQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
                     title="Xóa văn bản"
                     aria-label="Xóa văn bản"
                   >
@@ -492,14 +595,14 @@ export default function FloatingAiButton() {
                 )}
               </div>
 
-              {/* Nút Micro Nghe liên tục chuẩn kích thước ngón tay (44x44px, icon 20px) */}
+              {/* Nút Micro Nghe liên tục chuẩn 44x44px */}
               <button
                 type="button"
                 onClick={toggleListening}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90 shadow-md ${
                   isListening
-                    ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50 ring-4 ring-red-400/50'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/35 text-amber-300 border border-amber-500/40'
+                    ? 'bg-red-600 text-white animate-pulse shadow-lg shadow-red-600/40 ring-2 ring-red-400'
+                    : 'bg-white/10 hover:bg-white/15 active:bg-white/20 text-stone-200 border border-white/15'
                 }`}
                 title={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
                 aria-label={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
@@ -511,15 +614,15 @@ export default function FloatingAiButton() {
                 )}
               </button>
 
-              {/* Nút Gửi câu hỏi chuẩn kích thước ngón tay (44x44px, icon 19px) */}
+              {/* Nút Gửi câu hỏi chuẩn 44x44px - Đồng bộ màu tao nhã */}
               <button
                 type="button"
                 onClick={() => handleSend()}
                 disabled={!query.trim() || isLoading}
                 className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shrink-0 shadow-md ${
                   query.trim() && !isLoading
-                    ? 'bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold active:scale-90 cursor-pointer shadow-amber-500/30'
-                    : 'bg-white/5 text-slate-500 border border-white/10 opacity-40 cursor-not-allowed'
+                    ? 'bg-stone-200 hover:bg-white text-stone-900 font-bold active:scale-90 cursor-pointer'
+                    : 'bg-white/5 text-stone-600 border border-white/10 opacity-40 cursor-not-allowed'
                 }`}
                 title="Gửi câu hỏi"
                 aria-label="Gửi câu hỏi"
