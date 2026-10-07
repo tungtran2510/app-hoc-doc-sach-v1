@@ -16,10 +16,15 @@ import {
   Sparkles,
   BookMarked,
   Check,
+  HardDrive,
+  Zap,
+  CheckCircle2,
+  Download,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
+import { offlineStorage, CachedBookMetadata, formatBytes } from '../../lib/offlineStorage';
 
 interface SavedItem {
   id: string;
@@ -102,9 +107,25 @@ export default function SavedBooksPage() {
   const [activeReaderBook, setActiveReaderBook] = useState<{
     title: string;
     author?: string;
-    pages: string[];
+    pages?: string[];
     initialPage: number;
+    fileUrl?: string | null;
   } | null>(null);
+
+  // Danh sách sách lưu ngoại tuyến (IndexedDB)
+  const [offlineBooks, setOfflineBooks] = useState<CachedBookMetadata[]>([]);
+  const [offlineUsage, setOfflineUsage] = useState<{ count: number; totalBytes: number }>({ count: 0, totalBytes: 0 });
+
+  const loadOfflineList = async () => {
+    try {
+      const list = await offlineStorage.getAllCachedBooks();
+      setOfflineBooks(list);
+      const usage = await offlineStorage.getStorageUsage();
+      setOfflineUsage(usage);
+    } catch (err) {
+      console.error('Lỗi tải danh sách ngoại tuyến:', err);
+    }
+  };
 
   // Load last read & bookmarks
   const loadData = () => {
@@ -184,7 +205,26 @@ export default function SavedBooksPage() {
   useEffect(() => {
     document.title = 'Đã lưu · Qbiz Books';
     loadData();
+    loadOfflineList();
   }, []);
+
+  const handleOpenOfflineBook = (book: CachedBookMetadata) => {
+    setActiveReaderBook({
+      title: book.title,
+      author: book.author || 'Tủ Sách Ngoại Tuyến',
+      pages: [],
+      initialPage: book.lastReadPage || 0,
+      fileUrl: book.fileUrl,
+    });
+  };
+
+  const handleRemoveOfflineBook = async (e: React.MouseEvent, bookId: string) => {
+    e.stopPropagation();
+    if (confirm('Xóa tệp sách này khỏi bộ nhớ ngoại tuyến của máy để giải phóng dung lượng?')) {
+      await offlineStorage.removeBookFromOffline(bookId);
+      await loadOfflineList();
+    }
+  };
 
   const allSavedItems = useMemo(() => {
     const visibleCurated = DEFAULT_CURATED_SAVED.filter(
@@ -514,15 +554,125 @@ export default function SavedBooksPage() {
         )}
       </section>
 
+      {/* 4. SECTION: SÁCH NGOẠI TUYẾN ĐÃ LƯU (APPEND-ONLY) */}
+      <section className="flex flex-col gap-3 pt-2 border-t border-[#e6dcce] dark:border-[#553622]/60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
+            <HardDrive size={15} className="text-[#8B4513] dark:text-amber-400" />
+            <span>SÁCH NGOẠI TUYẾN ĐÃ LƯU</span>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+            {offlineBooks.length} cuốn · {formatBytes(offlineUsage.totalBytes)}
+          </span>
+        </div>
+
+        {offlineBooks.length === 0 ? (
+          <div className="p-4 rounded-2xl bg-white/70 dark:bg-[#22150c]/70 border border-dashed border-[#d9ccb9] dark:border-[#553622] flex flex-col items-center justify-center text-center gap-2 py-6">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400">
+              <Download size={20} />
+            </div>
+            <p className="text-xs font-bold text-[#2A160A] dark:text-amber-100">
+              Chưa có sách nào được lưu về máy
+            </p>
+            <p className="text-[11px] text-[#6E4223] dark:text-[#9e8574] max-w-xs leading-relaxed">
+              Khi mở bất kỳ cuốn sách nào, nhấn nút <span className="font-bold text-amber-700 dark:text-amber-300">Lưu máy ⚡</span> trên thanh công cụ để đọc mượt mà không cần mạng Internet!
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {offlineBooks.map((book) => (
+              <div
+                key={book.id}
+                onClick={() => handleOpenOfflineBook(book)}
+                className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
+              >
+                {/* Thumbnail bìa hoặc icon */}
+                <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shrink-0 p-0.5 flex items-center justify-center">
+                  {book.coverUrl ? (
+                    <img
+                      src={book.coverUrl}
+                      alt={book.title}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <BookOpen size={24} className="text-amber-700 dark:text-amber-400" />
+                  )}
+                  <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-emerald-600 text-white font-mono font-bold text-[8.5px] uppercase shadow-xs">
+                    {book.format}
+                  </div>
+                </div>
+
+                {/* Thông tin sách */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                      <CheckCircle2 size={10} />
+                      Sẵn sàng ngoại tuyến
+                    </span>
+                    <span className="text-[9px] text-[#7A583E] dark:text-[#9e8574]">·</span>
+                    <span className="text-[9px] font-mono text-[#7A583E] dark:text-[#9e8574]">
+                      {formatBytes(book.fileSize)}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate leading-snug">
+                    {book.title}
+                  </h3>
+                  <span className="text-[10px] text-[#6E4223] dark:text-[#9e8574] truncate mt-0.5">
+                    {book.author ? `Tác giả: ${book.author}` : 'Đã lưu trong máy'} · Trang {(book.lastReadPage ?? 0) + 1}
+                  </span>
+                </div>
+
+                {/* Nút hành động: Đọc ngay & Xóa */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenOfflineBook(book);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-900 dark:text-amber-200 hover:text-slate-950 font-bold text-[11px] border border-amber-500/30 flex items-center gap-1 transition-all cursor-pointer"
+                    title="Mở đọc ngay"
+                  >
+                    <BookOpen size={12} />
+                    <span className="hidden sm:inline">Đọc</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleRemoveOfflineBook(e, book.id)}
+                    className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-600 dark:text-red-400 hover:text-white border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Xóa khỏi bộ nhớ máy"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Khối giải thích tiện ích ngoại tuyến */}
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2.5">
+          <Zap size={14} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-[#6E4223] dark:text-amber-100/70 leading-relaxed">
+            <span className="font-bold text-[#2A160A] dark:text-amber-200">Tốc độ mở siêu tốc &lt; 0.1s:</span> Tệp sách được lưu trữ nguyên vẹn trong bộ nhớ đệm an toàn IndexedDB của trình duyệt. Bạn có thể đọc trơn tru ngay cả khi trên máy bay hoặc mất mạng.
+          </p>
+        </div>
+      </section>
+
       {/* MODAL ĐỌC SÁCH 3D KHI CLICK VÀO MỤC ĐÃ LƯU */}
       {activeReaderBook && (
         <SideBooksReaderModal
           isOpen={Boolean(activeReaderBook)}
           title={activeReaderBook.title}
           author={activeReaderBook.author}
-          pages={activeReaderBook.pages}
+          fileUrl={activeReaderBook.fileUrl}
+          pages={activeReaderBook.pages || []}
           initialPage={activeReaderBook.initialPage}
-          onClose={() => setActiveReaderBook(null)}
+          onClose={() => {
+            setActiveReaderBook(null);
+            loadOfflineList();
+          }}
         />
       )}
 

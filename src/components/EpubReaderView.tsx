@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
+import { offlineStorage } from '../lib/offlineStorage';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 
 interface EpubReaderViewProps {
@@ -63,7 +64,17 @@ export default function EpubReaderView({
         setLoading(true);
         setError(null);
 
-        const res = await fetch(fileUrl);
+        let targetUrl = fileUrl;
+        try {
+          const cached = await offlineStorage.getBookFromOffline(fileUrl);
+          if (cached && cached.blobUrl) {
+            targetUrl = cached.blobUrl;
+          }
+        } catch {
+          // fallback to fileUrl
+        }
+
+        const res = await fetch(targetUrl);
         if (!res.ok) {
           throw new Error(`Không thể tải tệp EPUB (Mã lỗi ${res.status}).`);
         }

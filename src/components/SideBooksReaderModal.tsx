@@ -18,6 +18,8 @@ import {
   Loader2,
   Layers,
   Headphones,
+  Zap,
+  CheckCircle2,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
@@ -25,6 +27,7 @@ import SideBooksReaderEngine, {
 import EpubReaderView from './EpubReaderView';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
+import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 import {
   detectEbookFormat,
   createPdfPageProvider,
@@ -70,6 +73,11 @@ export default function SideBooksReaderModal({
   const [isPdfAudioOpen, setIsPdfAudioOpen] = useState<boolean>(false);
   const [audioNotice, setAudioNotice] = useState<string | null>(null);
 
+  // State lưu ngoại tuyến (Offline IndexedDB)
+  const [isOfflineCached, setIsOfflineCached] = useState<boolean>(false);
+  const [isSavingOffline, setIsSavingOffline] = useState<boolean>(false);
+  const [offlineSaveProgress, setOfflineSaveProgress] = useState<number>(0);
+
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
   const activeFormat = detectEbookFormat(fileName || activeFileUrl);
@@ -83,6 +91,14 @@ export default function SideBooksReaderModal({
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [cbzPages, setCbzPages] = useState<string[]>([]);
 
+  // Kiểm tra trạng thái đã lưu ngoại tuyến của cuốn sách
+  useEffect(() => {
+    if (!isOpen || !activeFileUrl) return;
+    offlineStorage.isBookCached(activeFileUrl).then((cached) => {
+      setIsOfflineCached(cached);
+    });
+  }, [isOpen, activeFileUrl]);
+
   // 1. Xử lý nạp động PDF khi mở sách
   useEffect(() => {
     if (!isOpen || !isPdf || !activeFileUrl) return;
@@ -92,7 +108,17 @@ export default function SideBooksReaderModal({
     async function initPdf() {
       try {
         setPdfLoading(true);
-        const provider = await createPdfPageProvider(activeFileUrl!);
+
+        // Nạp từ bộ nhớ Offline IndexedDB nếu sách đã được lưu ngoại tuyến
+        let effectivePdfUrl = activeFileUrl!;
+        try {
+          const cached = await offlineStorage.getBookFromOffline(activeFileUrl!);
+          if (cached && cached.blobUrl) {
+            effectivePdfUrl = cached.blobUrl;
+          }
+        } catch {}
+
+        const provider = await createPdfPageProvider(effectivePdfUrl);
         if (isCancelled) {
           provider.destroy();
           return;
@@ -366,6 +392,46 @@ export default function SideBooksReaderModal({
     }
   }, [currentPage, isPdfAudioOpen, isPdf, pdfProvider]);
 
+  const handleSaveOffline = async () => {
+    if (!activeFileUrl || isSavingOffline) return;
+    try {
+      setIsSavingOffline(true);
+      setOfflineSaveProgress(15);
+      const res = await offlineStorage.saveBookToOffline(
+        {
+          title,
+          author,
+          coverUrl,
+          fileUrl: activeFileUrl,
+          fileName,
+          lastReadPage: currentPage,
+          totalPages,
+        },
+        (percent) => setOfflineSaveProgress(percent)
+      );
+      setIsOfflineCached(true);
+      setAudioNotice(`Đã lưu sách về máy (${formatBytes(res.size)})! Bạn có thể đọc ngoại tuyến mọi lúc không cần mạng.`);
+      setTimeout(() => setAudioNotice(null), 4000);
+    } catch (err: any) {
+      console.error('Lỗi lưu sách ngoại tuyến:', err);
+      setAudioNotice('Không thể lưu sách: ' + (err.message || 'Lỗi mạng'));
+      setTimeout(() => setAudioNotice(null), 4000);
+    } finally {
+      setIsSavingOffline(false);
+      setOfflineSaveProgress(0);
+    }
+  };
+
+  const handleRemoveOffline = async () => {
+    if (!activeFileUrl) return;
+    try {
+      await offlineStorage.removeBookFromOffline(activeFileUrl);
+      setIsOfflineCached(false);
+      setAudioNotice('Đã xóa sách khỏi bộ nhớ máy.');
+      setTimeout(() => setAudioNotice(null), 3000);
+    } catch {}
+  };
+
   const handleExitBook = () => {
     bookAudioPlayer.stop();
     setIsPdfAudioOpen(false);
@@ -544,6 +610,45 @@ export default function SideBooksReaderModal({
             >
               <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-400'} />
               <span className="hidden sm:inline">Sách nói</span>
+            </button>
+          )}
+
+          {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
+          {Boolean(activeFileUrl) && (
+            <button
+              type="button"
+              onClick={isOfflineCached ? handleRemoveOffline : handleSaveOffline}
+              disabled={isSavingOffline}
+              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
+                isOfflineCached
+                  ? 'bg-emerald-600/90 text-white shadow-md border border-emerald-400/40'
+                  : isSavingOffline
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
+                  : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'
+              }`}
+              title={
+                isOfflineCached
+                  ? 'Đã lưu ngoại tuyến vào máy (Nhấn để xóa cache)'
+                  : 'Lưu sách về bộ nhớ máy để đọc ngoại tuyến không cần mạng'
+              }
+              aria-label="Lưu ngoại tuyến"
+            >
+              {isSavingOffline ? (
+                <>
+                  <Loader2 size={13} className="animate-spin text-amber-400" />
+                  <span className="hidden sm:inline font-mono">{offlineSaveProgress}%</span>
+                </>
+              ) : isOfflineCached ? (
+                <>
+                  <CheckCircle2 size={14} className="text-emerald-300" />
+                  <span className="hidden sm:inline">Offline ✓</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={14} className="text-amber-400" />
+                  <span className="hidden sm:inline">Lưu máy</span>
+                </>
+              )}
             </button>
           )}
 
