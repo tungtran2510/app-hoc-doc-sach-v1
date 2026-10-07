@@ -427,6 +427,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const question = (body.question || '').trim();
     const history = Array.isArray(body.history) ? body.history : [];
+    const bookContext = body.bookContext; // { title?: string; author?: string; page?: number; excerpt?: string }
 
     if (!question) {
       return NextResponse.json({ error: 'Vui lòng nhập câu hỏi.' }, { status: 400 });
@@ -434,15 +435,17 @@ export async function POST(req: NextRequest) {
 
     const isAskingDoctorLoan = /doctor\s*loan/i.test(question);
 
-    // 1. KIỂM TRA PHẢN HỒI TỨC THÌ TỪ DANH SÁCH CÂU HỎI MẪU CHUẨN XÁC (< 5ms)
-    const curated = findCuratedMatch(question);
-    if (curated) {
-      return NextResponse.json({
-        answer: curated.answer,
-        suggested_pages: curated.suggested_pages,
-        follow_up_questions: curated.follow_up_questions,
-        provider: 'curated_instant',
-      });
+    // 1. KIỂM TRA PHẢN HỒI TỨC THÌ TỪ DANH SÁCH CÂU HỎI MẪU CHUẨN XÁC (< 5ms) - Chỉ áp dụng khi người dùng hỏi chung, không có ngữ cảnh sách
+    if (!bookContext) {
+      const curated = findCuratedMatch(question);
+      if (curated) {
+        return NextResponse.json({
+          answer: curated.answer,
+          suggested_pages: curated.suggested_pages,
+          follow_up_questions: curated.follow_up_questions,
+          provider: 'curated_instant',
+        });
+      }
     }
 
     // Lấy catalog bài học siêu nhanh
@@ -500,7 +503,15 @@ export async function POST(req: NextRequest) {
       .join('\n');
 
     // 4. HỆ THỐNG PROMPT TỐI ƯU: ĐÚNG TRỌNG TÂM, NGẮN GỌN, TUYỆT ĐỐI CẤM BÁN HÀNG DOCTORLOAN
-    const systemPrompt = `Bạn là Trợ lý Sức Khỏe AI trong ứng dụng giáo dục y học "Học Cơ Thể" (Tủ Sách Y Khoa Qbiz Books của tác giả Tùng dinh dưỡng).
+    const contextPrefix = bookContext
+      ? `BỐI CẢNH ĐỌC SÁCH HIỆN TẠI (TỦ SÁCH QBIZ BOOKS):
+- Tên cuốn sách: "${bookContext.title || 'Sách chuyên đề'}" ${bookContext.author ? `(Tác giả: ${bookContext.author})` : ''}
+- Đang đọc tại: Trang ${bookContext.page || 1}
+${bookContext.excerpt ? `- Trích đoạn / Nội dung trang sách đang đọc:\n"""\n${bookContext.excerpt.slice(0, 2500)}\n"""\n` : ''}
+NHIỆM VỤ ĐẶC BIỆT: Bạn đóng vai trò Trợ lý AI Đồng hành Đọc sách (Interactive Reading Copilot). Hãy ưu tiên trực tiếp giải thích, làm sáng tỏ các thuật ngữ chuyên sâu, tóm tắt hoặc giải đáp thắc mắc của độc giả dựa trên chính xác nội dung trang sách được cung cấp ở trên một cách dễ hiểu, sinh động, chuẩn y khoa.\n\n`
+      : '';
+
+    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Sức Khỏe AI trong ứng dụng giáo dục y học "Học Cơ Thể" (Tủ Sách Y Khoa Qbiz Books của tác giả Tùng dinh dưỡng).
 
 NGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT):
 1. ĐÚNG TRỌNG TÂM CÂU HỎI (P0):

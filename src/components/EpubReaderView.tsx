@@ -14,6 +14,8 @@ import {
   X,
   BookOpen,
   Headphones,
+  Sparkles,
+  Volume2,
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
@@ -27,6 +29,7 @@ interface EpubReaderViewProps {
   readingTheme?: 'dark' | 'sepia' | 'ivory';
   onCenterClick?: () => void;
   onPageProgress?: (currentChapter: number, totalChapters: number) => void;
+  onOpenAiCopilot?: (selectedText?: string) => void;
 }
 
 export default function EpubReaderView({
@@ -36,6 +39,7 @@ export default function EpubReaderView({
   readingTheme = 'sepia',
   onCenterClick,
   onPageProgress,
+  onOpenAiCopilot,
 }: EpubReaderViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +53,47 @@ export default function EpubReaderView({
   const [isAudioOpen, setIsAudioOpen] = useState(false);
   const [activeParagraphIdx, setActiveParagraphIdx] = useState<number | null>(null);
 
+  // State bôi đen văn bản & Floating Tooltip Hỏi AI
+  const [selectedText, setSelectedText] = useState<string | null>(null);
+  const [bubbleCoords, setBubbleCoords] = useState<{ x: number; y: number } | null>(null);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
+
+  // Theo dõi vùng chọn văn bản người dùng trong sách EPUB
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !contentRef.current) {
+        setBubbleCoords(null);
+        setSelectedText(null);
+        return;
+      }
+
+      const text = sel.toString().trim();
+      if (text.length >= 2 && contentRef.current.contains(sel.anchorNode)) {
+        try {
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          setSelectedText(text);
+          setBubbleCoords({
+            x: Math.max(10, Math.min(window.innerWidth - 180, rect.left + rect.width / 2 - 80)),
+            y: Math.max(10, rect.top - 46),
+          });
+        } catch {
+          // ignore
+        }
+      } else {
+        setBubbleCoords(null);
+        setSelectedText(null);
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, []);
 
   useEffect(() => {
     setLocalTheme(readingTheme);
@@ -324,6 +367,19 @@ export default function EpubReaderView({
             <span className="hidden xs:inline">Sách nói</span>
           </button>
 
+          {/* Nút Hỏi AI ✨ */}
+          {onOpenAiCopilot && (
+            <button
+              type="button"
+              onClick={() => onOpenAiCopilot(selectedText || undefined)}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-800 dark:text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-all cursor-pointer font-bold active:scale-95"
+              title="Hỏi Trợ lý AI về chương này"
+            >
+              <Sparkles size={14} className="text-amber-500" />
+              <span className="hidden xs:inline">Hỏi AI</span>
+            </button>
+          )}
+
           {/* Cỡ chữ */}
           <div className="flex items-center bg-black/5 dark:bg-white/10 rounded-lg p-0.5">
             <button
@@ -497,6 +553,38 @@ export default function EpubReaderView({
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* KHỐI MINI TOOLTIP KHI BÔI ĐEN VĂN BẢN TRONG EPUB */}
+      {bubbleCoords && selectedText && (
+        <div
+          style={{ top: bubbleCoords.y, left: bubbleCoords.x }}
+          className="fixed z-50 flex items-center gap-1 p-1 rounded-xl bg-[#2A160A]/95 text-amber-200 border border-amber-500/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 select-none"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              onOpenAiCopilot?.(selectedText);
+              setBubbleCoords(null);
+            }}
+            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer"
+          >
+            <Sparkles size={11} className="text-slate-950" />
+            <span>Hỏi AI ✨</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              bookAudioPlayer.setQueue([selectedText], 0);
+              bookAudioPlayer.play(0);
+              setBubbleCoords(null);
+            }}
+            className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+          >
+            <Volume2 size={11} />
+            <span>Đọc</span>
+          </button>
         </div>
       )}
 

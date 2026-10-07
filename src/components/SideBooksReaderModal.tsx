@@ -20,11 +20,13 @@ import {
   Headphones,
   Zap,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
 } from './SideBooksReaderEngine';
 import EpubReaderView from './EpubReaderView';
+import ReaderAiCopilot from './ReaderAiCopilot';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
@@ -78,6 +80,11 @@ export default function SideBooksReaderModal({
   const [isSavingOffline, setIsSavingOffline] = useState<boolean>(false);
   const [offlineSaveProgress, setOfflineSaveProgress] = useState<number>(0);
 
+  // State Trợ lý AI Đồng hành Đọc Sách (Reading Copilot)
+  const [isAiCopilotOpen, setIsAiCopilotOpen] = useState<boolean>(false);
+  const [currentPageText, setCurrentPageText] = useState<string | null>(null);
+  const [copilotSelectedText, setCopilotSelectedText] = useState<string | null>(null);
+
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
   const activeFormat = detectEbookFormat(fileName || activeFileUrl);
@@ -98,6 +105,32 @@ export default function SideBooksReaderModal({
       setIsOfflineCached(cached);
     });
   }, [isOpen, activeFileUrl]);
+
+  const openAiCopilot = async (overrideSelectedText?: string) => {
+    if (typeof overrideSelectedText === 'string') {
+      setCopilotSelectedText(overrideSelectedText);
+    }
+    if (isPdf && pdfProvider) {
+      try {
+        const text = await pdfProvider.getPageText(currentPage + 1);
+        if (text) {
+          setCurrentPageText(text);
+        }
+      } catch (err) {
+        console.warn('Lỗi lấy văn bản trang PDF cho AI Copilot:', err);
+      }
+    }
+    setIsAiCopilotOpen(true);
+  };
+
+  // Tự động đồng bộ văn bản trang sách mới cho AI Copilot khi lật trang
+  useEffect(() => {
+    if (isAiCopilotOpen && isPdf && pdfProvider) {
+      pdfProvider.getPageText(currentPage + 1).then((txt) => {
+        if (txt) setCurrentPageText(txt);
+      });
+    }
+  }, [currentPage, isAiCopilotOpen, isPdf, pdfProvider]);
 
   // 1. Xử lý nạp động PDF khi mở sách
   useEffect(() => {
@@ -613,6 +646,22 @@ export default function SideBooksReaderModal({
             </button>
           )}
 
+          {/* Nút Trợ lý AI Đồng hành Đọc Sách (Reading Copilot) */}
+          <button
+            type="button"
+            onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
+            className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
+              isAiCopilotOpen
+                ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+            }`}
+            title={isAiCopilotOpen ? 'Đóng Trợ lý AI' : 'Hỏi Trợ lý AI về trang sách này (Tóm tắt, giải thích thuật ngữ, hỏi đáp)'}
+            aria-label="Hỏi AI"
+          >
+            <Sparkles size={14} className={isAiCopilotOpen ? 'animate-spin text-slate-950' : 'text-amber-400'} />
+            <span className="hidden sm:inline">Hỏi AI</span>
+          </button>
+
           {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
           {Boolean(activeFileUrl) && (
             <button
@@ -763,6 +812,7 @@ export default function SideBooksReaderModal({
             author={author}
             readingTheme={readingTheme}
             onCenterClick={toggleHud}
+            onOpenAiCopilot={(selText) => openAiCopilot(selText)}
             onPageProgress={(ch, totalCh) => {
               setCurrentPage(ch - 1);
               try {
@@ -954,6 +1004,20 @@ export default function SideBooksReaderModal({
           {audioNotice}
         </div>
       )}
+
+      {/* 5. TRỢ LÝ AI ĐỒNG HÀNH ĐỌC SÁCH (READING COPILOT) */}
+      <ReaderAiCopilot
+        isOpen={isAiCopilotOpen}
+        onClose={() => setIsAiCopilotOpen(false)}
+        bookTitle={title}
+        author={author}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        selectedText={copilotSelectedText}
+        pageContent={currentPageText}
+        onClearSelection={() => setCopilotSelectedText(null)}
+        readingTheme={readingTheme}
+      />
     </div>
   );
 }
