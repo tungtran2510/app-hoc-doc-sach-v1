@@ -285,9 +285,7 @@ export default function WoodenBookshelf({
 
     try {
       const storedTheme = localStorage.getItem('giao_dien');
-      const darkActive =
-        storedTheme === 'dark' ||
-        (!storedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const darkActive = storedTheme !== 'light';
       setIsDark(darkActive);
       if (darkActive) {
         document.documentElement.classList.add('dark');
@@ -295,7 +293,8 @@ export default function WoodenBookshelf({
         document.documentElement.classList.remove('dark');
       }
     } catch {
-      setIsDark(false);
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
     }
 
     try {
@@ -523,7 +522,7 @@ export default function WoodenBookshelf({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className="relative w-full min-h-[calc(100dvh-5.5rem)] flex flex-col justify-start rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-b from-[#24170d] via-[#1c1109] to-[#110803] px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-8 sm:py-6 border-x-0 border-t-0 sm:border border-[#3d2817] shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] select-none transition-all duration-200"
+      className="relative w-full min-h-[calc(100dvh-5.5rem)] flex flex-col justify-start rounded-none sm:rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF5EE] via-[#F3EADB] to-[#E8DBCA] dark:from-[#24170d] dark:via-[#1c1109] dark:to-[#110803] px-2 sm:px-5 pt-[max(0.5rem,env(safe-area-inset-top))] pb-8 sm:py-6 border-x-0 border-t-0 sm:border border-[#d8c5aa] dark:border-[#3d2817] shadow-[0_10px_30px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.1)] text-[#29180c] dark:text-[#fdf7ee] select-none transition-colors duration-200"
     >
       {/* Toast thông báo thay đổi kích cỡ sách khi vuốt / bấm */}
       {zoomToast && (
@@ -536,17 +535,19 @@ export default function WoodenBookshelf({
       <div
         className="absolute top-0 left-[10%] right-[10%] h-[180px] pointer-events-none z-0"
         style={{
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.16) 0%, transparent 75%)',
+          background: isDark
+            ? 'radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.16) 0%, transparent 75%)'
+            : 'radial-gradient(ellipse at 50% 0%, rgba(217, 119, 6, 0.10) 0%, transparent 75%)',
         }}
       />
 
       {/* 1. KHUNG THƯƠNG HIỆU & LỜI CHÀO & CÀI ĐẶT TÍCH HỢP TRÊN ĐỈNH KỆ SÁCH */}
       <div className="relative z-20 mb-4 sm:mb-5">
-        <div className="w-full rounded-[14px] bg-gradient-to-r from-[#2c1a10] via-[#3a2316] to-[#25170e] text-[#fdf7ee] border border-[#5a3a24] shadow-[0_8px_20px_rgba(0,0,0,0.6)] animate-bio-breathing hover:border-amber-500/80 hover:shadow-[0_10px_28px_rgba(217,119,6,0.25)] transition-all duration-300 p-2.5 sm:p-3 flex items-center justify-between gap-2.5">
+        <div className="w-full rounded-[14px] bg-gradient-to-r from-[#F0E5D4] via-[#F8F1E5] to-[#EFE2CE] dark:from-[#2c1a10] dark:via-[#3a2316] dark:to-[#25170e] text-[#29180c] dark:text-[#fdf7ee] border border-[#cfbeaa] dark:border-[#5a3a24] shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_20px_rgba(0,0,0,0.6)] animate-bio-breathing hover:border-amber-500/80 hover:shadow-[0_8px_24px_rgba(217,119,6,0.2)] transition-all duration-300 p-2.5 sm:p-3 flex items-center justify-between gap-2.5">
           {/* BÊN TRÁI: Logo app 3D */}
           <div
             onClick={onOpenWelcome}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[12px] overflow-hidden border border-amber-400/60 shadow-md shrink-0 bg-[#0C152B] p-0.5 cursor-pointer hover:scale-105 transition-transform"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[12px] overflow-hidden border border-amber-500/50 shadow-md shrink-0 bg-[#0C152B] p-0.5 cursor-pointer hover:scale-105 transition-transform"
             title="Xem lời ngỏ & video giới thiệu"
           >
             <img
@@ -556,38 +557,38 @@ export default function WoodenBookshelf({
             />
           </div>
 
-          {/* Ở GIỮA: Tên thương hiệu + Lời chào "Hi, [tên người dùng]!" (THAY THẾ CHỮ TIẾNG ANH NỔI NỔI) */}
+          {/* Ở GIỮA: Tên thương hiệu + Lời chào "Hi, [tên người dùng]!" */}
           <div className="flex flex-col flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-[#fdf7ee] uppercase drop-shadow-sm">
+              <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-[#24150b] dark:text-[#fdf7ee] uppercase drop-shadow-xs">
                 {firstWord}
               </span>
-              <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-amber-400 uppercase drop-shadow-sm">
+              <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-amber-700 dark:text-amber-400 uppercase drop-shadow-xs">
                 {restWords}
               </span>
             </div>
-            {/* Thay chữ tiếng Anh bằng chữ "Hi, [tên người dùng]!" */}
+            {/* Lời chào người dùng */}
             <button
               type="button"
               onClick={() => {
                 setNameInput(userName === 'bạn' ? '' : userName);
                 setShowNameModal(true);
               }}
-              className="text-[11.5px] sm:text-[12px] font-bold text-amber-200/90 hover:text-amber-100 mt-0.5 flex items-center gap-1 cursor-pointer transition-colors text-left group/greet truncate"
+              className="text-[11.5px] sm:text-[12px] font-bold text-[#78350f] dark:text-amber-200/90 hover:text-[#451a03] dark:hover:text-amber-100 mt-0.5 flex items-center gap-1 cursor-pointer transition-colors text-left group/greet truncate"
               title="Bấm để đổi tên của bạn"
             >
               <span className="truncate">Hi, {userName || 'bạn'}! 👋</span>
-              <Edit2 size={10} className="text-amber-400/60 group-hover/greet:text-amber-300 shrink-0" />
+              <Edit2 size={10} className="text-amber-600 dark:text-amber-400/60 group-hover/greet:text-amber-700 dark:group-hover/greet:text-amber-300 shrink-0" />
             </button>
           </div>
 
-          {/* BÊN PHẢI: CỤM CÀI ĐẶT & TIỆN ÍCH DỒN HẾT VÀO KHUNG NÀY */}
+          {/* BÊN PHẢI: CỤM CÀI ĐẶT & TIỆN ÍCH */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Chuyển chế độ Sáng / Tối */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-amber-300 hover:text-amber-200 transition-all cursor-pointer shadow-xs"
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 border border-[#d8c5aa] dark:border-white/10 flex items-center justify-center text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 transition-all cursor-pointer shadow-xs"
               title={isDark ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
               aria-label="Sáng / Tối"
             >
@@ -601,7 +602,7 @@ export default function WoodenBookshelf({
               className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
                 isBookshelfFullscreen
                   ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-                  : 'bg-white/10 hover:bg-white/20 text-amber-200 hover:text-white border-white/10'
+                  : 'bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-amber-900 dark:text-amber-200 hover:text-amber-950 dark:hover:text-white border-[#d8c5aa] dark:border-white/10'
               }`}
               title={isBookshelfFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}
               aria-label="Toàn màn hình"
@@ -631,7 +632,7 @@ export default function WoodenBookshelf({
             <button
               type="button"
               onClick={() => setShowExitConfirm(true)}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-red-500/20 hover:bg-red-500/35 border border-red-500/40 text-red-300 hover:text-red-100 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-red-500/15 dark:bg-red-500/20 hover:bg-red-500/30 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
               title="Thoát khỏi phần mềm (Cảnh báo xác nhận)"
               aria-label="Thoát phần mềm"
             >
@@ -686,7 +687,7 @@ export default function WoodenBookshelf({
       {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN KÍNH LÚP THU PHÓNG */}
       <div className="relative z-10 flex items-center justify-between mb-3 px-1 sm:px-2 gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <h2 className="text-[13px] sm:text-[14px] font-black tracking-wide text-amber-200/90 uppercase drop-shadow-sm truncate">
+          <h2 className="text-[13px] sm:text-[14px] font-black tracking-wide text-[#4a250e] dark:text-amber-200/90 uppercase drop-shadow-xs truncate">
             GIAN TRƯNG BÀY
           </h2>
         </div>
@@ -697,7 +698,7 @@ export default function WoodenBookshelf({
           <button
             type="button"
             onClick={cycleSortOrder}
-            className="h-7 px-2.5 rounded-xl bg-[#1a0f08]/90 hover:bg-black border border-amber-900/60 text-amber-300 flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-inner active:scale-95"
+            className="h-7 px-2.5 rounded-xl bg-white/80 dark:bg-[#1a0f08]/90 hover:bg-white dark:hover:bg-black border border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-300 flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95"
             title={`Sắp xếp: ${
               sortBy === 'default'
                 ? 'Mặc định'
@@ -722,12 +723,12 @@ export default function WoodenBookshelf({
           </button>
 
           {/* Cụm Kính lúp: Chỉ thu nhỏ (-) và phóng to (+) đầu sách */}
-          <div className="flex items-center gap-0.5 bg-[#1a0f08]/90 border border-amber-900/60 rounded-xl p-0.5 shadow-inner">
+          <div className="flex items-center gap-0.5 bg-white/80 dark:bg-[#1a0f08]/90 border border-[#d8c5aa] dark:border-amber-900/60 rounded-xl p-0.5 shadow-xs">
             <button
               type="button"
               onClick={zoomOutBooks}
               disabled={bookCols === 4}
-              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-amber-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
               title="Thu nhỏ đầu sách"
               aria-label="Thu nhỏ sách"
             >
@@ -737,7 +738,7 @@ export default function WoodenBookshelf({
               type="button"
               onClick={zoomInBooks}
               disabled={bookCols === 2}
-              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-amber-300 hover:text-white hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
               title="Phóng to đầu sách"
               aria-label="Phóng to sách"
             >
@@ -965,7 +966,9 @@ export default function WoodenBookshelf({
                 <div
                   className="h-[8px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.32)]"
                   style={{
-                    background: 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)'
+                      : 'linear-gradient(180deg, #c29562 0%, #a47643 70%, #83592a 100%)',
                   }}
                 />
                 {/* Gờ mép trước thanh gỗ dày nổi 3D cao cấp - nơi chứa nhãn tiêu đề sách */}
@@ -974,7 +977,9 @@ export default function WoodenBookshelf({
                     showBookTitles ? 'min-h-[20px] py-0.5' : 'h-[14px]'
                   }`}
                   style={{
-                    background: 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)'
+                      : 'linear-gradient(180deg, #d4a773 0%, #b88a56 50%, #946937 100%)',
                   }}
                 >
                   {/* TIÊU ĐỀ SÁCH TRÊN GỜ KỆ GỖ (TỰA CHÂN SÁCH, CHỈ 1 DÒNG DUY NHẤT, KHÔNG LÀM ĐẨY SÁCH) */}
@@ -993,7 +998,7 @@ export default function WoodenBookshelf({
                             isPartialTier ? cardMaxWidthClass + ' w-full' : 'flex-1 ' + cardMaxWidthClass
                           } text-center px-1 overflow-hidden`}
                         >
-                          <p className="text-[9.5px] sm:text-[10.5px] font-bold text-amber-100/95 truncate leading-none drop-shadow-md tracking-tight">
+                          <p className="text-[9.5px] sm:text-[10.5px] font-bold text-amber-50 dark:text-amber-100/95 truncate leading-none drop-shadow-md tracking-tight">
                             {b.title}
                           </p>
                         </div>
@@ -1005,7 +1010,9 @@ export default function WoodenBookshelf({
                 <div
                   className="h-[18px] -mt-[1px]"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%)'
+                      : 'linear-gradient(180deg, rgba(80,45,15,0.22) 0%, transparent 100%)',
                   }}
                 />
               </div>
@@ -1018,7 +1025,7 @@ export default function WoodenBookshelf({
           Array.from({ length: emptyShelvesCount }).map((_, emptyIdx) => (
             <div key={`empty-tier-${emptyIdx}`} className="relative pt-6 sm:pt-8">
               <div className="h-16 sm:h-24 flex items-center justify-center opacity-35 select-none pointer-events-none">
-                <span className="text-[10.5px] text-amber-400/40 font-serif italic tracking-widest">
+                <span className="text-[10.5px] text-amber-700 dark:text-amber-400/40 font-serif italic tracking-widest">
                   ✦ TỦ SÁCH Y KHOA QBIZ ✦
                 </span>
               </div>
@@ -1027,19 +1034,25 @@ export default function WoodenBookshelf({
                 <div
                   className="h-[8px] shadow-[inset_0_1px_1px_rgba(255,255,255,0.32)]"
                   style={{
-                    background: 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, #6c4222 0%, #4f2f16 70%, #341e0d 100%)'
+                      : 'linear-gradient(180deg, #c29562 0%, #a47643 70%, #83592a 100%)',
                   }}
                 />
                 <div
                   className="h-[14px] rounded-b-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_22px_rgba(0,0,0,0.95)]"
                   style={{
-                    background: 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, #8f582b 0%, #683d1c 50%, #3c230e 100%)'
+                      : 'linear-gradient(180deg, #d4a773 0%, #b88a56 50%, #946937 100%)',
                   }}
                 />
                 <div
                   className="h-[18px] -mt-[1px]"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                    background: isDark
+                      ? 'linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%)'
+                      : 'linear-gradient(180deg, rgba(80,45,15,0.22) 0%, transparent 100%)',
                   }}
                 />
               </div>
@@ -1111,21 +1124,21 @@ export default function WoodenBookshelf({
           onClick={() => setShowSettingsMenu(false)}
         >
           <div
-            className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl bg-[#20130a] border border-[#553622] text-[#fdf7ee] p-3.5 sm:p-4 shadow-2xl flex flex-col gap-2.5 animate-in zoom-in-95"
+            className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl bg-[#FAF6EF] dark:bg-[#20130a] border border-[#d8c5aa] dark:border-[#553622] text-[#2c180c] dark:text-[#fdf7ee] p-3.5 sm:p-4 shadow-2xl flex flex-col gap-2.5 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Tiêu đề Modal 1 dòng */}
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between pb-2 border-b border-[#e2d5c3] dark:border-white/10 shrink-0">
               <div className="flex items-center gap-2">
-                <Settings size={17} className="text-amber-400" />
-                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-200">
+                <Settings size={17} className="text-amber-700 dark:text-amber-400" />
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2c180c] dark:text-amber-200">
                   Cài đặt & Tùy chọn đọc
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowSettingsMenu(false)}
-                className="w-7 h-7 rounded-full text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                className="w-7 h-7 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
                 title="Đóng"
                 aria-label="Đóng"
               >
@@ -1135,8 +1148,8 @@ export default function WoodenBookshelf({
 
             <div className="flex flex-col gap-1.5 text-xs py-0.5">
               {/* 1. TÔNG MÀU GIẤY ĐỌC SÁCH (1 dòng tinh gọn) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
-                <span className="text-amber-100/90 font-medium">Giấy đọc:</span>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
+                <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Giấy đọc:</span>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -1144,7 +1157,7 @@ export default function WoodenBookshelf({
                     className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                       readerPaperTheme === 'sepia'
                         ? 'bg-[#3d3327] text-amber-300 ring-1 ring-amber-400'
-                        : 'bg-black/40 text-slate-400 hover:text-slate-200'
+                        : 'bg-[#efe5d6] dark:bg-black/40 text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-slate-200'
                     }`}
                     title="Vàng Sepia"
                   >
@@ -1156,7 +1169,7 @@ export default function WoodenBookshelf({
                     className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                       readerPaperTheme === 'dark'
                         ? 'bg-slate-900 text-amber-300 ring-1 ring-amber-400'
-                        : 'bg-black/40 text-slate-400 hover:text-slate-200'
+                        : 'bg-[#efe5d6] dark:bg-black/40 text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-slate-200'
                     }`}
                     title="Đen OLED"
                   >
@@ -1168,7 +1181,7 @@ export default function WoodenBookshelf({
                     className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                       readerPaperTheme === 'ivory'
                         ? 'bg-amber-100 text-slate-900 ring-1 ring-amber-500'
-                        : 'bg-black/40 text-slate-400 hover:text-slate-200'
+                        : 'bg-[#efe5d6] dark:bg-black/40 text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-slate-200'
                     }`}
                     title="Trắng ngà"
                   >
@@ -1178,16 +1191,16 @@ export default function WoodenBookshelf({
               </div>
 
               {/* 2. CHẾ ĐỘ LẬT TRANG MẶC ĐỊNH (1 dòng tinh gọn) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
-                <span className="text-amber-100/90 font-medium">Lật trang:</span>
-                <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
+                <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Lật trang:</span>
+                <div className="flex items-center gap-1 bg-[#efe5d6] dark:bg-black/40 p-0.5 rounded-lg border border-[#e2d5c3] dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => handleChangeDefaultMode('curl')}
                     className={`px-2 py-0.5 rounded text-[10.5px] font-bold transition-all cursor-pointer ${
                       readerDefaultMode === 'curl'
                         ? 'bg-amber-500 text-slate-950 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
                     }`}
                   >
                     Lật 3D
@@ -1198,7 +1211,7 @@ export default function WoodenBookshelf({
                     className={`px-2 py-0.5 rounded text-[10.5px] font-bold transition-all cursor-pointer ${
                       readerDefaultMode === 'roll'
                         ? 'bg-amber-500 text-slate-950 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
                     }`}
                   >
                     Trượt 3D
@@ -1209,7 +1222,7 @@ export default function WoodenBookshelf({
                     className={`px-2 py-0.5 rounded text-[10.5px] font-bold transition-all cursor-pointer ${
                       readerDefaultMode === 'scroll'
                         ? 'bg-amber-500 text-slate-950 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        : 'text-amber-900 dark:text-slate-400 hover:text-[#2c180c] dark:hover:text-white'
                     }`}
                   >
                     Cuộn dọc
@@ -1218,20 +1231,20 @@ export default function WoodenBookshelf({
               </div>
 
               {/* 3. ÂM THANH LẬT SÁCH (1 dòng tinh gọn có công tắc) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
                   {readerSoundEnabled ? (
-                    <Volume2 size={16} className="text-amber-400" />
+                    <Volume2 size={16} className="text-amber-700 dark:text-amber-400" />
                   ) : (
-                    <VolumeX size={16} className="text-slate-500" />
+                    <VolumeX size={16} className="text-slate-400 dark:text-slate-500" />
                   )}
-                  <span className="text-amber-100/90 font-medium">Âm thanh lật sách</span>
+                  <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Âm thanh lật sách</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleToggleSound}
                   className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-                    readerSoundEnabled ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+                    readerSoundEnabled ? 'bg-amber-500 justify-end' : 'bg-slate-400 dark:bg-slate-700 justify-start'
                   }`}
                   aria-label="Bật tắt âm thanh"
                 >
@@ -1240,16 +1253,16 @@ export default function WoodenBookshelf({
               </div>
 
               {/* 4. TỰ ĐỘNG NHỚ TRANG ĐỌC DỞ (1 dòng tinh gọn có công tắc) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <BookmarkCheck size={16} className="text-amber-400" />
-                  <span className="text-amber-100/90 font-medium">Tự nhớ trang đọc dở</span>
+                  <BookmarkCheck size={16} className="text-amber-700 dark:text-amber-400" />
+                  <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Tự nhớ trang đọc dở</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleToggleAutoResume}
                   className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-                    readerAutoResume ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+                    readerAutoResume ? 'bg-amber-500 justify-end' : 'bg-slate-400 dark:bg-slate-700 justify-start'
                   }`}
                   aria-label="Bật tắt tự nhớ trang"
                 >
@@ -1258,16 +1271,16 @@ export default function WoodenBookshelf({
               </div>
 
               {/* 5. HIỆN TÊN SÁCH DƯỚI CHÂN KỆ (1 dòng tinh gọn có công tắc) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <Type size={16} className="text-amber-400" />
-                  <span className="text-amber-100/90 font-medium">Hiện tên sách dưới chân kệ</span>
+                  <Type size={16} className="text-amber-700 dark:text-amber-400" />
+                  <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Hiện tên sách dưới chân kệ</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleToggleShowTitles}
                   className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-                    showBookTitles ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+                    showBookTitles ? 'bg-amber-500 justify-end' : 'bg-slate-400 dark:bg-slate-700 justify-start'
                   }`}
                   aria-label="Bật tắt hiện tên sách dưới chân kệ"
                 >
@@ -1276,16 +1289,16 @@ export default function WoodenBookshelf({
               </div>
 
               {/* 6. HIỆN TIẾN ĐỘ ĐỌC TRÊN BÌA (1 dòng tinh gọn có công tắc) */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-black/35 border border-white/5 whitespace-nowrap">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <BookmarkCheck size={16} className="text-amber-400" />
-                  <span className="text-amber-100/90 font-medium">Hiện tiến độ đọc trên bìa</span>
+                  <BookmarkCheck size={16} className="text-amber-700 dark:text-amber-400" />
+                  <span className="text-[#4a250e] dark:text-amber-100/90 font-medium">Hiện tiến độ đọc trên bìa</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleToggleShowProgress}
                   className={`w-10 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
-                    showProgress ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+                    showProgress ? 'bg-amber-500 justify-end' : 'bg-slate-400 dark:bg-slate-700 justify-start'
                   }`}
                   aria-label="Bật tắt hiện tiến độ đọc trên bìa"
                 >
@@ -1297,13 +1310,13 @@ export default function WoodenBookshelf({
               <Link
                 href="/da-luu"
                 onClick={() => setShowSettingsMenu(false)}
-                className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-100 whitespace-nowrap"
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 whitespace-nowrap"
               >
                 <div className="flex items-center gap-2">
-                  <Bookmark size={16} className="text-amber-400" />
+                  <Bookmark size={16} className="text-amber-700 dark:text-amber-400" />
                   <span>Dấu trang & Sách đã lưu</span>
                 </div>
-                <span className="text-[11px] text-amber-300 font-bold">Mở →</span>
+                <span className="text-[11px] text-amber-700 dark:text-amber-300 font-bold">Mở →</span>
               </Link>
 
               {/* 6. ĐỔI TÊN HIỂN THỊ (1 dòng) */}
@@ -1314,13 +1327,13 @@ export default function WoodenBookshelf({
                   setNameInput(userName === 'bạn' ? '' : userName);
                   setShowNameModal(true);
                 }}
-                className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-100 cursor-pointer whitespace-nowrap"
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 cursor-pointer whitespace-nowrap"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Edit2 size={16} className="text-amber-400 shrink-0" />
+                  <Edit2 size={16} className="text-amber-700 dark:text-amber-400 shrink-0" />
                   <span className="truncate">Tên bạn: {userName}</span>
                 </div>
-                <span className="text-[11px] text-amber-300 font-bold shrink-0 ml-2">Đổi</span>
+                <span className="text-[11px] text-amber-700 dark:text-amber-300 font-bold shrink-0 ml-2">Đổi</span>
               </button>
 
               {/* 7. CÀI APP RA MÀN HÌNH CHÍNH (PWA) (1 dòng) */}
@@ -1331,13 +1344,13 @@ export default function WoodenBookshelf({
                     setShowSettingsMenu(false);
                     onOpenPwaInstall();
                   }}
-                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-100 cursor-pointer whitespace-nowrap"
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center gap-2">
-                    <Smartphone size={16} className="text-amber-400" />
+                    <Smartphone size={16} className="text-amber-700 dark:text-amber-400" />
                     <span>Cài ứng dụng ra màn hình</span>
                   </div>
-                  <span className="text-[11px] text-slate-300">PWA</span>
+                  <span className="text-[11px] text-stone-500 dark:text-slate-300">PWA</span>
                 </button>
               )}
 
@@ -1349,18 +1362,18 @@ export default function WoodenBookshelf({
                     setShowSettingsMenu(false);
                     onOpenWelcome();
                   }}
-                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-100 cursor-pointer whitespace-nowrap"
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center gap-2">
-                    <BookOpen size={16} className="text-amber-400" />
+                    <BookOpen size={16} className="text-amber-700 dark:text-amber-400" />
                     <span>Lời ngỏ giới thiệu</span>
                   </div>
-                  <span className="text-[11px] text-slate-300">Xem</span>
+                  <span className="text-[11px] text-stone-500 dark:text-slate-300">Xem</span>
                 </button>
               )}
 
               {/* 9. KHỐI QUẢN TRỊ VIÊN (1 dòng) */}
-              <div className="h-px bg-white/10 my-0.5" />
+              <div className="h-px bg-[#e8dccb] dark:bg-white/10 my-0.5" />
               {isAdmin ? (
                 <>
                   {onOpenAdminSettings && (
@@ -1370,13 +1383,13 @@ export default function WoodenBookshelf({
                         setShowSettingsMenu(false);
                         onOpenAdminSettings();
                       }}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-200 cursor-pointer whitespace-nowrap"
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-200 cursor-pointer whitespace-nowrap"
                     >
                       <div className="flex items-center gap-2">
-                        <Settings size={16} className="text-amber-400" />
+                        <Settings size={16} className="text-amber-700 dark:text-amber-400" />
                         <span>Cài đặt hệ thống</span>
                       </div>
-                      <span className="text-[11px] text-amber-300 font-bold">Admin</span>
+                      <span className="text-[11px] text-amber-700 dark:text-amber-300 font-bold">Admin</span>
                     </button>
                   )}
                   {onOpenAddBookModal && (
@@ -1386,13 +1399,13 @@ export default function WoodenBookshelf({
                         setShowSettingsMenu(false);
                         onOpenAddBookModal();
                       }}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-200 cursor-pointer whitespace-nowrap"
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-200 cursor-pointer whitespace-nowrap"
                     >
                       <div className="flex items-center gap-2">
-                        <Plus size={16} className="text-amber-400" />
+                        <Plus size={16} className="text-amber-700 dark:text-amber-400" />
                         <span>Thêm sách mới</span>
                       </div>
-                      <span className="text-[11px] text-amber-300 font-bold">+Sách</span>
+                      <span className="text-[11px] text-amber-700 dark:text-amber-300 font-bold">+Sách</span>
                     </button>
                   )}
                   {onLogout && (
@@ -1402,13 +1415,13 @@ export default function WoodenBookshelf({
                         setShowSettingsMenu(false);
                         onLogout();
                       }}
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-red-500/20 text-red-300 transition-colors cursor-pointer whitespace-nowrap"
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-red-500/20 text-red-600 dark:text-red-300 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <div className="flex items-center gap-2">
-                        <LogOut size={16} className="text-red-400" />
+                        <LogOut size={16} className="text-red-500 dark:text-red-400" />
                         <span>Đăng xuất Quản trị</span>
                       </div>
-                      <span className="text-[11px] text-red-400 font-bold">Thoát</span>
+                      <span className="text-[11px] text-red-600 dark:text-red-400 font-bold">Thoát</span>
                     </button>
                   )}
                 </>
@@ -1416,31 +1429,31 @@ export default function WoodenBookshelf({
                 <Link
                   href="/dang-nhap"
                   onClick={() => setShowSettingsMenu(false)}
-                  className="flex items-center justify-between p-2 rounded-xl hover:bg-white/10 transition-colors text-amber-200 cursor-pointer whitespace-nowrap"
+                  className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-200 cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center gap-2">
-                    <Settings size={16} className="text-amber-400" />
+                    <Settings size={16} className="text-amber-700 dark:text-amber-400" />
                     <span>Đăng nhập Quản trị viên</span>
                   </div>
-                  <span className="text-[11px] text-amber-400 font-bold">Khóa</span>
+                  <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">Khóa</span>
                 </Link>
               )}
 
               {/* NÚT THOÁT PHẦN MỀM CÓ CẢNH BÁO (TRONG MENU CÀI ĐẶT) */}
-              <div className="h-px bg-white/10 my-0.5" />
+              <div className="h-px bg-[#e8dccb] dark:bg-white/10 my-0.5" />
               <button
                 type="button"
                 onClick={() => {
                   setShowSettingsMenu(false);
                   setShowExitConfirm(true);
                 }}
-                className="flex items-center justify-between p-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-200 transition-all cursor-pointer whitespace-nowrap active:scale-98"
+                className="flex items-center justify-between p-2 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-200 transition-all cursor-pointer whitespace-nowrap active:scale-98"
               >
                 <div className="flex items-center gap-2">
-                  <LogOut size={16} className="text-red-400" />
-                  <span className="font-bold text-red-200">Thoát phần mềm</span>
+                  <LogOut size={16} className="text-red-500 dark:text-red-400" />
+                  <span className="font-bold text-red-700 dark:text-red-200">Thoát phần mềm</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-500/20 text-red-300 border border-red-500/30 font-bold">
+                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30 font-bold">
                   Cảnh báo
                 </span>
               </button>
@@ -1458,27 +1471,27 @@ export default function WoodenBookshelf({
           onClick={() => setShowExitConfirm(false)}
         >
           <div
-            className="w-full max-w-[330px] rounded-2xl bg-gradient-to-b from-[#25170e] via-[#1f130b] to-[#140b06] border border-amber-600/40 p-5 text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
+            className="w-full max-w-[330px] rounded-2xl bg-gradient-to-b from-[#FAF6EF] via-[#F4ECE0] to-[#EAE0D0] dark:from-[#25170e] dark:via-[#1f130b] dark:to-[#140b06] border border-amber-800/20 dark:border-amber-600/40 p-5 text-[#2c180c] dark:text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Icon cảnh báo hình tam giác phát sáng */}
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500/25 to-red-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow-lg shadow-amber-900/30">
-              <AlertTriangle size={26} strokeWidth={2.4} className="text-amber-400 animate-pulse" />
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500/15 to-red-500/15 dark:from-amber-500/25 dark:to-red-500/20 border border-amber-500/30 dark:border-amber-500/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-lg shadow-amber-900/10 dark:shadow-amber-900/30">
+              <AlertTriangle size={26} strokeWidth={2.4} className="text-amber-600 dark:text-amber-400 animate-pulse" />
             </div>
 
             {/* Tiêu đề Cảnh báo */}
             <div className="flex flex-col gap-1">
-              <h3 className="text-[15px] font-black tracking-wide text-amber-100 uppercase">
+              <h3 className="text-[15px] font-black tracking-wide text-[#2c180c] dark:text-amber-100 uppercase">
                 Xác nhận thoát phần mềm
               </h3>
-              <p className="text-[12px] text-amber-200/85 leading-relaxed px-1">
+              <p className="text-[12px] text-[#6a4224] dark:text-amber-200/85 leading-relaxed px-1">
                 Bạn có chắc chắn muốn thoát khỏi ứng dụng đọc sách không?
               </p>
             </div>
 
             {/* Khối thông báo an toàn dữ liệu */}
-            <div className="w-full p-2 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-300/90 font-medium">
-              <CheckCircle2 size={13} className="shrink-0 text-emerald-400" />
+            <div className="w-full p-2 rounded-xl bg-emerald-50 dark:bg-black/40 border border-emerald-200/80 dark:border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-800 dark:text-emerald-300/90 font-medium">
+              <CheckCircle2 size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>Tiến độ đọc đã được lưu an toàn</span>
             </div>
 
@@ -1497,7 +1510,7 @@ export default function WoodenBookshelf({
               <button
                 type="button"
                 onClick={handleConfirmExit}
-                className="w-full py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-300 hover:text-red-200 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                className="w-full py-2.5 rounded-xl bg-red-100/80 hover:bg-red-200/80 dark:bg-red-950/40 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-300 font-bold text-xs transition-all cursor-pointer active:scale-95"
               >
                 Thoát phần mềm
               </button>
@@ -1533,14 +1546,14 @@ export default function WoodenBookshelf({
           onClick={() => setQuickPeekBook(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#25170e] to-[#170e08] border border-amber-900/60 p-4 sm:p-5 text-amber-100 shadow-2xl relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#FAF5ED] to-[#EFE5D6] dark:from-[#25170e] dark:to-[#170e08] border border-amber-900/20 dark:border-amber-900/60 p-4 sm:p-5 text-[#2c180c] dark:text-amber-100 shadow-2xl relative flex flex-col gap-3 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Nút Đóng */}
             <button
               type="button"
               onClick={() => setQuickPeekBook(null)}
-              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-[#6a4224] dark:text-slate-300 hover:text-[#2c180c] dark:hover:text-white flex items-center justify-center cursor-pointer transition-colors"
               aria-label="Đóng tóm tắt sách"
             >
               <X size={15} />
@@ -1556,17 +1569,17 @@ export default function WoodenBookshelf({
                 />
               </div>
               <div className="flex-1 min-w-0 pr-6">
-                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-1">
+                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 mb-1">
                   {quickPeekBook.category || quickPeekBook.tag || 'Tài liệu y khoa'}
                 </span>
-                <h4 className="text-sm sm:text-base font-black text-amber-100 leading-snug line-clamp-2">
+                <h4 className="text-sm sm:text-base font-black text-[#2c180c] dark:text-amber-100 leading-snug line-clamp-2">
                   {quickPeekBook.title}
                 </h4>
-                <p className="text-[11px] text-amber-300/80 mt-0.5">
+                <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 mt-0.5">
                   Tác giả: {quickPeekBook.author || 'Dr. Tùng'}
                 </p>
                 {bookProgressMap[quickPeekBook.title] && (
-                  <p className="text-[10px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 flex items-center gap-1">
                     <CheckCircle2 size={11} />
                     <span>
                       Tiến độ: Trang {bookProgressMap[quickPeekBook.title].page}/
@@ -1579,8 +1592,8 @@ export default function WoodenBookshelf({
             </div>
 
             {/* Mô tả tóm tắt nội dung */}
-            <div className="p-2.5 rounded-xl bg-black/40 border border-white/5 text-xs text-amber-200/90 leading-relaxed max-h-36 overflow-y-auto">
-              <p className="font-semibold text-amber-300 mb-1">✦ Giới thiệu chuyên sâu:</p>
+            <div className="p-2.5 rounded-xl bg-white/80 dark:bg-black/40 border border-[#e8dccb] dark:border-white/5 text-xs text-[#4a2810] dark:text-amber-200/90 leading-relaxed max-h-36 overflow-y-auto">
+              <p className="font-semibold text-amber-900 dark:text-amber-300 mb-1">✦ Giới thiệu chuyên sâu:</p>
               <p>
                 {quickPeekBook.description ||
                   'Tài liệu y khoa chuyên sâu được biên soạn công phu dành cho việc học tập và tự chăm sóc cơ thể chủ động.'}
@@ -1604,7 +1617,7 @@ export default function WoodenBookshelf({
               <button
                 type="button"
                 onClick={() => setQuickPeekBook(null)}
-                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[#4a2810] dark:text-slate-200 font-bold text-xs active:scale-95 transition-all cursor-pointer"
               >
                 Đóng
               </button>

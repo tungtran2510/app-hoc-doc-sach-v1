@@ -702,8 +702,12 @@ export default function SideBooksReaderModal({
         }`}
       >
         {/* TẦNG 1: TIÊU ĐỀ CUỐN SÁCH NẰM SÁT MÉP TRÊN CÙNG */}
-        <div className="w-full px-3 py-1 flex items-center justify-center border-b border-white/5 bg-black/25">
-          <span className="text-[11px] sm:text-[12px] font-bold text-amber-200/90 tracking-wide truncate max-w-[360px] sm:max-w-xl text-center">
+        <div className={`w-full px-3 py-1 flex items-center justify-center border-b ${
+          readingTheme === 'ivory' ? 'border-black/5 bg-[#ece5d8]' : 'border-white/5 bg-black/25'
+        }`}>
+          <span className={`text-[11px] sm:text-[12px] font-bold tracking-wide truncate max-w-[360px] sm:max-w-xl text-center ${
+            readingTheme === 'ivory' ? 'text-[#3d2210]' : 'text-amber-200/90'
+          }`}>
             {title} {author ? `· ${author}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
           </span>
         </div>
@@ -1129,7 +1133,11 @@ export default function SideBooksReaderModal({
                   readerRef.current?.flipPrev();
                 }
               }}
-              className="px-3 py-1 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md border border-white/15 text-amber-300/90 hover:text-amber-200 active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none"
+              className={`px-3 py-1 rounded-full ${
+                readingTheme === 'ivory'
+                  ? 'bg-[#ece4d6] hover:bg-[#e2d8c7] text-[#3d2210] border-[#d8ccba]'
+                  : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
+              } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
               title={currentPage <= 0 ? 'Thoát về kệ sách' : 'Về trang trước'}
               aria-label="Về trang"
             >
@@ -1137,7 +1145,11 @@ export default function SideBooksReaderModal({
               <span>Về trang</span>
             </button>
 
-            <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/10 text-amber-200 text-xs font-mono font-bold shadow-inner">
+            <div className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full ${
+              readingTheme === 'ivory'
+                ? 'bg-[#ece4d6] border-[#d8ccba] text-[#3d2210]'
+                : 'bg-white/10 border-white/10 text-amber-200'
+            } border text-xs font-mono font-bold shadow-inner`}>
               <span>Trang {currentPage + 1}</span>
               <span className="opacity-40">/</span>
               <span>{totalPages}</span>
@@ -1152,7 +1164,11 @@ export default function SideBooksReaderModal({
                   readerRef.current?.flipNext();
                 }
               }}
-              className="px-3 py-1 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-md border border-white/15 text-amber-300/90 hover:text-amber-200 active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none"
+              className={`px-3 py-1 rounded-full ${
+                readingTheme === 'ivory'
+                  ? 'bg-[#ece4d6] hover:bg-[#e2d8c7] text-[#3d2210] border-[#d8ccba]'
+                  : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
+              } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
               title={currentPage >= totalPages - 1 ? 'Hoàn thành & Thoát sách' : 'Mở trang sau'}
               aria-label="Mở trang"
             >
@@ -1163,7 +1179,9 @@ export default function SideBooksReaderModal({
 
           {/* HÀNG DƯỚI: THANH TRƯỢT TUA NHANH */}
           <div className="w-full max-w-md flex items-center gap-2 px-1 pt-0.5">
-            <span className="text-[10px] font-mono text-slate-400 w-5 text-right">
+            <span className={`text-[10px] font-mono w-5 text-right ${
+              readingTheme === 'ivory' ? 'text-[#6a4224]' : 'text-slate-400'
+            }`}>
               1
             </span>
             <input
@@ -1176,10 +1194,14 @@ export default function SideBooksReaderModal({
                 setCurrentPage(val);
                 readerRef.current?.goToPage(val);
               }}
-              className="flex-1 accent-amber-500 h-1.5 bg-slate-700/80 rounded-lg cursor-pointer"
+              className={`flex-1 accent-amber-600 h-1.5 ${
+                readingTheme === 'ivory' ? 'bg-[#d8ccba]' : 'bg-slate-700/80'
+              } rounded-lg cursor-pointer`}
               aria-label="Xem nhanh trang"
             />
-            <span className="text-[10px] font-mono text-slate-400 w-5">
+            <span className={`text-[10px] font-mono w-5 ${
+              readingTheme === 'ivory' ? 'text-[#6a4224]' : 'text-slate-400'
+            }`}>
               {totalPages}
             </span>
           </div>
