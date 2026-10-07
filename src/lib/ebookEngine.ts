@@ -381,6 +381,7 @@ export async function extractCbzImages(arrayBuffer: ArrayBuffer): Promise<string
 export interface PdfPageProvider {
   numPages: number;
   getPageUrl: (pageNum1Based: number) => Promise<string>;
+  getPageText: (pageNum1Based: number) => Promise<string>;
   destroy: () => void;
 }
 
@@ -449,6 +450,22 @@ export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProv
       }
 
       return url;
+    },
+    getPageText: async (pageNum: number) => {
+      try {
+        const clamped = Math.max(1, Math.min(pageNum, pdf.numPages));
+        const page = await pdf.getPage(clamped);
+        const content = await page.getTextContent();
+        const text = content.items
+          .map((item: any) => item.str || '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return text;
+      } catch (err) {
+        console.warn('Không trích xuất được text trang PDF:', err);
+        return '';
+      }
     },
     destroy: () => {
       cache.clear();

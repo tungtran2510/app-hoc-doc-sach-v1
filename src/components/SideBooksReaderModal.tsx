@@ -17,11 +17,14 @@ import {
   Minimize,
   Loader2,
   Layers,
+  Headphones,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
 } from './SideBooksReaderEngine';
 import EpubReaderView from './EpubReaderView';
+import BookAudioPlayerBar from './BookAudioPlayerBar';
+import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import {
   detectEbookFormat,
   createPdfPageProvider,
@@ -59,11 +62,13 @@ export default function SideBooksReaderModal({
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
   const [readingTheme, setReadingTheme] = useState<'dark' | 'sepia' | 'ivory'>('sepia');
   const [readingMode, setReadingMode] = useState<'curl' | 'roll' | 'scroll'>('curl');
-  const [showHud, setShowHud] = useState<boolean>(false);
+  const [showHud, setShowHud] = useState<boolean>(true);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
   const [showTocModal, setShowTocModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [isPdfAudioOpen, setIsPdfAudioOpen] = useState<boolean>(false);
+  const [audioNotice, setAudioNotice] = useState<string | null>(null);
 
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
@@ -280,7 +285,7 @@ export default function SideBooksReaderModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setShowHud(false);
+    setShowHud(true);
     try {
       const savedTheme = localStorage.getItem('reader_theme_pref');
       if (savedTheme && ['dark', 'sepia', 'ivory'].includes(savedTheme)) {
@@ -319,7 +324,51 @@ export default function SideBooksReaderModal({
     } catch {}
   };
 
+  // Khi đóng modal hoặc thoát sách thì dừng audio
+  useEffect(() => {
+    if (!isOpen) {
+      bookAudioPlayer.stop();
+      setIsPdfAudioOpen(false);
+    }
+  }, [isOpen]);
+
+  const startPdfPageAudio = async (pageNum1Based: number) => {
+    if (!pdfProvider) return;
+    try {
+      const text = await pdfProvider.getPageText(pageNum1Based);
+      if (!text || text.length < 5) {
+        setAudioNotice('Trang PDF này không chứa văn bản số hoá hoặc là bản scan ảnh.');
+        setTimeout(() => setAudioNotice(null), 3500);
+        return;
+      }
+      const paras = extractParagraphsFromPdfText(text);
+      bookAudioPlayer.setQueue(paras, 0);
+      bookAudioPlayer.play(0);
+    } catch (err) {
+      console.warn('Lỗi đọc audio trang PDF:', err);
+    }
+  };
+
+  const togglePdfAudio = () => {
+    if (isPdfAudioOpen) {
+      bookAudioPlayer.stop();
+      setIsPdfAudioOpen(false);
+    } else {
+      setIsPdfAudioOpen(true);
+      startPdfPageAudio(currentPage + 1);
+    }
+  };
+
+  // Khi lật trang trong chế độ Sách Nói PDF
+  useEffect(() => {
+    if (isPdfAudioOpen && isPdf && pdfProvider) {
+      startPdfPageAudio(currentPage + 1);
+    }
+  }, [currentPage, isPdfAudioOpen, isPdf, pdfProvider]);
+
   const handleExitBook = () => {
+    bookAudioPlayer.stop();
+    setIsPdfAudioOpen(false);
     try {
       localStorage.setItem(`last_read_page_${title}`, currentPage.toString());
       localStorage.setItem('last_read_book_title', title);
@@ -478,6 +527,24 @@ export default function SideBooksReaderModal({
                 <ZoomIn size={16} strokeWidth={2.4} />
               </button>
             </div>
+          )}
+
+          {/* Nút Sách Nói (Audio Book) cho tài liệu PDF */}
+          {isPdf && (
+            <button
+              type="button"
+              onClick={togglePdfAudio}
+              className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold ${
+                isPdfAudioOpen
+                  ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+              }`}
+              title={isPdfAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc văn bản trang PDF)'}
+              aria-label="Sách nói AI"
+            >
+              <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-400'} />
+              <span className="hidden sm:inline">Sách nói</span>
+            </button>
           )}
 
           <button
@@ -754,6 +821,32 @@ export default function SideBooksReaderModal({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* THANH PHÁT SÁCH NÓI AI NỔI CHO TÀI LIỆU PDF */}
+      {isPdfAudioOpen && isPdf && (
+        <BookAudioPlayerBar
+          chapterTitle={`Trang ${currentPage + 1} / ${totalPages}`}
+          onClose={() => {
+            setIsPdfAudioOpen(false);
+            bookAudioPlayer.stop();
+          }}
+          onAutoNextChapter={() => {
+            if (currentPage < totalPages - 1) {
+              readerRef.current?.flipNext();
+            } else {
+              setIsPdfAudioOpen(false);
+              bookAudioPlayer.stop();
+            }
+          }}
+        />
+      )}
+
+      {/* TOAST THÔNG BÁO SÁCH NÓI */}
+      {audioNotice && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-xl border border-amber-300 animate-in fade-in slide-in-from-top-2">
+          {audioNotice}
         </div>
       )}
     </div>

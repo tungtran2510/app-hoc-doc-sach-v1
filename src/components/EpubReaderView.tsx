@@ -13,8 +13,11 @@ import {
   AlertCircle,
   X,
   BookOpen,
+  Headphones,
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
+import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
+import BookAudioPlayerBar from './BookAudioPlayerBar';
 
 interface EpubReaderViewProps {
   fileUrl: string;
@@ -42,6 +45,8 @@ export default function EpubReaderView({
   const [fontFamily, setFontFamily] = useState<'serif' | 'sans'>('serif');
   const [showToc, setShowToc] = useState(false);
   const [localTheme, setLocalTheme] = useState<'dark' | 'sepia' | 'ivory'>(readingTheme);
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
+  const [activeParagraphIdx, setActiveParagraphIdx] = useState<number | null>(null);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -96,13 +101,94 @@ export default function EpubReaderView({
   const currentChapter: EpubChapter | undefined = parsedBook?.chapters[currentChapterIdx];
   const totalChapters = parsedBook?.chapters.length || 1;
 
+  // Dọn dẹp âm thanh khi đóng giao diện
+  useEffect(() => {
+    return () => {
+      bookAudioPlayer.stop();
+    };
+  }, []);
+
+  // Xử lý highlight và auto-scroll đoạn văn bản đang được đọc
+  const highlightParagraphInDom = (idx: number) => {
+    if (!contentRef.current) return;
+    const elements = contentRef.current.querySelectorAll(
+      'article .epub-rendered-content p, article .epub-rendered-content h1, article .epub-rendered-content h2, article .epub-rendered-content h3, article .epub-rendered-content h4, article .epub-rendered-content h5, article .epub-rendered-content h6, article .epub-rendered-content li, article .epub-rendered-content blockquote'
+    );
+    elements.forEach((el, i) => {
+      if (i === idx) {
+        el.classList.add('audio-active-reading');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        el.classList.remove('audio-active-reading');
+      }
+    });
+  };
+
+  const clearParagraphHighlight = () => {
+    if (!contentRef.current) return;
+    const elements = contentRef.current.querySelectorAll('.audio-active-reading');
+    elements.forEach((el) => el.classList.remove('audio-active-reading'));
+    setActiveParagraphIdx(null);
+  };
+
+  const startChapterAudio = (startIdx: number = 0) => {
+    if (!currentChapter) return;
+    const paras = extractParagraphsFromHtml(currentChapter.htmlContent);
+    if (paras.length === 0) {
+      const raw = contentRef.current?.textContent?.trim() || '';
+      if (raw) {
+        bookAudioPlayer.setQueue([raw], 0);
+        bookAudioPlayer.play(0);
+      }
+      return;
+    }
+    bookAudioPlayer.setQueue(paras, startIdx);
+    bookAudioPlayer.play(startIdx);
+  };
+
+  const toggleAudioBook = () => {
+    if (isAudioOpen) {
+      bookAudioPlayer.stop();
+      setIsAudioOpen(false);
+      clearParagraphHighlight();
+    } else {
+      setIsAudioOpen(true);
+      startChapterAudio(0);
+    }
+  };
+
+  // Lắng nghe sự kiện chuyển câu/đoạn từ player
+  useEffect(() => {
+    if (!isAudioOpen) return;
+
+    bookAudioPlayer.onParagraphChange((idx) => {
+      setActiveParagraphIdx(idx);
+      highlightParagraphInDom(idx);
+    });
+
+    return () => {
+      clearParagraphHighlight();
+    };
+  }, [isAudioOpen, currentChapterIdx]);
+
   const goToChapter = (idx: number) => {
     if (!parsedBook || idx < 0 || idx >= parsedBook.chapters.length) return;
     setCurrentChapterIdx(idx);
     setShowToc(false);
+    clearParagraphHighlight();
     onPageProgress?.(idx + 1, parsedBook.chapters.length);
     if (contentRef.current) {
       contentRef.current.scrollTop = 0;
+    }
+    if (isAudioOpen) {
+      setTimeout(() => {
+        const nextCh = parsedBook.chapters[idx];
+        if (nextCh) {
+          const paras = extractParagraphsFromHtml(nextCh.htmlContent);
+          bookAudioPlayer.setQueue(paras, 0);
+          bookAudioPlayer.play(0);
+        }
+      }, 150);
     }
   };
 
@@ -210,8 +296,23 @@ export default function EpubReaderView({
           </p>
         </div>
 
-        {/* Cụm chỉnh Cỡ chữ & Theme */}
+        {/* Cụm chỉnh Cỡ chữ & Theme & Sách Nói */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Nút Sách Nói AI 🎧 */}
+          <button
+            type="button"
+            onClick={toggleAudioBook}
+            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
+              isAudioOpen
+                ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                : 'bg-black/5 dark:bg-white/10 hover:bg-black/10'
+            }`}
+            title={isAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc tiếng Việt tự động)'}
+          >
+            <Headphones size={14} className={isAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-500'} />
+            <span className="hidden xs:inline">Sách nói</span>
+          </button>
+
           {/* Cỡ chữ */}
           <div className="flex items-center bg-black/5 dark:bg-white/10 rounded-lg p-0.5">
             <button
@@ -249,14 +350,31 @@ export default function EpubReaderView({
       <div
         ref={contentRef}
         onClick={(e) => {
-          // Bấm trung tâm để toggle HUD
           const target = e.target as HTMLElement;
-          if (target.tagName !== 'A' && target.tagName !== 'BUTTON') {
-            const w = window.innerWidth;
-            const x = e.clientX;
-            if (x > w * 0.35 && x < w * 0.65) {
-              onCenterClick?.();
+          if (target.tagName === 'A' || target.tagName === 'BUTTON') return;
+
+          // Nếu đang bật sách nói và click vào 1 thẻ đoạn văn, chuyển giọng đọc ngay tới đoạn đó
+          if (isAudioOpen && contentRef.current) {
+            const elements = Array.from(
+              contentRef.current.querySelectorAll(
+                'article .epub-rendered-content p, article .epub-rendered-content h1, article .epub-rendered-content h2, article .epub-rendered-content h3, article .epub-rendered-content h4, article .epub-rendered-content h5, article .epub-rendered-content h6, article .epub-rendered-content li, article .epub-rendered-content blockquote'
+              )
+            );
+            const clickedEl = target.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote');
+            if (clickedEl) {
+              const idx = elements.indexOf(clickedEl as Element);
+              if (idx !== -1) {
+                bookAudioPlayer.play(idx);
+                return;
+              }
             }
+          }
+
+          // Bấm trung tâm để toggle HUD
+          const w = window.innerWidth;
+          const x = e.clientX;
+          if (x > w * 0.35 && x < w * 0.65) {
+            onCenterClick?.();
           }
         }}
         className="flex-1 overflow-y-auto px-4 sm:px-12 md:px-20 lg:px-32 py-6 sm:py-10 max-w-4xl mx-auto w-full scroll-smooth"
@@ -370,6 +488,37 @@ export default function EpubReaderView({
           </div>
         </div>
       )}
+
+      {/* THANH PHÁT SÁCH NÓI AI NỔI */}
+      {isAudioOpen && (
+        <BookAudioPlayerBar
+          chapterTitle={currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
+          onClose={() => {
+            setIsAudioOpen(false);
+            clearParagraphHighlight();
+          }}
+          onAutoNextChapter={() => {
+            if (currentChapterIdx < totalChapters - 1) {
+              goToChapter(currentChapterIdx + 1);
+            } else {
+              setIsAudioOpen(false);
+              clearParagraphHighlight();
+            }
+          }}
+        />
+      )}
+
+      {/* Hiệu ứng Highlight cho đoạn văn bản đang đọc */}
+      <style jsx global>{`
+        .audio-active-reading {
+          background-color: rgba(245, 158, 11, 0.16) !important;
+          border-left: 4px solid #f59e0b !important;
+          padding-left: 12px !important;
+          border-radius: 8px !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+      `}</style>
     </div>
   );
 }
