@@ -69,7 +69,7 @@ export default function HomeSectionsClient({
   );
   const [welcomeMessage, setWelcomeMessage] = useState(
     initialWelcomeMessage ||
-      'Hi vọng nền tảng học hiểu cơ thể và chăm sóc sức khỏe chủ động này sẽ giúp bạn hiểu sâu hơn về cơ thể mình, nuôi dưỡng hệ cơ xương khớp và sống khỏe mỗi ngày.'
+      'Chào mừng bạn đến với không gian đọc sách điện tử chuyên nghiệp. Nơi lưu trữ, nghiên cứu và đọc các tài liệu, sách điện tử chuyên sâu với trải nghiệm lật trang sống động, tiện ích ghi chú thông minh và trợ lý AI đồng hành.'
   );
   const [welcomeVideoUrl, setWelcomeVideoUrl] = useState(initialWelcomeVideoUrl || '');
 
