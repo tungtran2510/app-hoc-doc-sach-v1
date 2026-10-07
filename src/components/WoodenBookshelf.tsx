@@ -62,6 +62,24 @@ interface WoodenBookshelfProps {
   onLogout?: () => void;
 }
 
+const getBookFormatBadge = (book: RecommendedBook) => {
+  const lowerTag = (book.badge_tag || book.tag || '').toLowerCase();
+  const lowerName = (book.file_name || book.file_url || book.pdf_url || '').toLowerCase();
+  if (lowerTag.includes('epub') || lowerName.endsWith('.epub')) {
+    return { label: 'EPUB', color: 'bg-emerald-600/90 text-white border-emerald-400/40' };
+  }
+  if (lowerTag.includes('cbz') || lowerName.endsWith('.cbz')) {
+    return { label: 'CBZ', color: 'bg-purple-600/90 text-white border-purple-400/40' };
+  }
+  if (lowerTag.includes('txt') || lowerName.endsWith('.txt')) {
+    return { label: 'TXT', color: 'bg-stone-700/90 text-white border-stone-400/40' };
+  }
+  if (lowerTag.includes('pdf') || lowerName.endsWith('.pdf')) {
+    return { label: 'PDF', color: 'bg-rose-600/90 text-white border-rose-400/40' };
+  }
+  return { label: '3D', color: 'bg-amber-600/90 text-white border-amber-400/40' };
+};
+
 export default function WoodenBookshelf({
   books,
   isAdmin = false,
@@ -814,6 +832,17 @@ export default function WoodenBookshelf({
                         >
                           <Info size={11} strokeWidth={2.4} />
                         </button>
+                        {/* BADGE ĐỊNH DẠNG SÁCH (PDF, EPUB, CBZ, 3D, TXT) */}
+                        {(() => {
+                          const fmt = getBookFormatBadge(book);
+                          return (
+                            <span
+                              className={`absolute bottom-2 right-1.5 z-20 px-1.5 py-0.5 rounded text-[8px] font-mono font-black uppercase tracking-wider shadow-md border pointer-events-none backdrop-blur-xs ${fmt.color}`}
+                            >
+                              {fmt.label}
+                            </span>
+                          );
+                        })()}
                         {/* VẠCH TIẾN ĐỘ ĐỌC Ở CHÂN BÌA */}
                         {showProgress && prog && prog.percent > 0 && (
                           <div className="absolute bottom-0 inset-x-0 h-1 bg-black/75 z-15 pointer-events-none">

@@ -23,6 +23,10 @@ export async function GET() {
           badge_tag: b.badge_tag || b.tag || 'NÊN ĐỌC',
           pages_count: pages.length,
           pages: pages,
+          file_url: b.file_url || null,
+          pdf_url: b.pdf_url || null,
+          file_name: b.file_name || null,
+          category: b.category || null,
         };
       }),
     };
