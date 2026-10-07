@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,13 +21,23 @@ import {
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
 import { offlineStorage } from '../lib/offlineStorage';
+import {
+  TypographySettings,
+  DEFAULT_TYPOGRAPHY,
+  getStoredTypography,
+  applyBionicToHtml,
+  getFontFamilyClass,
+} from '../lib/typographyEngine';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
+import ReaderTypographyModal from './ReaderTypographyModal';
 
 interface EpubReaderViewProps {
   fileUrl: string;
   bookTitle?: string;
   author?: string | null;
   readingTheme?: 'dark' | 'sepia' | 'ivory';
+  typographySettings?: TypographySettings;
+  onOpenTypographyModal?: () => void;
   onCenterClick?: () => void;
   onPageProgress?: (currentChapter: number, totalChapters: number) => void;
   onOpenAiCopilot?: (selectedText?: string) => void;
@@ -39,6 +49,8 @@ export default function EpubReaderView({
   bookTitle,
   author,
   readingTheme = 'sepia',
+  typographySettings,
+  onOpenTypographyModal,
   onCenterClick,
   onPageProgress,
   onOpenAiCopilot,
@@ -48,13 +60,14 @@ export default function EpubReaderView({
   const [error, setError] = useState<string | null>(null);
   const [parsedBook, setParsedBook] = useState<ParsedEpubBook | null>(null);
   const [currentChapterIdx, setCurrentChapterIdx] = useState(0);
-  const [fontSize, setFontSize] = useState(18); // px
-  const [lineHeight, setLineHeight] = useState(1.8);
-  const [fontFamily, setFontFamily] = useState<'serif' | 'sans'>('serif');
+  const [localTypography, setLocalTypography] = useState<TypographySettings>(() => getStoredTypography());
+  const [showTypographyModal, setShowTypographyModal] = useState(false);
   const [showToc, setShowToc] = useState(false);
   const [localTheme, setLocalTheme] = useState<'dark' | 'sepia' | 'ivory'>(readingTheme);
   const [isAudioOpen, setIsAudioOpen] = useState(false);
   const [activeParagraphIdx, setActiveParagraphIdx] = useState<number | null>(null);
+
+  const activeTypography = typographySettings || localTypography;
 
   // State bôi đen văn bản & Floating Tooltip Hỏi AI
   const [selectedText, setSelectedText] = useState<string | null>(null);
@@ -324,6 +337,15 @@ export default function EpubReaderView({
     );
   }
 
+  // Xử lý nội dung chương với Bionic Reading nếu được kích hoạt
+  const renderedContent = useMemo(() => {
+    if (!currentChapter?.htmlContent) return '';
+    if (activeTypography.bionicReading) {
+      return applyBionicToHtml(currentChapter.htmlContent, activeTypography.bionicIntensity);
+    }
+    return currentChapter.htmlContent;
+  }, [currentChapter?.htmlContent, activeTypography.bionicReading, activeTypography.bionicIntensity]);
+
   return (
     <div
       className={`w-full h-full flex flex-col relative select-text transition-colors duration-200 ${themeStyles[localTheme]}`}
@@ -383,35 +405,29 @@ export default function EpubReaderView({
             </button>
           )}
 
-          {/* Cỡ chữ */}
-          <div className="flex items-center bg-black/5 dark:bg-white/10 rounded-lg p-0.5">
-            <button
-              type="button"
-              onClick={() => setFontSize((s) => Math.max(14, s - 2))}
-              className="w-7 h-7 flex items-center justify-center font-bold hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer"
-              title="Giảm cỡ chữ"
-            >
-              A-
-            </button>
-            <span className="px-1 text-[11px] font-mono font-bold">{fontSize}</span>
-            <button
-              type="button"
-              onClick={() => setFontSize((s) => Math.min(28, s + 2))}
-              className="w-7 h-7 flex items-center justify-center font-bold hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer"
-              title="Tăng cỡ chữ"
-            >
-              A+
-            </button>
-          </div>
-
-          {/* Phông chữ Serif / Sans */}
+          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa */}
           <button
             type="button"
-            onClick={() => setFontFamily((f) => (f === 'serif' ? 'sans' : 'serif'))}
-            className="w-7 h-7 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center font-bold text-[11px] cursor-pointer"
-            title={fontFamily === 'serif' ? 'Đổi sang phông Sans' : 'Đổi sang phông Serif'}
+            onClick={() => {
+              if (onOpenTypographyModal) {
+                onOpenTypographyModal();
+              } else {
+                setShowTypographyModal(true);
+              }
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all font-bold text-xs cursor-pointer active:scale-95 ${
+              activeTypography.bionicReading
+                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs'
+                : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 border-transparent'
+            }`}
+            title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
+            aria-label="Cài đặt phông chữ và Bionic reading"
           >
-            {fontFamily === 'serif' ? 'Serif' : 'Sans'}
+            <Type size={13} />
+            <span>Aa</span>
+            {activeTypography.bionicReading && (
+              <Sparkles size={12} className="text-amber-500 animate-pulse" />
+            )}
           </button>
         </div>
       </div>
@@ -451,12 +467,13 @@ export default function EpubReaderView({
       >
         {currentChapter ? (
           <article
-            className={`prose prose-base sm:prose-lg max-w-none leading-relaxed transition-all ${
-              fontFamily === 'serif' ? 'font-serif' : 'font-sans'
-            }`}
+            className={`prose prose-base sm:prose-lg max-w-none leading-relaxed transition-all ${getFontFamilyClass(
+              activeTypography.fontFamily
+            )}`}
             style={{
-              fontSize: `${fontSize}px`,
-              lineHeight: lineHeight,
+              fontSize: `${activeTypography.fontSize}px`,
+              lineHeight: activeTypography.lineHeight,
+              textAlign: activeTypography.textAlign,
             }}
           >
             <h1
@@ -465,10 +482,10 @@ export default function EpubReaderView({
               {currentChapter.title}
             </h1>
 
-            {/* Nội dung chương HTML đã làm sạch */}
+            {/* Nội dung chương HTML đã xử lý Bionic Reading */}
             <div
               className="epub-rendered-content space-y-4"
-              dangerouslySetInnerHTML={{ __html: currentChapter.htmlContent }}
+              dangerouslySetInnerHTML={{ __html: renderedContent }}
             />
           </article>
         ) : (
@@ -622,6 +639,15 @@ export default function EpubReaderView({
           }}
         />
       )}
+
+      {/* MODAL CÀI ĐẶT PHÔNG CHỮ & BIONIC READING */}
+      <ReaderTypographyModal
+        isOpen={showTypographyModal}
+        onClose={() => setShowTypographyModal(false)}
+        currentSettings={activeTypography}
+        onChange={(newSettings) => setLocalTypography(newSettings)}
+        readingTheme={localTheme === 'dark' ? 'dark' : localTheme === 'sepia' ? 'sepia' : 'light'}
+      />
 
       {/* Hiệu ứng Highlight cho đoạn văn bản đang đọc */}
       <style jsx global>{`

@@ -23,6 +23,7 @@ import {
   Sparkles,
   Search,
   BookMarked,
+  Type,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
@@ -31,10 +32,12 @@ import EpubReaderView from './EpubReaderView';
 import ReaderAiCopilot from './ReaderAiCopilot';
 import ReaderNotesModal from './ReaderNotesModal';
 import ReaderSearchModal from './ReaderSearchModal';
+import ReaderTypographyModal from './ReaderTypographyModal';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import { readingNotesStorage } from '../lib/readingNotes';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
+import { TypographySettings, getStoredTypography } from '../lib/typographyEngine';
 import {
   detectEbookFormat,
   createPdfPageProvider,
@@ -97,6 +100,10 @@ export default function SideBooksReaderModal({
 
   // State Tìm kiếm toàn văn trong sách
   const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
+
+  // State Cài đặt Phông chữ & Bionic Reading
+  const [typographySettings, setTypographySettings] = useState<TypographySettings>(() => getStoredTypography());
+  const [showTypographyModal, setShowTypographyModal] = useState<boolean>(false);
 
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
@@ -714,6 +721,25 @@ export default function SideBooksReaderModal({
             )}
           </button>
 
+          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa */}
+          <button
+            type="button"
+            onClick={() => setShowTypographyModal(true)}
+            className={`h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative ${
+              typographySettings.bionicReading
+                ? 'bg-amber-500/25 text-amber-300 border-amber-500/50 shadow-xs'
+                : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
+            }`}
+            title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
+            aria-label="Cài đặt phông chữ và Bionic reading"
+          >
+            <Type size={14} className="text-amber-400" />
+            <span className="font-serif">Aa</span>
+            {typographySettings.bionicReading && (
+              <Sparkles size={11} className="text-amber-400 animate-pulse" />
+            )}
+          </button>
+
           {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
           {Boolean(activeFileUrl) && (
             <button
@@ -863,6 +889,8 @@ export default function SideBooksReaderModal({
             bookTitle={title}
             author={author}
             readingTheme={readingTheme}
+            typographySettings={typographySettings}
+            onOpenTypographyModal={() => setShowTypographyModal(true)}
             onCenterClick={toggleHud}
             onOpenAiCopilot={(selText) => openAiCopilot(selText)}
             onOpenNotesModal={(selText) => {
@@ -1102,6 +1130,15 @@ export default function SideBooksReaderModal({
           setCurrentPage(p0);
           readerRef.current?.goToPage(p0);
         }}
+      />
+
+      {/* 8. MODAL CÀI ĐẶT PHÔNG CHỮ & BIONIC READING */}
+      <ReaderTypographyModal
+        isOpen={showTypographyModal}
+        onClose={() => setShowTypographyModal(false)}
+        currentSettings={typographySettings}
+        onChange={(newSettings) => setTypographySettings(newSettings)}
+        readingTheme={readingTheme === 'dark' ? 'dark' : readingTheme === 'sepia' ? 'sepia' : 'light'}
       />
     </div>
   );
