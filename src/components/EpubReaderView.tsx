@@ -16,6 +16,7 @@ import {
   Headphones,
   Sparkles,
   Volume2,
+  Edit3,
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
@@ -30,6 +31,7 @@ interface EpubReaderViewProps {
   onCenterClick?: () => void;
   onPageProgress?: (currentChapter: number, totalChapters: number) => void;
   onOpenAiCopilot?: (selectedText?: string) => void;
+  onOpenNotesModal?: (selectedText?: string) => void;
 }
 
 export default function EpubReaderView({
@@ -40,6 +42,7 @@ export default function EpubReaderView({
   onCenterClick,
   onPageProgress,
   onOpenAiCopilot,
+  onOpenNotesModal,
 }: EpubReaderViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -573,6 +576,19 @@ export default function EpubReaderView({
             <Sparkles size={11} className="text-slate-950" />
             <span>Hỏi AI ✨</span>
           </button>
+          {onOpenNotesModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenNotesModal(selectedText);
+                setBubbleCoords(null);
+              }}
+              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+            >
+              <Edit3 size={11} />
+              <span>Ghi chú</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

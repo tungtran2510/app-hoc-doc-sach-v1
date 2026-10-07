@@ -21,13 +21,18 @@ import {
   Zap,
   CheckCircle2,
   Sparkles,
+  Search,
+  BookMarked,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
 } from './SideBooksReaderEngine';
 import EpubReaderView from './EpubReaderView';
 import ReaderAiCopilot from './ReaderAiCopilot';
+import ReaderNotesModal from './ReaderNotesModal';
+import ReaderSearchModal from './ReaderSearchModal';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
+import { readingNotesStorage } from '../lib/readingNotes';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 import {
@@ -85,6 +90,14 @@ export default function SideBooksReaderModal({
   const [currentPageText, setCurrentPageText] = useState<string | null>(null);
   const [copilotSelectedText, setCopilotSelectedText] = useState<string | null>(null);
 
+  // State Sổ tay ghi chú & Thẻ Flashcard 3D
+  const [showNotesModal, setShowNotesModal] = useState<boolean>(false);
+  const [notesModalInitialText, setNotesModalInitialText] = useState<string | null>(null);
+  const [notesCount, setNotesCount] = useState<number>(0);
+
+  // State Tìm kiếm toàn văn trong sách
+  const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
+
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
   const activeFormat = detectEbookFormat(fileName || activeFileUrl);
@@ -131,6 +144,14 @@ export default function SideBooksReaderModal({
       });
     }
   }, [currentPage, isAiCopilotOpen, isPdf, pdfProvider]);
+
+  // Đồng bộ số lượng ghi chú của cuốn sách
+  useEffect(() => {
+    if (isOpen && title) {
+      const list = readingNotesStorage.getNotes(title);
+      setNotesCount(list.length);
+    }
+  }, [isOpen, title, showNotesModal]);
 
   // 1. Xử lý nạp động PDF khi mở sách
   useEffect(() => {
@@ -662,6 +683,37 @@ export default function SideBooksReaderModal({
             <span className="hidden sm:inline">Hỏi AI</span>
           </button>
 
+          {/* Nút Tìm kiếm toàn văn trong sách */}
+          <button
+            type="button"
+            onClick={() => setShowSearchModal(true)}
+            className="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold"
+            title="Tìm kiếm từ khóa trong cuốn sách"
+            aria-label="Tìm kiếm trong sách"
+          >
+            <Search size={15} />
+          </button>
+
+          {/* Nút Sổ tay Ghi chú & Thẻ Flashcard 3D */}
+          <button
+            type="button"
+            onClick={() => {
+              setNotesModalInitialText(null);
+              setShowNotesModal(true);
+            }}
+            className="h-7.5 sm:h-8 px-2 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative"
+            title="Sổ tay ghi chú & Thẻ ghi nhớ Flashcard 3D"
+            aria-label="Sổ tay và Flashcard"
+          >
+            <BookMarked size={14} className="text-amber-400" />
+            <span className="hidden md:inline">Sổ tay</span>
+            {notesCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 font-mono font-bold text-[9px] leading-none">
+                {notesCount}
+              </span>
+            )}
+          </button>
+
           {/* Nút Lưu Ngoại Tuyến (Offline Reading) */}
           {Boolean(activeFileUrl) && (
             <button
@@ -813,6 +865,10 @@ export default function SideBooksReaderModal({
             readingTheme={readingTheme}
             onCenterClick={toggleHud}
             onOpenAiCopilot={(selText) => openAiCopilot(selText)}
+            onOpenNotesModal={(selText) => {
+              setNotesModalInitialText(selText || null);
+              setShowNotesModal(true);
+            }}
             onPageProgress={(ch, totalCh) => {
               setCurrentPage(ch - 1);
               try {
@@ -1017,6 +1073,35 @@ export default function SideBooksReaderModal({
         pageContent={currentPageText}
         onClearSelection={() => setCopilotSelectedText(null)}
         readingTheme={readingTheme}
+      />
+
+      {/* 6. MODAL SỔ TAY GHI CHÚ & THẺ FLASHCARD 3D */}
+      <ReaderNotesModal
+        isOpen={showNotesModal}
+        onClose={() => setShowNotesModal(false)}
+        bookTitle={title}
+        currentPage={currentPage}
+        initialSelectedText={notesModalInitialText}
+        onJumpToPage={(p1Based) => {
+          const p0 = p1Based - 1;
+          setCurrentPage(p0);
+          readerRef.current?.goToPage(p0);
+        }}
+        readingTheme={readingTheme}
+      />
+
+      {/* 7. MODAL TÌM KIẾM TOÀN VĂN TRONG SÁCH */}
+      <ReaderSearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        bookTitle={title}
+        totalPages={totalPages}
+        pdfProvider={pdfProvider}
+        onSelectResult={(p1Based) => {
+          const p0 = p1Based - 1;
+          setCurrentPage(p0);
+          readerRef.current?.goToPage(p0);
+        }}
       />
     </div>
   );
