@@ -31,6 +31,7 @@ export interface UnifiedBookItem {
   youtube_url?: string | null;
   gallery_images?: string[];
   flipbook_pages?: string[];
+  pages?: string[];
   file_url?: string | null;
   file_name?: string | null;
   pdf_url?: string | null;
@@ -149,6 +150,8 @@ export default function BookDetailModal({
     new Set([
       ...(book?.cover_url ? [book.cover_url] : []),
       ...(Array.isArray(book?.gallery_images) ? book.gallery_images : []),
+      ...(Array.isArray(book?.flipbook_pages) ? book.flipbook_pages : []),
+      ...(Array.isArray((book as any)?.pages) ? (book as any).pages : []),
     ].filter(Boolean) as string[])
   );
 
@@ -441,8 +444,8 @@ export default function BookDetailModal({
                     type="button"
                     onClick={() => {
                       if (onReadBook3D && book) {
-                        onClose();
                         onReadBook3D(book);
+                        onClose();
                       } else {
                         setShow3DFlipbook(true);
                       }

@@ -48,6 +48,7 @@ export function normalizeRecommendedBooks(raw?: any): RecommendedBook[] {
     youtube_url: item.youtube_url || null,
     gallery_images: Array.isArray(item.gallery_images) ? item.gallery_images.filter(Boolean) : [],
     flipbook_pages: Array.isArray(item.flipbook_pages) ? item.flipbook_pages.filter(Boolean) : [],
+    pages: Array.isArray(item.pages) ? item.pages.filter(Boolean) : [],
     file_url: item.file_url || null,
     file_name: item.file_name || null,
     pdf_url: item.pdf_url || null,
@@ -76,6 +77,7 @@ export function normalizeAuthorProfile(raw?: any): AuthorProfile {
           ...b,
           gallery_images: Array.isArray(b.gallery_images) ? b.gallery_images.filter(Boolean) : [],
           flipbook_pages: Array.isArray(b.flipbook_pages) ? b.flipbook_pages.filter(Boolean) : [],
+          pages: Array.isArray(b.pages) ? b.pages.filter(Boolean) : [],
           is_visible: b.is_visible !== undefined ? Boolean(b.is_visible) : true,
         }))
       : DEFAULT_AUTHOR_PROFILE.books,

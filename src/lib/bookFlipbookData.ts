@@ -8,6 +8,7 @@ export interface BookInfoInput {
   description?: string | null;
   gallery_images?: string[];
   flipbook_pages?: string[];
+  pages?: string[];
   file_url?: string | null;
   file_name?: string | null;
   pdf_url?: string | null;
@@ -27,7 +28,10 @@ export function getBookFlipbookPages(book?: BookInfoInput | null): FlipbookPage[
   const id = book?.id || '';
 
   // ƯU TIÊN SỐ 1: BỘ TRANG TÀI LIỆU XEM THỬ 3D (TỪ FILE PDF, WORD HOẶC BỘ ẢNH TRANG / GALLERY)
-  const customPages = (Array.isArray(book?.flipbook_pages) && book.flipbook_pages.length > 0)
+  const bookPages = (book as any)?.pages;
+  const customPages = (Array.isArray(bookPages) && bookPages.length > 0)
+    ? bookPages
+    : (Array.isArray(book?.flipbook_pages) && book.flipbook_pages.length > 0)
     ? book.flipbook_pages
     : (Array.isArray(book?.gallery_images) && book.gallery_images.length > 0)
     ? book.gallery_images

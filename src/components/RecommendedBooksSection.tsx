@@ -226,6 +226,7 @@ export default function RecommendedBooksSection({
         youtube_url: selectedBook.youtube_url,
         gallery_images: selectedBook.gallery_images,
         flipbook_pages: selectedBook.flipbook_pages,
+        pages: (selectedBook as any)?.pages,
         file_url: selectedBook.file_url,
         file_name: selectedBook.file_name,
         pdf_url: selectedBook.pdf_url,
@@ -627,10 +628,10 @@ export default function RecommendedBooksSection({
         hotline={hotline}
         zaloUrl={zaloUrl}
         onClose={() => setSelectedBook(null)}
-        onReadBook3D={() => {
-          const b = selectedBook;
+        onReadBook3D={(bookItem) => {
+          const target = books.find((b) => b.id === bookItem?.id) || selectedBook || bookItem;
           setSelectedBook(null);
-          if (b) setSideBooksModalBook(b);
+          if (target) setSideBooksModalBook(target as RecommendedBook);
         }}
         onEdit={() => {
           const b = selectedBook;

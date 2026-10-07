@@ -69,6 +69,10 @@ interface SearchBookItem {
   badge_tag: string;
   pages_count: number;
   pages: string[];
+  gallery_images?: string[];
+  flipbook_pages?: string[];
+  file_url?: string | null;
+  pdf_url?: string | null;
 }
 
 interface BookSnippetItem {
@@ -812,6 +816,11 @@ export default function SearchPage() {
                         author: book.author,
                         description: book.description,
                         cover_url: book.cover_url,
+                        pages: book.pages,
+                        gallery_images: book.gallery_images,
+                        flipbook_pages: book.flipbook_pages,
+                        file_url: book.file_url,
+                        pdf_url: book.pdf_url,
                         type: 'recommended',
                       })
                     }
@@ -844,6 +853,11 @@ export default function SearchPage() {
       <BookDetailModal
         book={detailBook}
         onClose={() => setDetailBook(null)}
+        onReadBook3D={(b) => {
+          const target = books.find((x) => x.id === b.id) || b;
+          setDetailBook(null);
+          handleOpenBook(target as SearchBookItem);
+        }}
       />
 
       {/* THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}

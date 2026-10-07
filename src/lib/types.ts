@@ -9,6 +9,7 @@ export interface AuthorBook {
   youtube_url?: string | null;
   gallery_images?: string[];
   flipbook_pages?: string[];
+  pages?: string[];
   file_url?: string | null;
   file_name?: string | null;
   pdf_url?: string | null;
@@ -51,6 +52,7 @@ export interface RecommendedBook {
   youtube_url?: string | null;
   gallery_images?: string[];
   flipbook_pages?: string[];
+  pages?: string[];
   file_url?: string | null;
   file_name?: string | null;
   pdf_url?: string | null;

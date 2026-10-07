@@ -20,6 +20,18 @@ const DEFAULT_ATLAS_PAGES = [
 export function getBookReaderPageUrls(book?: RecommendedBook | AuthorBook | null): string[] {
   if (!book) return DEFAULT_ATLAS_PAGES;
 
+  // 0. Nếu sách có thuộc tính pages (danh sách trang ảnh từ cơ sở dữ liệu Supabase)
+  const bookPages = (book as any)?.pages;
+  if (Array.isArray(bookPages) && bookPages.length > 0) {
+    const valid = bookPages.filter((u: any) => typeof u === 'string' && u.trim().length > 0);
+    if (valid.length > 0) {
+      if (book.cover_url && !valid.includes(book.cover_url)) {
+        return [book.cover_url, ...valid];
+      }
+      return valid;
+    }
+  }
+
   // 1. Nếu admin đã tải lên danh sách ảnh trang flipbook_pages
   if (Array.isArray(book.flipbook_pages) && book.flipbook_pages.length > 0) {
     const valid = book.flipbook_pages.filter((u) => typeof u === 'string' && u.trim().length > 0);

@@ -305,7 +305,15 @@ export default function SideBooksReaderModal({
           }
         } catch {}
 
-        const provider = await createPdfPageProvider(effectivePdfUrl);
+        // Timeout an toàn 4.0 giây để bảo vệ app không bao giờ bị kẹt spinner
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('PDF loading timeout sau 4.0s')), 4000)
+        );
+
+        const provider = await Promise.race([
+          createPdfPageProvider(effectivePdfUrl),
+          timeoutPromise,
+        ]);
         if (isCancelled) {
           provider.destroy();
           return;
@@ -316,21 +324,29 @@ export default function SideBooksReaderModal({
         // Khởi tạo danh sách trang rỗng tương ứng với tổng số trang thật
         const arr = Array(provider.numPages).fill('');
 
-        // Tải ngay trang đầu tiên (và trang bìa nếu có)
-        const p1 = await provider.getPageUrl(1);
+        // Tải ngay trang đầu tiên (và trang bìa nếu có) với timeout
+        const p1 = await Promise.race([
+          provider.getPageUrl(1),
+          timeoutPromise,
+        ]);
         if (isCancelled) return;
         arr[0] = p1;
 
         if (provider.numPages > 1) {
-          const p2 = await provider.getPageUrl(2);
-          if (!isCancelled) arr[1] = p2;
+          try {
+            const p2 = await Promise.race([
+              provider.getPageUrl(2),
+              new Promise<string>((res) => setTimeout(() => res(''), 2000)),
+            ]);
+            if (!isCancelled && p2) arr[1] = p2;
+          } catch {}
         }
 
         if (!isCancelled) {
           setDynamicPdfPages([...arr]);
         }
       } catch (err) {
-        console.error('Lỗi khởi tạo bộ đọc PDF động:', err);
+        console.warn('Không giải mã được PDF động, tự động chuyển sang trang ảnh dự phòng:', err);
       } finally {
         if (!isCancelled) setPdfLoading(false);
       }
@@ -406,9 +422,13 @@ export default function SideBooksReaderModal({
   // Danh sách trang thực tế được đưa vào Engine 3D
   const effectivePages = isCbz
     ? cbzPages
-    : isPdf && dynamicPdfPages.length > 0
+    : dynamicPdfPages.length > 0
     ? dynamicPdfPages
-    : pages;
+    : pages && pages.length > 0
+    ? pages
+    : coverUrl
+    ? [coverUrl]
+    : ['/documents/covers/cover_hieu_dung_ve_cot_song.png'];
 
   const totalPages = Math.max(1, effectivePages.length);
 
@@ -1041,8 +1061,8 @@ export default function SideBooksReaderModal({
               } catch {}
             }}
           />
-        ) : pdfLoading && dynamicPdfPages.length === 0 ? (
-          /* ĐANG TẢI TRANG ĐẦU CỦA FILE PDF */
+        ) : pdfLoading && dynamicPdfPages.length === 0 && (!pages || pages.length === 0) ? (
+          /* ĐANG TẢI TRANG ĐẦU CỦA FILE PDF KHI KHÔNG CÓ TRANG ẢNH SẴN */
           <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center text-amber-200">
             <Loader2 size={38} className="animate-spin text-amber-400" />
             <p className="text-base font-bold text-amber-200">
@@ -1051,6 +1071,13 @@ export default function SideBooksReaderModal({
             <p className="text-xs text-amber-300/70 max-w-sm">
               Hệ thống tải trực tiếp tài liệu nguyên bản và tối ưu bộ nhớ on-demand.
             </p>
+            <button
+              type="button"
+              onClick={() => setPdfLoading(false)}
+              className="mt-2 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold cursor-pointer transition-colors border border-amber-500/30"
+            >
+              Mở trang ngay lập tức
+            </button>
           </div>
         ) : (
           /* TRÌNH ĐỌC LẬT TRANG 3D SIDEBOOKS ENGINE */
