@@ -567,42 +567,75 @@ export default function ReaderAiCopilot({
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-1.5"
+          className="flex items-center gap-2"
         >
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Hỏi AI về trang sách này..."
-            disabled={isLoading}
-            className="flex-1 px-3 py-2 rounded-xl bg-[#FAF6F0] dark:bg-[#1C120C] border border-amber-900/20 dark:border-amber-500/30 text-[12.5px] text-[#2A160A] dark:text-amber-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-1.5 focus:ring-amber-500 transition-all"
-          />
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={isListening ? "Đang lắng nghe..." : "Hỏi AI về trang sách này..."}
+              disabled={isLoading}
+              className={`w-full h-11 pl-4 pr-9 rounded-full bg-[#FAF6F0] dark:bg-[#1C120C] border ${
+                isListening
+                  ? 'border-red-500 ring-2 ring-red-400/40'
+                  : 'border-amber-900/20 dark:border-amber-500/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/40'
+              } text-[13.5px] text-[#2A160A] dark:text-amber-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-all shadow-inner`}
+            />
+            {input && !isListening && (
+              <button
+                type="button"
+                onClick={() => setInput('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs font-bold p-1 cursor-pointer"
+                title="Xóa nhanh"
+                aria-label="Xóa nhanh"
+              >
+                ✕
+              </button>
+            )}
+          </div>
 
-          {/* Nút Micro nghe liên tục (Continuous Speech-to-Text) */}
+          {/* Nút Micro nghe liên tục (44x44px, icon 20px) */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90 shadow-md ${
               isListening
-                ? 'bg-red-500 text-white shadow-md animate-pulse ring-2 ring-red-400/50'
-                : 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 hover:bg-amber-500/25 border border-amber-500/30'
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/40 ring-4 ring-red-400/50 animate-pulse'
+                : 'bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 hover:bg-amber-500/25 border border-amber-500/40'
             }`}
             title={isListening ? 'Dừng lắng nghe' : 'Bật micro nói liên tục'}
             aria-label="Micro giọng nói"
           >
-            {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            {isListening ? (
+              <MicOff size={20} strokeWidth={2.2} />
+            ) : (
+              <Mic size={20} strokeWidth={2.2} />
+            )}
           </button>
 
-          {/* Nút Gửi */}
+          {/* Nút Gửi câu hỏi (44x44px, icon 19px) */}
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="w-9 h-9 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer shrink-0"
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shrink-0 shadow-md ${
+              input.trim() && !isLoading
+                ? 'bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 text-slate-950 font-bold active:scale-90 cursor-pointer shadow-amber-500/30'
+                : 'bg-amber-500/20 text-amber-800/40 dark:text-amber-300/40 border border-amber-500/20 opacity-40 cursor-not-allowed'
+            }`}
             title="Gửi câu hỏi"
             aria-label="Gửi"
           >
-            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
+            {isLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send
+                size={19}
+                strokeWidth={2.4}
+                className={input.trim() ? 'translate-x-0.5' : ''}
+              />
+            )}
           </button>
         </form>
       </footer>

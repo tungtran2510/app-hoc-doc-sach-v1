@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -135,23 +135,25 @@ export default function WoodenBookshelf({
 
   // Trạng thái hiển thị Cảnh báo khi người dùng muốn thoát ra khỏi hẳn phần mềm
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
-  const [exitNotice, setExitNotice] = useState<string | null>(null);
+  const isExitingRef = useRef<boolean>(false);
 
   const handleConfirmExit = () => {
+    isExitingRef.current = true;
     setShowExitConfirm(false);
-    setExitNotice('Đã lưu tiến độ đọc an toàn! Bạn có thể đóng tab hoặc vuốt thoát ứng dụng.');
     try {
       window.close();
     } catch {}
     setTimeout(() => {
       try {
-        if (window.history.length > 1) {
+        if (window.opener) {
+          window.close();
+        } else if (window.history.length > 1) {
           window.history.back();
         } else {
           window.location.href = 'about:blank';
         }
       } catch {}
-    }, 1500);
+    }, 120);
   };
 
   const handleToggleShowTitles = () => {
@@ -401,6 +403,9 @@ export default function WoodenBookshelf({
     } catch {}
 
     const handlePopState = () => {
+      // Nếu người dùng đã xác nhận thoát, không bao giờ mở lại modal
+      if (isExitingRef.current) return;
+
       // Nếu có bất kỳ modal đọc sách, xem chi tiết, cài đặt nào đang mở thì nhường modal đó xử lý
       const hasOtherModal = Boolean(
         document.querySelector('[role="dialog"]') ||
@@ -1499,7 +1504,10 @@ export default function WoodenBookshelf({
           role="dialog"
           aria-modal="true"
           className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
-          onClick={() => setShowExitConfirm(false)}
+          onClick={() => {
+            isExitingRef.current = false;
+            setShowExitConfirm(false);
+          }}
         >
           <div
             className="w-full max-w-[330px] rounded-2xl bg-gradient-to-b from-[#FAF6EF] via-[#F4ECE0] to-[#EAE0D0] dark:from-[#25170e] dark:via-[#1f130b] dark:to-[#140b06] border border-amber-800/20 dark:border-amber-600/40 p-5 text-[#2c180c] dark:text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
@@ -1531,7 +1539,10 @@ export default function WoodenBookshelf({
               {/* Nút 1: Ở lại đọc sách */}
               <button
                 type="button"
-                onClick={() => setShowExitConfirm(false)}
+                onClick={() => {
+                  isExitingRef.current = false;
+                  setShowExitConfirm(false);
+                }}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
               >
                 Ở lại đọc sách
@@ -1550,23 +1561,7 @@ export default function WoodenBookshelf({
         </div>
       )}
 
-      {/* MÀN HÌNH TẠM BIỆT KHI ĐÃ XÁC NHẬN THOÁT */}
-      {exitNotice && (
-        <div className="fixed inset-0 z-[120] bg-black/95 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
-          <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mb-4 border border-amber-500/40">
-            <CheckCircle2 size={28} />
-          </div>
-          <h3 className="text-lg font-black text-amber-200 mb-2">Tạm biệt bạn!</h3>
-          <p className="text-xs text-amber-100/80 max-w-xs leading-relaxed">{exitNotice}</p>
-          <button
-            type="button"
-            onClick={() => setExitNotice(null)}
-            className="mt-6 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-amber-300 font-bold cursor-pointer"
-          >
-            Mở lại Kệ Sách
-          </button>
-        </div>
-      )}
+
 
       {/* MODAL XEM NHANH THÔNG TIN SÁCH (QUICK PEEK MODAL) */}
       {quickPeekBook && (

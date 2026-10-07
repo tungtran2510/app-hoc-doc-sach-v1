@@ -927,37 +927,37 @@ export default function AiAssistantPage() {
             )}
           </div>
 
-          {/* Nút Micro Nghe liên tục (đặt cạnh nút gửi theo đúng yêu cầu) */}
+          {/* Nút Micro Nghe liên tục chuẩn kích thước khung chat (44x44px, icon 20px) */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all ${
+            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-all ${
               isListening
-                ? 'bg-red-500 text-white shadow-md shadow-red-500/40 ring-2 ring-red-400 animate-pulse'
+                ? 'bg-red-500 text-white shadow-md shadow-red-500/40 ring-4 ring-red-400/50 animate-pulse'
                 : 'bg-white dark:bg-[#1E1342] text-slate-700 dark:text-purple-200 border border-slate-200 dark:border-purple-800/40 hover:bg-slate-50 dark:hover:bg-purple-900/40 shadow-xs'
             }`}
             title={isListening ? 'Đang nghe liên tục (Bấm để dừng)' : 'Bật Micro nghe liên tục'}
             aria-label={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nghe liên tục'}
           >
             {isListening ? (
-              <MicOff size={18} strokeWidth={2.3} className="text-white" />
+              <MicOff size={20} strokeWidth={2.2} className="text-white" />
             ) : (
-              <Mic size={18} strokeWidth={2.3} className="text-slate-700 dark:text-purple-200" />
+              <Mic size={20} strokeWidth={2.2} className="text-slate-700 dark:text-purple-200" />
             )}
           </button>
 
-          {/* Nút Gửi câu hỏi */}
+          {/* Nút Gửi câu hỏi chuẩn kích thước khung chat (44x44px, icon 19px) */}
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-[14px] bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-900 hover:to-indigo-950 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-900/20 shrink-0 cursor-pointer active:scale-95"
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 hover:from-purple-900 hover:to-indigo-950 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-900/20 shrink-0 cursor-pointer active:scale-90"
             aria-label="Gửi câu hỏi"
             title="Gửi câu hỏi"
           >
             {isLoading ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={18} className="animate-spin" />
             ) : (
-              <Send size={16} />
+              <Send size={19} strokeWidth={2.4} className={input.trim() ? "translate-x-0.5" : ""} />
             )}
           </button>
         </form>

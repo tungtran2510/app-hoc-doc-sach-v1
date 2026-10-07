@@ -444,43 +444,91 @@ export default function FloatingAiButton() {
               )}
             </div>
 
-            {/* Input Bar */}
-            <div className="p-2.5 border-t border-white/10 bg-[#24160d] flex items-center gap-1.5">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSend();
-                }}
-                placeholder={isListening ? "Đang nghe bạn nói liên tục..." : "Nhập câu hỏi hoặc nội dung cần tra trong sách..."}
-                className={`flex-1 px-3 py-2 rounded-xl bg-black/40 border ${
-                  isListening
-                    ? 'border-red-500 ring-2 ring-red-400/40'
-                    : 'border-amber-500/30'
-                } text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-400`}
-              />
-              {/* Nút Micro Nghe liên tục ngay cạnh nút Gửi */}
+            {/* Thông báo lỗi Micro nếu có */}
+            {speechError && (
+              <div className="px-3.5 py-1.5 bg-red-950/90 border-t border-red-500/40 text-[11px] text-red-200 flex items-center justify-between">
+                <span>{speechError}</span>
+                <button
+                  type="button"
+                  onClick={() => setSpeechError('')}
+                  className="p-0.5 hover:text-white text-xs cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Input Bar - Chuẩn khung chat hiện đại, nút Micro & nút Gửi to rõ ràng */}
+            <div className="p-2.5 sm:p-3 border-t border-white/10 bg-[#24160d] flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSend();
+                  }}
+                  placeholder={
+                    isListening
+                      ? 'Đang lắng nghe bạn nói...'
+                      : 'Nhập câu hỏi tra cứu...'
+                  }
+                  className={`w-full h-11 pl-4 pr-9 rounded-full bg-black/50 border ${
+                    isListening
+                      ? 'border-red-500 ring-2 ring-red-400/40'
+                      : 'border-amber-500/30 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40'
+                  } text-white text-[13.5px] placeholder:text-slate-400 focus:outline-none transition-all shadow-inner`}
+                />
+                {query && !isListening && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                    title="Xóa văn bản"
+                    aria-label="Xóa văn bản"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Nút Micro Nghe liên tục chuẩn kích thước ngón tay (44x44px, icon 20px) */}
               <button
                 type="button"
                 onClick={toggleListening}
-                className={`w-8.5 h-8.5 rounded-xl flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-95 ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 active:scale-90 shadow-md ${
                   isListening
-                    ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/40 ring-2 ring-red-400'
-                    : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
+                    ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50 ring-4 ring-red-400/50'
+                    : 'bg-amber-500/15 hover:bg-amber-500/25 active:bg-amber-500/35 text-amber-300 border border-amber-500/40'
                 }`}
                 title={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
                 aria-label={isListening ? 'Dừng nghe liên tục' : 'Bật Micro nói liên tục'}
               >
-                {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                {isListening ? (
+                  <MicOff size={20} strokeWidth={2.2} />
+                ) : (
+                  <Mic size={20} strokeWidth={2.2} />
+                )}
               </button>
+
+              {/* Nút Gửi câu hỏi chuẩn kích thước ngón tay (44x44px, icon 19px) */}
               <button
                 type="button"
                 onClick={() => handleSend()}
                 disabled={!query.trim() || isLoading}
-                className="w-8.5 h-8.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shrink-0 shadow-md ${
+                  query.trim() && !isLoading
+                    ? 'bg-gradient-to-tr from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold active:scale-90 cursor-pointer shadow-amber-500/30'
+                    : 'bg-white/5 text-slate-500 border border-white/10 opacity-40 cursor-not-allowed'
+                }`}
+                title="Gửi câu hỏi"
+                aria-label="Gửi câu hỏi"
               >
-                <Send size={14} />
+                <Send
+                  size={19}
+                  strokeWidth={2.4}
+                  className={query.trim() ? 'translate-x-0.5' : ''}
+                />
               </button>
             </div>
           </div>
