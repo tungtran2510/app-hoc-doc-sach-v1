@@ -127,12 +127,55 @@ export async function POST(req: NextRequest) {
       mergedXemTiep = cloudTime >= localTime ? cloudData.xem_tiep : localData.xem_tiep;
     }
 
+    // Merge thói quen đọc sách (reading_streak)
+    let mergedReadingStreak = localData?.reading_streak || cloudData?.reading_streak || null;
+    if (cloudData?.reading_streak && localData?.reading_streak) {
+      mergedReadingStreak = {
+        streakDays: Math.max(cloudData.reading_streak.streakDays || 0, localData.reading_streak.streakDays || 0),
+        pagesToday: Math.max(cloudData.reading_streak.pagesToday || 0, localData.reading_streak.pagesToday || 0),
+        minutesToday: Math.max(cloudData.reading_streak.minutesToday || 0, localData.reading_streak.minutesToday || 0),
+        totalBooksCompleted: Math.max(cloudData.reading_streak.totalBooksCompleted || 0, localData.reading_streak.totalBooksCompleted || 0),
+        lastActiveDate: localData.reading_streak.lastActiveDate || cloudData.reading_streak.lastActiveDate,
+      };
+    }
+
+    // Merge dấu trang sách (book_bookmarks)
+    const mergedBookmarks = {
+      ...(cloudData?.book_bookmarks || {}),
+      ...(localData?.book_bookmarks || {}),
+    };
+
+    // Merge tiến độ đọc sách gần nhất (last_read_progress & last_read_book_title)
+    const mergedLastReadProgress = {
+      ...(cloudData?.last_read_progress || {}),
+      ...(localData?.last_read_progress || {}),
+    };
+    const mergedLastReadBookTitle = localData?.last_read_book_title || cloudData?.last_read_book_title || null;
+
+    // Merge sổ tay ghi chú & Flashcard (reading_notes)
+    const cloudNotes = Array.isArray(cloudData?.reading_notes) ? cloudData.reading_notes : [];
+    const localNotes = Array.isArray(localData?.reading_notes) ? localData.reading_notes : [];
+    const notesMap = new Map<string, any>();
+    for (const n of [...cloudNotes, ...localNotes]) {
+      if (!n || !n.id) continue;
+      const existing = notesMap.get(n.id);
+      if (!existing || (n.createdAt || 0) >= (existing.createdAt || 0)) {
+        notesMap.set(n.id, n);
+      }
+    }
+    const mergedReadingNotes = Array.from(notesMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
     const mergedPayload: UserProgressSyncData = {
       phone: '',
       xem_tiep: mergedXemTiep,
       tien_do: mergedTienDo,
       bai_da_luu: mergedBaiDaLuu,
       da_hoan_thanh: mergedDaHoanThanh,
+      reading_streak: mergedReadingStreak,
+      book_bookmarks: mergedBookmarks,
+      last_read_progress: mergedLastReadProgress,
+      last_read_book_title: mergedLastReadBookTitle,
+      reading_notes: mergedReadingNotes,
       updated_at: new Date().toISOString(),
     };
 

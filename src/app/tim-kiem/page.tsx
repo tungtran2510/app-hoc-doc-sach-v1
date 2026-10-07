@@ -73,6 +73,7 @@ interface SearchBookItem {
   flipbook_pages?: string[];
   file_url?: string | null;
   pdf_url?: string | null;
+  file_name?: string | null;
 }
 
 interface BookSnippetItem {
@@ -1167,6 +1168,10 @@ export default function SearchPage() {
         isOpen={Boolean(readerBook)}
         title={readerBook?.title || 'Tủ Sách Y Khoa'}
         author={readerBook?.author}
+        coverUrl={readerBook?.cover_url}
+        fileUrl={readerBook?.file_url || undefined}
+        pdfUrl={readerBook?.pdf_url || undefined}
+        fileName={readerBook?.file_name || undefined}
         pages={readerBook?.pages || []}
         initialPage={readerInitialPage}
         onClose={() => {

@@ -286,6 +286,11 @@ export interface UserProgressSyncData {
     saved_at: number;
   }>;
   da_hoan_thanh?: string[];
+  reading_streak?: any;
+  book_bookmarks?: Record<string, number>;
+  last_read_progress?: Record<string, { page: number; total_pages?: number }>;
+  last_read_book_title?: string | null;
+  reading_notes?: any[];
   updated_at?: string;
 }
 

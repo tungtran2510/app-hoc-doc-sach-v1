@@ -406,8 +406,22 @@ export default function SideBooksReaderModal({
 
     async function loadCbz() {
       try {
-        const res = await fetch(activeFileUrl!);
-        const buffer = await res.arrayBuffer();
+        let buffer: ArrayBuffer;
+        try {
+          const cached = await offlineStorage.getBookFromOffline(activeFileUrl!);
+          if (cached && cached.fileBlob) {
+            buffer = await cached.fileBlob.arrayBuffer();
+          } else if (cached && cached.blobUrl) {
+            const res = await fetch(cached.blobUrl);
+            buffer = await res.arrayBuffer();
+          } else {
+            const res = await fetch(activeFileUrl!);
+            buffer = await res.arrayBuffer();
+          }
+        } catch {
+          const res = await fetch(activeFileUrl!);
+          buffer = await res.arrayBuffer();
+        }
         if (isCancelled) return;
         const urls = await extractCbzImages(buffer);
         if (!isCancelled) {
@@ -555,10 +569,26 @@ export default function SideBooksReaderModal({
     } catch {}
   }, [isOpen, title, initialPage, totalPages]);
 
-  const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
+  // Cập nhật trạng thái Dấu trang (Bookmark) theo đúng trang hiện tại
+  useEffect(() => {
+    if (!isOpen || !title) return;
     try {
-      if (!isBookmarked) {
+      const savedBm = localStorage.getItem(`bookmark_page_${title}`);
+      if (savedBm !== null && parseInt(savedBm, 10) === currentPage) {
+        setIsBookmarked(true);
+      } else {
+        setIsBookmarked(false);
+      }
+    } catch {
+      setIsBookmarked(false);
+    }
+  }, [isOpen, title, currentPage]);
+
+  const toggleBookmark = () => {
+    const nextState = !isBookmarked;
+    setIsBookmarked(nextState);
+    try {
+      if (nextState) {
         localStorage.setItem(`bookmark_page_${title}`, currentPage.toString());
       } else {
         localStorage.removeItem(`bookmark_page_${title}`);
@@ -1203,7 +1233,6 @@ export default function SideBooksReaderModal({
               setCurrentPage(page);
               try {
                 localStorage.setItem(`last_read_page_${title}`, page.toString());
-                localStorage.setItem(`bookmark_page_${title}`, page.toString());
                 localStorage.setItem('last_read_book_title', title);
               } catch {}
             }}

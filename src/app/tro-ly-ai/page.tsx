@@ -71,6 +71,7 @@ interface SearchBookItem {
   flipbook_pages?: string[];
   file_url?: string | null;
   pdf_url?: string | null;
+  file_name?: string | null;
 }
 
 interface ChatMessage {
@@ -972,6 +973,7 @@ export default function AiAssistantPage() {
         initialPage={readerInitialPage}
         pdfUrl={readerBook?.pdf_url}
         fileUrl={readerBook?.file_url}
+        fileName={readerBook?.file_name || undefined}
         coverUrl={readerBook?.cover_url}
         onClose={() => {
           setReaderBook(null);

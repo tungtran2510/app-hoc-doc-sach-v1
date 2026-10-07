@@ -47,19 +47,68 @@ export function clearUserPhone(): void {
 }
 
 /**
- * Gom toàn bộ dữ liệu học tập hiện có trên thiết bị này
+ * Gom toàn bộ dữ liệu học tập và đọc sách hiện có trên thiết bị này
  */
 export function getLocalLearningData(): {
   xem_tiep: any;
   tien_do: any;
   bai_da_luu: any[];
   da_hoan_thanh: string[];
+  reading_streak?: any;
+  book_bookmarks?: Record<string, number>;
+  last_read_progress?: Record<string, { page: number; total_pages?: number }>;
+  last_read_book_title?: string | null;
+  reading_notes?: any[];
 } {
+  const bookmarks: Record<string, number> = {};
+  const lastReadProgress: Record<string, { page: number; total_pages?: number }> = {};
+  let lastReadBookTitle: string | null = null;
+  let readingStreak: any = null;
+  const readingNotes: any[] = [];
+
+  if (typeof window !== 'undefined') {
+    try {
+      const streakRaw = localStorage.getItem('qbiz_reading_insights_v1');
+      if (streakRaw) readingStreak = JSON.parse(streakRaw);
+
+      lastReadBookTitle = localStorage.getItem('last_read_book_title');
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('bookmark_page_')) {
+          const bookTitle = key.replace('bookmark_page_', '');
+          const pageVal = parseInt(localStorage.getItem(key) || '0', 10);
+          if (!isNaN(pageVal)) bookmarks[bookTitle] = pageVal;
+        } else if (key && key.startsWith('last_read_page_')) {
+          const bookTitle = key.replace('last_read_page_', '');
+          const pageVal = parseInt(localStorage.getItem(key) || '0', 10);
+          const totalVal = parseInt(localStorage.getItem(`total_pages_${bookTitle}`) || '0', 10);
+          if (!isNaN(pageVal)) {
+            lastReadProgress[bookTitle] = { page: pageVal, total_pages: totalVal || undefined };
+          }
+        } else if (key && key.startsWith('qbiz_reading_notes_')) {
+          const val = localStorage.getItem(key);
+          if (val) {
+            try {
+              const notes = JSON.parse(val);
+              if (Array.isArray(notes)) readingNotes.push(...notes);
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+  }
+
   return {
     xem_tiep: getStoredXemTiep(),
     tien_do: getStoredTienDo(),
     bai_da_luu: getSavedPages(),
     da_hoan_thanh: getCompletedPages(),
+    reading_streak: readingStreak,
+    book_bookmarks: bookmarks,
+    last_read_progress: lastReadProgress,
+    last_read_book_title: lastReadBookTitle,
+    reading_notes: readingNotes,
   };
 }
 
@@ -80,6 +129,39 @@ export function applyRemoteLearningData(data: UserProgressSyncData): void {
     }
     if (data.xem_tiep && typeof data.xem_tiep === 'object') {
       localStorage.setItem('xem_tiep', JSON.stringify(data.xem_tiep));
+    }
+    if (data.reading_streak && typeof data.reading_streak === 'object') {
+      localStorage.setItem('qbiz_reading_insights_v1', JSON.stringify(data.reading_streak));
+    }
+    if (data.last_read_book_title && typeof data.last_read_book_title === 'string') {
+      localStorage.setItem('last_read_book_title', data.last_read_book_title);
+    }
+    if (data.book_bookmarks && typeof data.book_bookmarks === 'object') {
+      for (const [title, page] of Object.entries(data.book_bookmarks)) {
+        localStorage.setItem(`bookmark_page_${title}`, page.toString());
+      }
+    }
+    if (data.last_read_progress && typeof data.last_read_progress === 'object') {
+      for (const [title, prog] of Object.entries(data.last_read_progress)) {
+        if (typeof prog === 'object' && prog !== null) {
+          localStorage.setItem(`last_read_page_${title}`, (prog.page ?? 0).toString());
+          if (prog.total_pages) {
+            localStorage.setItem(`total_pages_${title}`, prog.total_pages.toString());
+          }
+        }
+      }
+    }
+    if (Array.isArray(data.reading_notes) && data.reading_notes.length > 0) {
+      const byBook: Record<string, any[]> = {};
+      for (const note of data.reading_notes) {
+        if (note && note.bookTitle) {
+          if (!byBook[note.bookTitle]) byBook[note.bookTitle] = [];
+          byBook[note.bookTitle].push(note);
+        }
+      }
+      for (const [bTitle, notes] of Object.entries(byBook)) {
+        localStorage.setItem(`qbiz_reading_notes_${bTitle}`, JSON.stringify(notes));
+      }
     }
 
     // Bắn sự kiện để các trang/thành phần đang mở cập nhật tức thì

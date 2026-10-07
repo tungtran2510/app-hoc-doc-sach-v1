@@ -169,6 +169,10 @@ export default function CategoriesPage() {
   const [activeReaderBook, setActiveReaderBook] = useState<{
     title: string;
     author?: string;
+    coverUrl?: string;
+    fileUrl?: string;
+    pdfUrl?: string;
+    fileName?: string;
     pages: string[];
     initialPage: number;
   } | null>(null);
@@ -201,6 +205,9 @@ export default function CategoriesPage() {
             cover_url: b.cover_url,
             badge_tag: b.badge_tag,
             gallery_images: b.pages || [],
+            file_url: b.file_url || null,
+            pdf_url: b.pdf_url || null,
+            file_name: b.file_name || null,
           }));
           setAllBooks(mapped);
         }
@@ -332,6 +339,10 @@ export default function CategoriesPage() {
       author: book.author || 'Tủ Sách Y Khoa',
       pages: bookPages,
       initialPage: 0,
+      coverUrl: book.cover_url || undefined,
+      fileUrl: book.file_url || undefined,
+      pdfUrl: book.pdf_url || undefined,
+      fileName: book.file_name || undefined,
     });
   };
 
@@ -966,6 +977,10 @@ export default function CategoriesPage() {
           isOpen={Boolean(activeReaderBook)}
           title={activeReaderBook.title}
           author={activeReaderBook.author}
+          coverUrl={activeReaderBook.coverUrl}
+          fileUrl={activeReaderBook.fileUrl}
+          pdfUrl={activeReaderBook.pdfUrl}
+          fileName={activeReaderBook.fileName}
           pages={activeReaderBook.pages}
           initialPage={activeReaderBook.initialPage}
           onClose={() => setActiveReaderBook(null)}

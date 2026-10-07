@@ -131,7 +131,17 @@ export default function WoodenBookshelf({
   const [quickPeekBook, setQuickPeekBook] = useState<RecommendedBook | null>(null);
   const [isBookshelfFullscreen, setIsBookshelfFullscreen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isResumeDismissed, setIsResumeDismissed] = useState<boolean>(false);
   const touchStartDistRef = React.useRef<number | null>(null);
+
+  const lastReadBook = React.useMemo(() => {
+    if (!lastReadBookTitle) return null;
+    return (
+      books.find(
+        (b) => b.title.trim().toLowerCase() === lastReadBookTitle.trim().toLowerCase()
+      ) || null
+    );
+  }, [books, lastReadBookTitle]);
 
   // Trạng thái hiển thị Cảnh báo khi người dùng muốn thoát ra khỏi hẳn phần mềm
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
@@ -715,6 +725,59 @@ export default function WoodenBookshelf({
           </div>
         )}
       </div>
+
+      {/* 1-TOUCH BANNER TIẾP TỤC ĐỌC DỞ (MOBILE-FIRST SEAMLESS RESUME) */}
+      {lastReadBook && !isResumeDismissed && (
+        <div className="relative z-10 mb-3 p-2 sm:p-2.5 rounded-2xl bg-white/90 dark:bg-[#1f130b]/90 border border-amber-500/35 backdrop-blur-md flex items-center justify-between gap-2 shadow-xs transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+          <div
+            onClick={() => onReadBook3D(lastReadBook)}
+            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
+          >
+            <div className="relative w-8 h-11 sm:w-9 sm:h-12 rounded-md overflow-hidden shrink-0 border border-amber-900/20 shadow-xs">
+              <img
+                src={lastReadBook.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
+                alt={lastReadBook.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                  <Sparkles size={11} className="text-amber-500 animate-pulse" />
+                  Đang đọc dở
+                </span>
+                <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-900 dark:text-amber-200">
+                  Trang {lastReadPage}
+                </span>
+              </div>
+              <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 truncate group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+                {lastReadBook.title}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => onReadBook3D(lastReadBook)}
+              className="h-7 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs transition-all"
+              title={`Đọc tiếp cuốn ${lastReadBook.title} tại trang ${lastReadPage}`}
+            >
+              <BookOpen size={12} strokeWidth={2.4} />
+              <span>Đọc tiếp</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsResumeDismissed(true)}
+              className="w-6 h-6 rounded-lg text-[#6E4223] dark:text-amber-200/60 hover:text-red-500 dark:hover:text-red-400 flex items-center justify-center cursor-pointer transition-colors"
+              title="Ẩn thông báo này"
+              aria-label="Ẩn banner tiếp tục đọc"
+            >
+              <X size={13} strokeWidth={2.4} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN KÍNH LÚP THU PHÓNG */}
       <div className="relative z-10 flex items-center justify-between mb-3 px-1 sm:px-2 gap-2">

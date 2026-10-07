@@ -218,6 +218,7 @@ export default function SavedBooksPage() {
   const [activeReaderBook, setActiveReaderBook] = useState<{
     title: string;
     author?: string;
+    coverUrl?: string | null;
     pages?: string[];
     initialPage: number;
     fileUrl?: string | null;
@@ -383,6 +384,7 @@ export default function SavedBooksPage() {
     setActiveReaderBook({
       title: book.title,
       author: book.author || 'Tủ Sách Ngoại Tuyến',
+      coverUrl: book.coverUrl,
       pages: [],
       initialPage: book.lastReadPage || 0,
       fileUrl: book.fileUrl,
@@ -461,6 +463,7 @@ export default function SavedBooksPage() {
       author: 'Tủ Sách Y Khoa',
       pages: bookPages,
       initialPage: item.initialPage || 0,
+      coverUrl: item.coverUrl,
       fileUrl: item.fileUrl,
       pdfUrl: item.pdfUrl || item.fileUrl,
       fileName: item.fileName,
@@ -480,6 +483,7 @@ export default function SavedBooksPage() {
       author: 'Tủ Sách Y Khoa',
       pages: bookPages,
       initialPage: continueBook.page || 0,
+      coverUrl: continueBook.coverUrl,
       fileUrl: continueBook.fileUrl || '/documents/atlas_giai_phau_cot_song_toan_dien.pdf',
       pdfUrl: continueBook.pdfUrl || '/documents/atlas_giai_phau_cot_song_toan_dien.pdf',
       fileName: continueBook.fileName || 'atlas_giai_phau_cot_song_toan_dien.pdf',
@@ -504,6 +508,7 @@ export default function SavedBooksPage() {
       author: 'Tủ Sách Y Khoa',
       pages: bookPages,
       initialPage: Math.max(0, note.page),
+      coverUrl: matched?.coverUrl,
       fileUrl: matched?.fileUrl,
       pdfUrl: matched?.pdfUrl,
       fileName: matched?.fileName,
@@ -1099,6 +1104,7 @@ export default function SavedBooksPage() {
           isOpen={Boolean(activeReaderBook)}
           title={activeReaderBook.title}
           author={activeReaderBook.author}
+          coverUrl={activeReaderBook.coverUrl || undefined}
           fileUrl={activeReaderBook.fileUrl}
           pdfUrl={activeReaderBook.pdfUrl}
           fileName={activeReaderBook.fileName}
