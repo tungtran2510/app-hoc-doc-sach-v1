@@ -34,6 +34,14 @@ import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { offlineStorage, CachedBookMetadata, formatBytes } from '../../lib/offlineStorage';
 import { readingNotesStorage, ReadingNoteItem } from '../../lib/readingNotes';
 import { readingStreakEngine, ReadingStats } from '../../lib/readingStreak';
+import { CURATED_ONLINE_BOOKS } from '../../lib/onlineLibraryData';
+import {
+  getFavoriteBooks,
+  toggleBookFavorite,
+  FavoriteBookItem,
+  getReadingHistory,
+  ReadingHistoryItem,
+} from '../../lib/userFavoritesHistory';
 
 interface SavedItem {
   id: string;
@@ -175,12 +183,90 @@ const DEFAULT_SAMPLE_NOTES: ReadingNoteItem[] = [
   },
 ];
 
+function resolveBookMetadata(
+  title: string,
+  cachedOfflineList: CachedBookMetadata[] = []
+): {
+  title: string;
+  category: string;
+  coverUrl: string;
+  fileUrl?: string | null;
+  pdfUrl?: string | null;
+  fileName?: string | null;
+  format?: 'pdf' | 'epub' | 'cbz' | 'txt' | 'flipbook';
+} | null {
+  const norm = title.toLowerCase().trim();
+  // 1. Curated list
+  const curated = DEFAULT_CURATED_SAVED.find(
+    (b) => b.title.toLowerCase().trim() === norm
+  );
+  if (curated) return curated;
+
+  // 2. Offline list
+  const offline = cachedOfflineList.find(
+    (b) => b.title.toLowerCase().trim() === norm
+  );
+  if (offline) {
+    return {
+      title: offline.title,
+      category: offline.format ? offline.format.toUpperCase() : 'NGOẠI TUYẾN',
+      coverUrl: offline.coverUrl || '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      fileUrl: offline.fileUrl,
+      pdfUrl: offline.format === 'pdf' ? offline.fileUrl : null,
+      fileName: offline.fileName,
+      format: (offline.format as any) || 'epub',
+    };
+  }
+
+  // 3. Online Curated list
+  const online = CURATED_ONLINE_BOOKS.find(
+    (b) => b.title.toLowerCase().trim() === norm
+  );
+  if (online) {
+    return {
+      title: online.title,
+      category: online.format ? online.format.toUpperCase() : 'TRỰC TUYẾN',
+      coverUrl: online.coverUrl || '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      fileUrl: online.downloadUrl,
+      pdfUrl: online.format === 'pdf' ? online.downloadUrl : null,
+      fileName: online.downloadUrl.split('/').pop() || null,
+      format: (online.format as any) || 'epub',
+    };
+  }
+
+  // 4. Favorites
+  const favs = getFavoriteBooks();
+  const fav = favs.find((b) => b.title.toLowerCase().trim() === norm);
+  if (fav) {
+    return {
+      title: fav.title,
+      category: fav.category || (fav.format ? fav.format.toUpperCase() : 'YÊU THÍCH'),
+      coverUrl: fav.coverUrl || '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      fileUrl: fav.fileUrl,
+      pdfUrl: fav.format === 'pdf' ? fav.fileUrl : null,
+      fileName: fav.fileName,
+      format: (fav.format as any) || 'epub',
+    };
+  }
+
+  return null;
+}
+
 export default function SavedBooksPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'books' | 'bookmarks' | 'notes' | 'offline'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('compact');
   const [userBookmarks, setUserBookmarks] = useState<SavedItem[]>([]);
-  const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>([]);
+  const [favoriteBooks, setFavoriteBooks] = useState<FavoriteBookItem[]>([]);
+  const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('qbiz_removed_curated_books_v1');
+        return saved ? JSON.parse(saved) : [];
+      } catch {}
+    }
+    return [];
+  });
   const [allNotes, setAllNotes] = useState<ReadingNoteItem[]>([]);
   const [readingStats, setReadingStats] = useState<ReadingStats>({
     streakDays: 3,
@@ -236,22 +322,26 @@ export default function SavedBooksPage() {
       setOfflineBooks(list);
       const usage = await offlineStorage.getStorageUsage();
       setOfflineUsage(usage);
+      return list;
     } catch (err) {
       console.error('Lỗi tải danh sách ngoại tuyến:', err);
+      return [];
     }
   };
 
   // Load last read, bookmarks & reading notes
-  const loadData = () => {
+  const loadData = (cachedList: CachedBookMetadata[] = offlineBooks) => {
     try {
+      // 0. Load Favorite Books
+      const favList = getFavoriteBooks();
+      setFavoriteBooks(favList);
+
       // 1. Load Last Read Book
       const lastTitle = localStorage.getItem('last_read_book_title');
       if (lastTitle) {
         const lastPageStr = localStorage.getItem(`last_read_page_${lastTitle}`);
         const pIdx = lastPageStr ? parseInt(lastPageStr, 10) : 0;
-        const matched = DEFAULT_CURATED_SAVED.find(
-          (b) => b.title.toLowerCase() === lastTitle.toLowerCase()
-        );
+        const matched = resolveBookMetadata(lastTitle, cachedList);
         const bookPages = getBookReaderPageUrls({
           id: lastTitle,
           title: lastTitle,
@@ -283,9 +373,7 @@ export default function SavedBooksPage() {
           const val = localStorage.getItem(key);
           if (val) {
             const pageIndices: number[] = JSON.parse(val);
-            const matched = DEFAULT_CURATED_SAVED.find(
-              (b) => b.title.toLowerCase() === title.toLowerCase()
-            );
+            const matched = resolveBookMetadata(title, cachedList);
             const bookPages = getBookReaderPageUrls({
               id: title,
               title,
@@ -316,9 +404,7 @@ export default function SavedBooksPage() {
           if (val) {
             const pIdx = parseInt(val, 10);
             if (!isNaN(pIdx)) {
-              const matched = DEFAULT_CURATED_SAVED.find(
-                (b) => b.title.toLowerCase() === title.toLowerCase()
-              );
+              const matched = resolveBookMetadata(title, cachedList);
               const exists = dynamicItems.some((d) => d.id === `dynamic-${title}-${pIdx}`);
               if (!exists) {
                 const bookPages = getBookReaderPageUrls({
@@ -376,17 +462,28 @@ export default function SavedBooksPage() {
 
   useEffect(() => {
     document.title = 'Đã lưu · Qbiz Books';
-    loadData();
-    loadOfflineList();
+    loadOfflineList().then((cached) => {
+      loadData(cached);
+    });
 
     const handleDownloadEvent = () => {
-      loadOfflineList();
+      loadOfflineList().then((cached) => {
+        loadData(cached);
+      });
     };
+    const handleFavoritesOrHistoryUpdated = () => {
+      loadData();
+    };
+
     window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
     window.addEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+    window.addEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
+    window.addEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
       window.removeEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+      window.removeEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
+      window.removeEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
     };
   }, []);
 
@@ -410,17 +507,42 @@ export default function SavedBooksPage() {
     }
   };
 
+  const favoriteSavedItems: SavedItem[] = useMemo(() => {
+    return favoriteBooks.map((f) => ({
+      id: f.id,
+      title: f.title,
+      category: f.category || (f.format ? f.format.toUpperCase() : 'YÊU THÍCH'),
+      badgeType: 'book' as const,
+      badgeNumber: f.format ? f.format.toUpperCase() : 'FAV',
+      coverUrl: f.coverUrl || '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
+      subtitle: f.author ? `Tác giả: ${f.author}` : 'Sách trong danh sách Yêu thích của bạn',
+      initialPage: 0,
+      fileUrl: f.fileUrl,
+      pdfUrl: f.format === 'pdf' ? f.fileUrl : null,
+      fileName: f.fileName,
+      format: (f.format as any) || 'epub',
+    }));
+  }, [favoriteBooks]);
+
   const visibleCuratedBooks = useMemo(() => {
     return DEFAULT_CURATED_SAVED.filter((c) => !removedCuratedIds.includes(c.id));
   }, [removedCuratedIds]);
 
+  const combinedBooks = useMemo(() => {
+    const existingTitles = new Set(visibleCuratedBooks.map((c) => c.title.toLowerCase().trim()));
+    const extraFavs = favoriteSavedItems.filter(
+      (f) => !existingTitles.has(f.title.toLowerCase().trim())
+    );
+    return [...extraFavs, ...visibleCuratedBooks];
+  }, [visibleCuratedBooks, favoriteSavedItems]);
+
   const allSavedItems = useMemo(() => {
-    return [...userBookmarks, ...visibleCuratedBooks];
-  }, [userBookmarks, visibleCuratedBooks]);
+    return [...userBookmarks, ...combinedBooks];
+  }, [userBookmarks, combinedBooks]);
 
   const displayedSavedItems = useMemo(() => {
     if (activeTab === 'books') {
-      return visibleCuratedBooks;
+      return combinedBooks;
     }
     if (activeTab === 'bookmarks') {
       return userBookmarks;
@@ -429,11 +551,20 @@ export default function SavedBooksPage() {
       return [];
     }
     return allSavedItems;
-  }, [activeTab, visibleCuratedBooks, userBookmarks, allSavedItems]);
+  }, [activeTab, combinedBooks, userBookmarks, allSavedItems]);
 
   const handleToggleRemove = (item: SavedItem) => {
     if (item.id.startsWith('curated-')) {
-      setRemovedCuratedIds((prev) => [...prev, item.id]);
+      setRemovedCuratedIds((prev) => {
+        const next = [...prev, item.id];
+        try {
+          localStorage.setItem('qbiz_removed_curated_books_v1', JSON.stringify(next));
+        } catch {}
+        return next;
+      });
+    } else if (item.id.startsWith('fav-') || favoriteBooks.some((f) => f.title.toLowerCase() === item.title.toLowerCase())) {
+      toggleBookFavorite({ id: item.id, title: item.title });
+      loadData();
     } else {
       // Remove from user bookmark
       try {
@@ -568,7 +699,7 @@ export default function SavedBooksPage() {
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5">
         {[
           { id: 'all', label: 'Tất cả', count: allSavedItems.length + allNotes.length + offlineBooks.length },
-          { id: 'books', label: 'Sách đã lưu', count: visibleCuratedBooks.length },
+          { id: 'books', label: 'Sách đã lưu', count: combinedBooks.length },
           { id: 'bookmarks', label: 'Dấu trang', count: userBookmarks.length },
           { id: 'notes', label: 'Sổ tay ghi chú', count: allNotes.length },
           { id: 'offline', label: 'Ngoại tuyến', count: offlineBooks.length },

@@ -6,17 +6,13 @@ import {
   ChevronRight,
   List,
   Type,
-  Sun,
-  Moon,
-  Coffee,
   Loader2,
   AlertCircle,
   X,
   BookOpen,
   Headphones,
   Sparkles,
-  Volume2,
-  Edit3,
+  ArrowUpDown,
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
@@ -31,18 +27,37 @@ import {
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import ReaderTypographyModal from './ReaderTypographyModal';
 
-interface EpubReaderViewProps {
+export interface EpubReaderViewProps {
   fileUrl: string;
   bookTitle?: string;
   author?: string | null;
   coverUrl?: string | null;
   readingTheme?: 'dark' | 'sepia' | 'ivory';
+  readingMode?: 'curl' | 'roll' | 'scroll'; // 'scroll' = cuộn vô hạn, 'curl'/'roll' = lật từng chương
   typographySettings?: TypographySettings;
+  showInternalHeader?: boolean;
+  targetChapterIdx?: number | null;
+  onChaptersLoaded?: (chapters: EpubChapter[]) => void;
+  onChapterChange?: (idx: number) => void;
   onOpenTypographyModal?: () => void;
   onCenterClick?: () => void;
   onPageProgress?: (currentChapter: number, totalChapters: number) => void;
   onOpenAiCopilot?: (selectedText?: string) => void;
   onOpenNotesModal?: (selectedText?: string) => void;
+}
+
+/** Loại bỏ tiêu đề trùng lặp bên trong nội dung HTML và ngăn tiêu đề quá to */
+function cleanChapterHtml(html: string, title?: string): string {
+  if (!html) return '';
+  let clean = html;
+  if (title) {
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    clean = clean.replace(new RegExp(`<h1[^>]*>\\s*${escaped}\\s*<\\/h1>`, 'gi'), '');
+    clean = clean.replace(/<div class="tag">[^<]*<\/div>/gi, '');
+  }
+  // Chuyển bất kỳ thẻ h1 nào còn lại trong nội dung thành h3 cỡ vừa vặn
+  clean = clean.replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '<h3 class="font-bold text-base my-2">$1</h3>');
+  return clean;
 }
 
 export default function EpubReaderView({
@@ -51,7 +66,12 @@ export default function EpubReaderView({
   author,
   coverUrl,
   readingTheme = 'sepia',
+  readingMode = 'scroll',
   typographySettings,
+  showInternalHeader = false,
+  targetChapterIdx = null,
+  onChaptersLoaded,
+  onChapterChange,
   onOpenTypographyModal,
   onCenterClick,
   onPageProgress,
@@ -117,6 +137,15 @@ export default function EpubReaderView({
     setLocalTheme(readingTheme);
   }, [readingTheme]);
 
+  // Nhảy tới chương được yêu cầu từ ngoài (Target Chapter Index)
+  useEffect(() => {
+    if (typeof targetChapterIdx === 'number' && parsedBook) {
+      if (targetChapterIdx >= 0 && targetChapterIdx < parsedBook.chapters.length) {
+        goToChapter(targetChapterIdx);
+      }
+    }
+  }, [targetChapterIdx, parsedBook]);
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -148,6 +177,7 @@ export default function EpubReaderView({
 
         setParsedBook(book);
         setCurrentChapterIdx(0);
+        onChaptersLoaded?.(book.chapters);
         onPageProgress?.(1, book.chapters.length);
       } catch (err: any) {
         if (!isCancelled) {
@@ -176,11 +206,12 @@ export default function EpubReaderView({
   // Xử lý nội dung chương với Bionic Reading nếu được kích hoạt
   const renderedContent = useMemo(() => {
     if (!currentChapter?.htmlContent) return '';
+    const cleaned = cleanChapterHtml(currentChapter.htmlContent, currentChapter.title);
     if (activeTypography.bionicReading) {
-      return applyBionicToHtml(currentChapter.htmlContent, activeTypography.bionicIntensity);
+      return applyBionicToHtml(cleaned, activeTypography.bionicIntensity);
     }
-    return currentChapter.htmlContent;
-  }, [currentChapter?.htmlContent, activeTypography.bionicReading, activeTypography.bionicIntensity]);
+    return cleaned;
+  }, [currentChapter?.htmlContent, currentChapter?.title, activeTypography.bionicReading, activeTypography.bionicIntensity]);
 
   // Dọn dẹp âm thanh khi đóng giao diện
   useEffect(() => {
@@ -223,7 +254,8 @@ export default function EpubReaderView({
       effectiveCover,
       currentChapter.title || `Chương ${currentChapterIdx + 1}`
     );
-    const paras = extractParagraphsFromHtml(currentChapter.htmlContent);
+    const cleaned = cleanChapterHtml(currentChapter.htmlContent, currentChapter.title);
+    const paras = extractParagraphsFromHtml(cleaned);
     if (paras.length === 0) {
       const raw = contentRef.current?.textContent?.trim() || '';
       if (raw) {
@@ -267,9 +299,19 @@ export default function EpubReaderView({
     setShowToc(false);
     clearParagraphHighlight();
     onPageProgress?.(idx + 1, parsedBook.chapters.length);
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0;
+    onChapterChange?.(idx);
+
+    if (readingMode === 'scroll') {
+      const targetSec = document.getElementById(`epub-chapter-${idx}`);
+      if (targetSec) {
+        targetSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
     }
+
     if (isAudioOpen) {
       setTimeout(() => {
         const nextCh = parsedBook.chapters[idx];
@@ -283,7 +325,7 @@ export default function EpubReaderView({
             effectiveCover,
             nextCh.title || `Chương ${idx + 1}`
           );
-          const paras = extractParagraphsFromHtml(nextCh.htmlContent);
+          const paras = extractParagraphsFromHtml(cleanChapterHtml(nextCh.htmlContent, nextCh.title));
           bookAudioPlayer.setQueue(paras, 0);
           bookAudioPlayer.play(0);
         }
@@ -303,13 +345,14 @@ export default function EpubReaderView({
     }
   };
 
-  // Vuốt chạm ngang để chuyển chương
+  // Vuốt chạm ngang để chuyển chương (chỉ bật khi ở chế độ lật trang)
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (readingMode === 'scroll') return;
     touchStartX.current = e.touches[0].clientX;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
+    if (readingMode === 'scroll' || touchStartX.current === null) return;
     const diff = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
     if (diff < -70) {
@@ -336,11 +379,11 @@ export default function EpubReaderView({
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
         <Loader2 size={36} className="animate-spin text-amber-500" />
-        <p className="text-base font-bold text-amber-200">
+        <p className="text-sm font-bold text-amber-200">
           Đang nạp và định dạng cuốn sách EPUB...
         </p>
         <p className="text-xs text-amber-300/70 max-w-sm">
-          Hệ thống đang trích xuất mục lục, cấu trúc chương và hình ảnh chất lượng cao.
+          Hệ thống đang nạp các chương và phông chữ tinh tế.
         </p>
       </div>
     );
@@ -352,7 +395,7 @@ export default function EpubReaderView({
         <div className="w-14 h-14 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center">
           <AlertCircle size={28} />
         </div>
-        <p className="text-base font-bold text-red-200">
+        <p className="text-sm font-bold text-red-200">
           {error || 'Không tìm thấy nội dung cuốn sách.'}
         </p>
         <a
@@ -366,101 +409,81 @@ export default function EpubReaderView({
     );
   }
 
-
   return (
     <div
       className={`w-full h-full flex flex-col relative select-text transition-colors duration-200 ${themeStyles[localTheme]}`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* THANH ĐIỀU KHIỂN ĐỌC SÁCH TRÊN CÙNG */}
-      <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 border-b border-black/10 dark:border-white/10 shrink-0 gap-2 text-xs">
-        {/* Nút Mục Lục (TOC) */}
-        <button
-          type="button"
-          onClick={() => setShowToc(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 transition-colors font-bold cursor-pointer shrink-0"
-          title="Mục lục chương"
-        >
-          <List size={14} />
-          <span className="hidden xs:inline">Mục lục ({totalChapters})</span>
-        </button>
-
-        {/* Tên chương hiện tại */}
-        <div className="flex-1 min-w-0 text-center px-2">
-          <p className="font-extrabold truncate text-[13px]">
-            {currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
-          </p>
-          <p className="text-[10px] opacity-65 truncate">
-            {parsedBook.title} {author ? `· ${author}` : ''}
-          </p>
-        </div>
-
-        {/* Cụm chỉnh Cỡ chữ & Theme & Sách Nói */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Nút Sách Nói AI 🎧 */}
+      <style jsx global>{`
+        .epub-rendered-content h1,
+        .epub-rendered-content h2,
+        .epub-rendered-content h3 {
+          font-size: 1.1rem !important;
+          line-height: 1.4 !important;
+          font-weight: 700 !important;
+          margin-top: 0.9rem !important;
+          margin-bottom: 0.45rem !important;
+        }
+        .epub-rendered-content p {
+          margin-bottom: 0.85rem !important;
+        }
+      `}</style>
+      {/* THANH ĐIỀU KHIỂN NỘI BỘ (Chỉ hiển thị khi showInternalHeader = true) */}
+      {showInternalHeader && (
+        <div className="flex items-center justify-between px-3 sm:px-6 py-2 border-b border-black/10 dark:border-white/10 shrink-0 gap-2 text-xs">
           <button
             type="button"
-            onClick={toggleAudioBook}
-            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
-              isAudioOpen
-                ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
-                : 'bg-black/5 dark:bg-white/10 hover:bg-black/10'
-            }`}
-            title={isAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI (Đọc tiếng Việt tự động)'}
+            onClick={() => setShowToc(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 transition-colors font-bold cursor-pointer shrink-0"
+            title="Mục lục chương"
           >
-            <Headphones size={14} className={isAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-500'} />
-            <span className="hidden xs:inline">Sách nói</span>
+            <List size={14} />
+            <span className="hidden xs:inline">Mục lục ({totalChapters})</span>
           </button>
 
-          {/* Nút Hỏi AI ✨ */}
-          {onOpenAiCopilot && (
+          <div className="flex-1 min-w-0 text-center px-2">
+            <p className="font-bold truncate text-xs">
+              {currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={() => onOpenAiCopilot(selectedText || undefined)}
-              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-800 dark:text-amber-300 hover:text-slate-950 border border-amber-500/30 transition-all cursor-pointer font-bold active:scale-95"
-              title="Hỏi Trợ lý AI về chương này"
+              onClick={toggleAudioBook}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold ${
+                isAudioOpen
+                  ? 'bg-amber-500 text-slate-950 shadow-md'
+                  : 'bg-black/5 dark:bg-white/10 hover:bg-black/10'
+              }`}
+              title={isAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI'}
             >
-              <Sparkles size={14} className="text-amber-500" />
-              <span className="hidden xs:inline">Hỏi AI</span>
+              <Headphones size={13} className={isAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-500'} />
+              <span className="text-[11px]">Sách nói</span>
             </button>
-          )}
 
-          {/* Nút Cài đặt Phông chữ & Bionic Reading Aa */}
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenTypographyModal) {
-                onOpenTypographyModal();
-              } else {
-                setShowTypographyModal(true);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all font-bold text-xs cursor-pointer active:scale-95 ${
-              activeTypography.bionicReading
-                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs'
-                : 'bg-black/5 dark:bg-white/10 hover:bg-black/10 border-transparent'
-            }`}
-            title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
-            aria-label="Cài đặt phông chữ và Bionic reading"
-          >
-            <Type size={13} />
-            <span>Aa</span>
-            {activeTypography.bionicReading && (
-              <Sparkles size={12} className="text-amber-500 animate-pulse" />
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => (onOpenTypographyModal ? onOpenTypographyModal() : setShowTypographyModal(true))}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 font-bold text-xs cursor-pointer"
+              title="Cài đặt chữ"
+            >
+              <Type size={13} />
+              <span>Aa</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* VÙNG NỘI DUNG CHƯƠNG SÁCH CUỘN MƯỢT MÀ */}
+      {/* KHUNG ĐỌC VĂN BẢN CHÍNH */}
       <div
         ref={contentRef}
         onClick={(e) => {
           const target = e.target as HTMLElement;
           if (target.tagName === 'A' || target.tagName === 'BUTTON') return;
 
-          // Nếu đang bật sách nói và click vào 1 thẻ đoạn văn, chuyển giọng đọc ngay tới đoạn đó
+          // Nếu đang bật sách nói và click vào 1 đoạn văn, chuyển giọng đọc ngay tới đoạn đó
           if (isAudioOpen && contentRef.current) {
             const elements = Array.from(
               contentRef.current.querySelectorAll(
@@ -484,12 +507,15 @@ export default function EpubReaderView({
             onCenterClick?.();
           }
         }}
-        className="flex-1 overflow-y-auto px-4 sm:px-12 md:px-20 lg:px-32 py-6 sm:py-10 max-w-4xl mx-auto w-full"
+        className="flex-1 overflow-y-auto px-4 sm:px-10 md:px-16 lg:px-24 py-4 sm:py-8 max-w-3xl mx-auto w-full"
         style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'auto', overscrollBehaviorY: 'contain' }}
       >
-        {currentChapter ? (
-          <article
-            className={`prose prose-base sm:prose-lg max-w-none leading-relaxed ${getFontFamilyClass(
+        {readingMode === 'scroll' ? (
+          /* =========================================================================
+             1. CHẾ ĐỘ CUỘN VÔ HẠN XUỐNG DƯỚI (CONTINUOUS INFINITE VERTICAL SCROLL)
+             ========================================================================= */
+          <div
+            className={`prose prose-sm sm:prose-base max-w-none leading-relaxed flex flex-col gap-10 pb-20 ${getFontFamilyClass(
               activeTypography.fontFamily
             )}`}
             style={{
@@ -498,51 +524,118 @@ export default function EpubReaderView({
               textAlign: activeTypography.textAlign,
             }}
           >
-            <h1
-              className={`text-2xl sm:text-3xl font-extrabold mb-6 pb-3 border-b border-black/10 dark:border-white/10 ${headingColors[localTheme]}`}
-            >
-              {currentChapter.title}
-            </h1>
+            {parsedBook.chapters.map((chap, idx) => {
+              const cleanedHtml = cleanChapterHtml(chap.htmlContent, chap.title);
+              const processedContent = activeTypography.bionicReading
+                ? applyBionicToHtml(cleanedHtml, activeTypography.bionicIntensity)
+                : cleanedHtml;
 
-            {/* Nội dung chương HTML đã xử lý Bionic Reading */}
-            <div
-              className="epub-rendered-content space-y-4"
-              dangerouslySetInnerHTML={{ __html: renderedContent }}
-            />
-          </article>
+              return (
+                <section
+                  key={`chapter-sec-${idx}`}
+                  id={`epub-chapter-${idx}`}
+                  className="chapter-block border-b border-black/10 dark:border-white/10 pb-10 last:border-b-0"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 font-mono text-[10px] font-bold">
+                      Chương {idx + 1} / {totalChapters}
+                    </span>
+                    <span className="text-[11px] opacity-60 truncate">
+                      {parsedBook.title}
+                    </span>
+                  </div>
+
+                  {/* TIÊU ĐỀ CHƯƠNG KÍCH THƯỚC VỪA VẶN, ĐẸP MẮT (KHÔNG BỊ QUÁ TO) */}
+                  <h2
+                    className={`text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10 ${headingColors[localTheme]}`}
+                  >
+                    {chap.title}
+                  </h2>
+
+                  {/* NỘI DUNG VĂN BẢN CHƯƠNG */}
+                  <div
+                    className="epub-rendered-content space-y-3.5"
+                    dangerouslySetInnerHTML={{ __html: processedContent }}
+                  />
+                </section>
+              );
+            })}
+
+            <div className="text-center py-6 opacity-60 text-xs font-serif italic border-t border-black/10 dark:border-white/10">
+              ✦ Hết cuốn sách • Bạn đã đọc trọn vẹn tác phẩm ✦
+            </div>
+          </div>
         ) : (
-          <p className="text-center py-12 text-sm opacity-70">Chưa có nội dung chương này.</p>
+          /* =========================================================================
+             2. CHẾ ĐỘ LẬT TỪNG CHƯƠNG (PAGE / CHAPTER BY CHAPTER)
+             ========================================================================= */
+          currentChapter ? (
+            <article
+              className={`prose prose-sm sm:prose-base max-w-none leading-relaxed ${getFontFamilyClass(
+                activeTypography.fontFamily
+              )}`}
+              style={{
+                fontSize: `${activeTypography.fontSize}px`,
+                lineHeight: activeTypography.lineHeight,
+                textAlign: activeTypography.textAlign,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-300 font-mono text-[10px] font-bold">
+                  Chương {currentChapterIdx + 1} / {totalChapters}
+                </span>
+                <span className="text-[11px] opacity-60 truncate">
+                  {parsedBook.title}
+                </span>
+              </div>
+
+              {/* TIÊU ĐỀ CHƯƠNG VỪA VẶN ĐƠN DÒNG / 2 DÒNG TINH TẾ */}
+              <h2
+                className={`text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10 ${headingColors[localTheme]}`}
+              >
+                {currentChapter.title}
+              </h2>
+
+              {/* Nội dung chương HTML */}
+              <div
+                className="epub-rendered-content space-y-3.5"
+                dangerouslySetInnerHTML={{ __html: renderedContent }}
+              />
+
+              {/* NÚT CHUYỂN CHƯƠNG CUỐI BÀI */}
+              <div className="flex items-center justify-between gap-3 pt-8 pb-12 mt-6 border-t border-black/10 dark:border-white/10 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={prevChapter}
+                  disabled={currentChapterIdx <= 0}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95"
+                >
+                  <ChevronLeft size={15} />
+                  <span>Chương trước</span>
+                </button>
+
+                <span className="opacity-60 text-xs">
+                  {currentChapterIdx + 1} / {totalChapters}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={nextChapter}
+                  disabled={currentChapterIdx >= totalChapters - 1}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95 shadow-xs"
+                >
+                  <span>Chương tiếp</span>
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </article>
+          ) : (
+            <p className="text-center py-12 text-sm opacity-70">Chưa có nội dung chương này.</p>
+          )
         )}
-
-        {/* NÚT CHUYỂN CHƯƠNG CUỐI BÀI */}
-        <div className="flex items-center justify-between gap-3 pt-10 pb-16 mt-8 border-t border-black/10 dark:border-white/10 text-xs sm:text-sm font-bold">
-          <button
-            type="button"
-            onClick={prevChapter}
-            disabled={currentChapterIdx <= 0}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95"
-          >
-            <ChevronLeft size={16} />
-            <span>Chương trước</span>
-          </button>
-
-          <span className="opacity-60 text-xs">
-            {currentChapterIdx + 1} / {totalChapters}
-          </span>
-
-          <button
-            type="button"
-            onClick={nextChapter}
-            disabled={currentChapterIdx >= totalChapters - 1}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95 shadow-xs"
-          >
-            <span>Chương tiếp</span>
-            <ChevronRight size={16} />
-          </button>
-        </div>
       </div>
 
-      {/* MODAL MỤC LỤC CHƯƠNG (TOC MODAL) */}
+      {/* MODAL MỤC LỤC NỘI BỘ (Khi showInternalHeader = true) */}
       {showToc && (
         <div
           role="dialog"
@@ -557,7 +650,7 @@ export default function EpubReaderView({
             <div className="flex items-center justify-between pb-3 border-b border-line shrink-0">
               <div className="flex items-center gap-2">
                 <BookOpen size={18} className="text-primary" />
-                <h3 className="text-base font-extrabold text-ink">
+                <h3 className="text-sm font-bold text-ink">
                   Mục Lục Cuốn Sách ({totalChapters} chương)
                 </h3>
               </div>
@@ -571,98 +664,33 @@ export default function EpubReaderView({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto py-2 divide-y divide-line/60">
-              {parsedBook.chapters.map((ch, idx) => (
-                <button
-                  key={ch.id || idx}
-                  type="button"
-                  onClick={() => goToChapter(idx)}
-                  className={`w-full text-left p-3 rounded-xl flex items-center justify-between gap-2 transition-colors cursor-pointer ${
-                    idx === currentChapterIdx
-                      ? 'bg-primary/10 text-primary font-bold'
-                      : 'hover:bg-surface-2 text-ink/90'
-                  }`}
-                >
-                  <span className="text-xs sm:text-[13px] line-clamp-1">
-                    {idx + 1}. {ch.title}
-                  </span>
-                  {idx === currentChapterIdx && (
-                    <span className="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-primary text-white">
-                      Đang đọc
+            <div className="flex-1 overflow-y-auto py-2 divide-y divide-line/40">
+              {parsedBook.chapters.map((chap, idx) => {
+                const isActive = idx === currentChapterIdx;
+                return (
+                  <button
+                    key={`toc-${idx}`}
+                    type="button"
+                    onClick={() => goToChapter(idx)}
+                    className={`w-full text-left py-2.5 px-3 rounded-xl flex items-center justify-between text-xs font-semibold cursor-pointer transition-colors ${
+                      isActive
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold'
+                        : 'hover:bg-surface-2 text-ink/80'
+                    }`}
+                  >
+                    <span className="truncate pr-2">{chap.title}</span>
+                    <span className="text-[10px] opacity-60 font-mono shrink-0">
+                      {idx + 1}
                     </span>
-                  )}
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* KHỐI MINI TOOLTIP KHI BÔI ĐEN VĂN BẢN TRONG EPUB */}
-      {bubbleCoords && selectedText && (
-        <div
-          style={{ top: bubbleCoords.y, left: bubbleCoords.x }}
-          className="fixed z-50 flex items-center gap-1 p-1 rounded-xl bg-[#2A160A]/95 text-amber-200 border border-amber-500/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 select-none"
-        >
-          <button
-            type="button"
-            onClick={() => {
-              onOpenAiCopilot?.(selectedText);
-              setBubbleCoords(null);
-            }}
-            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shadow-sm active:scale-95 transition-all cursor-pointer"
-          >
-            <Sparkles size={11} className="text-slate-950" />
-            <span>Hỏi AI ✨</span>
-          </button>
-          {onOpenNotesModal && (
-            <button
-              type="button"
-              onClick={() => {
-                onOpenNotesModal(selectedText);
-                setBubbleCoords(null);
-              }}
-              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
-            >
-              <Edit3 size={11} />
-              <span>Ghi chú</span>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              bookAudioPlayer.setQueue([selectedText], 0);
-              bookAudioPlayer.play(0);
-              setBubbleCoords(null);
-            }}
-            className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
-          >
-            <Volume2 size={11} />
-            <span>Đọc</span>
-          </button>
-        </div>
-      )}
-
-      {/* THANH PHÁT SÁCH NÓI AI NỔI */}
-      {isAudioOpen && (
-        <BookAudioPlayerBar
-          chapterTitle={currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
-          onClose={() => {
-            setIsAudioOpen(false);
-            clearParagraphHighlight();
-          }}
-          onAutoNextChapter={() => {
-            if (currentChapterIdx < totalChapters - 1) {
-              goToChapter(currentChapterIdx + 1);
-            } else {
-              setIsAudioOpen(false);
-              clearParagraphHighlight();
-            }
-          }}
-        />
-      )}
-
-      {/* MODAL CÀI ĐẶT PHÔNG CHỮ & BIONIC READING */}
+      {/* MODAL CÀI ĐẶT PHÔNG CHỮ & BIONIC READING (Typography) */}
       <ReaderTypographyModal
         isOpen={showTypographyModal}
         onClose={() => setShowTypographyModal(false)}
@@ -671,17 +699,56 @@ export default function EpubReaderView({
         readingTheme={localTheme === 'dark' ? 'dark' : localTheme === 'sepia' ? 'sepia' : 'light'}
       />
 
-      {/* Hiệu ứng Highlight cho đoạn văn bản đang đọc */}
-      <style jsx global>{`
-        .audio-active-reading {
-          background-color: rgba(245, 158, 11, 0.16) !important;
-          border-left: 4px solid #f59e0b !important;
-          padding-left: 12px !important;
-          border-radius: 8px !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-      `}</style>
+      {/* TRÌNH PHÁT SÁCH NÓI AI NỔI GIỮA MÀN HÌNH (BookAudioPlayerBar) */}
+      {isAudioOpen && (
+        <BookAudioPlayerBar
+          onClose={() => {
+            setIsAudioOpen(false);
+            clearParagraphHighlight();
+          }}
+          chapterTitle={currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
+          onAutoNextChapter={nextChapter}
+        />
+      )}
+
+      {/* FLOATING ACTION TOOLTIP: HỎI TRỢ LÝ AI & LƯU GHI CHÚ KHI BÔI ĐEN CHỮ */}
+      {selectedText && bubbleCoords && (
+        <div
+          style={{ top: bubbleCoords.y, left: bubbleCoords.x }}
+          className="fixed z-50 flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/95 text-white border border-amber-500/50 shadow-2xl animate-in zoom-in-95 pointer-events-auto"
+        >
+          {onOpenAiCopilot && (
+            <button
+              type="button"
+              onClick={() => {
+                const text = selectedText;
+                setSelectedText(null);
+                setBubbleCoords(null);
+                onOpenAiCopilot(text);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+            >
+              <Sparkles size={12} />
+              <span>Hỏi AI</span>
+            </button>
+          )}
+
+          {onOpenNotesModal && (
+            <button
+              type="button"
+              onClick={() => {
+                const text = selectedText;
+                setSelectedText(null);
+                setBubbleCoords(null);
+                onOpenNotesModal(text);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+            >
+              <span>Lưu chép</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

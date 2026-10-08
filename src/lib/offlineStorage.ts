@@ -39,6 +39,7 @@ export interface OfflineBookData extends OfflineBookMeta {
 class OfflineStorageEngine {
   private dbPromise: Promise<IDBDatabase> | null = null;
   private activeBlobUrls = new Map<string, string>();
+  private activeCoverBlobUrls = new Map<string, string>();
 
   private getDB(): Promise<IDBDatabase> {
     if (this.dbPromise) return this.dbPromise;
@@ -248,10 +249,15 @@ class OfflineStorageEngine {
               this.activeBlobUrls.set(rec.id, blobUrl);
             }
 
-            // Tạo Object URL cho bìa sách (nếu có blob bìa)
+            // Tạo Object URL cho bìa sách (nếu có blob bìa) và lưu cache tránh rò rỉ bộ nhớ
             let coverUrl = rec.coverUrl;
             if (rec.coverBlob) {
-              coverUrl = URL.createObjectURL(rec.coverBlob);
+              let cachedCover = this.activeCoverBlobUrls.get(rec.id);
+              if (!cachedCover) {
+                cachedCover = URL.createObjectURL(rec.coverBlob);
+                this.activeCoverBlobUrls.set(rec.id, cachedCover);
+              }
+              coverUrl = cachedCover;
             }
 
             resolve({
@@ -296,7 +302,12 @@ class OfflineStorageEngine {
           const metas: OfflineBookMeta[] = list.map((item) => {
             let coverUrl = item.coverUrl;
             if (item.coverBlob) {
-              coverUrl = URL.createObjectURL(item.coverBlob);
+              let cachedCover = this.activeCoverBlobUrls.get(item.id);
+              if (!cachedCover) {
+                cachedCover = URL.createObjectURL(item.coverBlob);
+                this.activeCoverBlobUrls.set(item.id, cachedCover);
+              }
+              coverUrl = cachedCover;
             }
             return {
               id: item.id,
@@ -338,6 +349,11 @@ class OfflineStorageEngine {
       if (existingUrl) {
         URL.revokeObjectURL(existingUrl);
         this.activeBlobUrls.delete(id);
+      }
+      const existingCover = this.activeCoverBlobUrls.get(id);
+      if (existingCover) {
+        URL.revokeObjectURL(existingCover);
+        this.activeCoverBlobUrls.delete(id);
       }
 
       return new Promise<boolean>((resolve) => {

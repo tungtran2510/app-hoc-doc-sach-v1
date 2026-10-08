@@ -62,17 +62,13 @@ function createEpubBuffer(title, author, identifier, chapters) {
   <meta charset="utf-8"/>
   <title>${chap.title}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", serif; line-height: 1.8; padding: 1.5rem; color: #1e1e1e; background-color: #faf8f5; }
-    h1 { color: #8B4513; border-bottom: 2px solid #8B4513; padding-bottom: 0.5rem; font-size: 1.4rem; font-weight: bold; }
-    h2 { color: #5c2c16; font-size: 1.15rem; margin-top: 1.2rem; }
-    p { margin-bottom: 1rem; text-indent: 1.5rem; text-align: justify; font-size: 1.05rem; }
-    .quote { font-style: italic; color: #6d4c41; border-left: 3px solid #8B4513; padding-left: 1rem; margin: 1rem 0; }
-    .tag { display: inline-block; background: #e8d8c8; color: #5c2c16; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 1rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", serif; line-height: 1.8; padding: 1rem 1.25rem; color: #1e1e1e; background-color: #faf8f5; }
+    h2 { color: #5c2c16; font-size: 1.05rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
+    p { margin-bottom: 0.85rem; text-indent: 1.25rem; text-align: justify; font-size: 1rem; line-height: 1.7; }
+    .quote { font-style: italic; color: #6d4c41; border-left: 3px solid #8B4513; padding-left: 0.8rem; margin: 0.8rem 0; }
   </style>
 </head>
 <body>
-  <div class="tag">TỦ SÁCH KINH ĐIỂN VIỆT NAM</div>
-  <h1>${chap.title}</h1>
   ${chap.content}
 </body>
 </html>`

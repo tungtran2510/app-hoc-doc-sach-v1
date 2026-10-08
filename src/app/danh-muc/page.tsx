@@ -22,6 +22,7 @@ import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { DEFAULT_RECOMMENDED_BOOKS } from '../../data/sample';
 import { RecommendedBook } from '../../lib/types';
+import { offlineStorage } from '../../lib/offlineStorage';
 
 export interface BookCategory {
   id: string;
@@ -173,10 +174,45 @@ export default function CategoriesPage() {
             pdf_url: b.pdf_url || null,
             file_name: b.file_name || null,
           }));
-          setAllBooks(mapped);
+          setAllBooks((prev) => {
+            const existingIds = new Set(mapped.map((m) => m.id));
+            const retained = prev.filter((p) => !existingIds.has(p.id) && p.id.startsWith('offline_'));
+            return [...mapped, ...retained];
+          });
         }
       })
       .catch(() => {});
+
+    // Nạp sách đã tải về từ IndexedDB để hiển thị trong mọi danh mục
+    const loadOfflineBooks = () => {
+      offlineStorage.getAllCachedBooks().then((cached) => {
+        if (cached && cached.length > 0) {
+          const offlineMapped: RecommendedBook[] = cached.map((b) => ({
+            id: b.id,
+            title: b.title,
+            author: b.author || 'Tác giả ngoại tuyến',
+            description: b.format ? `Sách tải về (${b.format.toUpperCase()})` : 'Sách ngoại tuyến đã lưu trên máy',
+            cover_url: b.coverUrl || null,
+            badge_tag: b.format?.toUpperCase() || 'OFFLINE',
+            gallery_images: [],
+            file_url: b.fileUrl || null,
+            pdf_url: b.format === 'pdf' ? (b.fileUrl || null) : null,
+            file_name: b.fileName || null,
+          }));
+          setAllBooks((prev) => {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const newItems = offlineMapped.filter((item) => !existingIds.has(item.id));
+            return [...prev, ...newItems];
+          });
+        }
+      }).catch(() => {});
+    };
+
+    loadOfflineBooks();
+    window.addEventListener('qbiz_books_updated', loadOfflineBooks);
+    return () => {
+      window.removeEventListener('qbiz_books_updated', loadOfflineBooks);
+    };
   }, []);
 
   // Lưu danh mục vào localStorage

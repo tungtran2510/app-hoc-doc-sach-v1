@@ -44,6 +44,7 @@ export default function AudiobookPlayerModal({
   isDownloaded = false,
 }: AudiobookPlayerModalProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastSaveTimeRef = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
@@ -64,7 +65,10 @@ export default function AudiobookPlayerModal({
 
     setIsLoading(true);
     setLoadError(null);
-    setCurrentTime(0);
+    const savedProgress = typeof window !== 'undefined' ? localStorage.getItem(`audiobook_progress_${book.id}`) : null;
+    const initialTime = savedProgress ? parseFloat(savedProgress) : 0;
+    const safeInitialTime = isNaN(initialTime) || initialTime < 0 ? 0 : initialTime;
+    setCurrentTime(safeInitialTime);
     setDuration(0);
 
     const audio = audioRef.current;
@@ -72,6 +76,9 @@ export default function AudiobookPlayerModal({
       let resolvedSrc = book.audioUrl;
       audio.src = resolvedSrc;
       audio.load();
+      if (safeInitialTime > 0) {
+        audio.currentTime = safeInitialTime;
+      }
       audio
         .play()
         .then(() => {
@@ -219,6 +226,14 @@ export default function AudiobookPlayerModal({
             if (duration > 0) {
               backgroundAudioManager.updatePositionState(cur, duration, playbackRate);
             }
+            // Throttled lưu vị trí nghe mỗi 2 giây
+            if (typeof window !== 'undefined' && book?.id) {
+              const now = Date.now();
+              if (now - lastSaveTimeRef.current > 2000) {
+                lastSaveTimeRef.current = now;
+                localStorage.setItem(`audiobook_progress_${book.id}`, cur.toString());
+              }
+            }
           }
         }}
         onLoadedMetadata={() => {
@@ -238,10 +253,16 @@ export default function AudiobookPlayerModal({
         onPause={() => {
           setIsPlaying(false);
           backgroundAudioManager.updatePlaybackState('paused');
+          if (typeof window !== 'undefined' && book?.id && audioRef.current) {
+            localStorage.setItem(`audiobook_progress_${book.id}`, audioRef.current.currentTime.toString());
+          }
         }}
         onEnded={() => {
           setIsPlaying(false);
           backgroundAudioManager.updatePlaybackState('paused');
+          if (typeof window !== 'undefined' && book?.id) {
+            localStorage.removeItem(`audiobook_progress_${book.id}`);
+          }
         }}
         onError={() => {
           setIsLoading(false);

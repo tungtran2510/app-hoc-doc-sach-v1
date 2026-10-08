@@ -27,13 +27,13 @@ export const CURATED_COVER_TEMPLATES: CuratedCoverTemplate[] = [
   {
     id: 'cover_navy',
     name: 'Xanh Hoàng Gia (Atlas Giải Phẫu)',
-    url: '/documents/covers/cover_atlas_giai_phau.png',
+    url: '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
     color: '#122e54',
   },
   {
     id: 'cover_amber',
     name: 'Nâu Cổ Điển (Y học thường thức)',
-    url: '/documents/covers/cover_sach_3d_co_the.png',
+    url: '/documents/covers/cover_co-the-nguoi.png',
     color: '#422410',
   },
 ];
