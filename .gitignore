@@ -32,3 +32,7 @@ scripts/test_*.js
 .env*
 server_runner.js
 scripts/audit_*.js
+scripts/verify_*.js
+scripts/inspect_*.js
+scripts/build_*.js
+scripts/full_system_*.js

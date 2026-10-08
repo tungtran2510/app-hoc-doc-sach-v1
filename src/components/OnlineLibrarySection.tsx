@@ -445,6 +445,10 @@ export default function OnlineLibrarySection({
           onClick={() => {
             playTapSound();
             setSelectedMedium('read');
+            if (selectedCategory !== 'all') {
+              const hasRead = queryMatchedBooks.some((b) => b.category === selectedCategory && b.medium !== 'audio');
+              if (!hasRead) setSelectedCategory('all');
+            }
           }}
           className={`h-7 px-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer border flex items-center gap-1 ${
             selectedMedium === 'read'
@@ -461,6 +465,10 @@ export default function OnlineLibrarySection({
           onClick={() => {
             playTapSound();
             setSelectedMedium('audio');
+            if (selectedCategory !== 'all') {
+              const hasAudio = queryMatchedBooks.some((b) => b.category === selectedCategory && b.medium === 'audio');
+              if (!hasAudio) setSelectedCategory('all');
+            }
           }}
           className={`h-7 px-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer border flex items-center gap-1 ${
             selectedMedium === 'audio'
@@ -512,6 +520,16 @@ export default function OnlineLibrarySection({
               onClick={() => {
                 playTapSound();
                 setSelectedCategory(cat.id);
+                if (cat.id !== 'all' && selectedMedium !== 'all') {
+                  const hasInCurrent = queryMatchedBooks.some(
+                    (b) =>
+                      b.category === cat.id &&
+                      (selectedMedium === 'audio' ? b.medium === 'audio' : b.medium !== 'audio')
+                  );
+                  if (!hasInCurrent) {
+                    setSelectedMedium('all');
+                  }
+                }
               }}
               className={`h-6 px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer border ${
                 isSelected
@@ -659,14 +677,24 @@ export default function OnlineLibrarySection({
                           </button>
                         </>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleDownload(book)}
-                          className="h-6 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                        >
-                          <Download size={11} strokeWidth={2.5} />
-                          <span>Tải về</span>
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDownloaded(book)}
+                            className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                          >
+                            <BookOpen size={11} />
+                            <span>Đọc ngay</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(book)}
+                            className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                            title="Tải đọc ngoại tuyến"
+                          >
+                            <Download size={11} strokeWidth={2.4} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}

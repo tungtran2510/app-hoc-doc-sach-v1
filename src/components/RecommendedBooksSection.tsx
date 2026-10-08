@@ -15,6 +15,8 @@ import {
   BookOpen,
   Sparkles,
   FileText,
+  Play,
+  Headphones,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
 import { checkIsAdminClient } from '../lib/adminAuth';
@@ -28,8 +30,10 @@ import ScrollReveal from './ScrollReveal';
 import FlipbookViewer from './FlipbookViewer';
 import WoodenBookshelf from './WoodenBookshelf';
 import SideBooksReaderModal from './SideBooksReaderModal';
+import AudiobookPlayerModal from './AudiobookPlayerModal';
 import { getBookReaderPageUrls } from '../lib/bookReaderPages';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
+import { getLastListenedAudiobook, AudiobookHistoryItem } from '../lib/audiobookHistory';
 
 interface RecommendedBooksSectionProps {
   initialTitle?: string | null;
@@ -97,6 +101,19 @@ export default function RecommendedBooksSection({
   const [sideBooksInitialPage, setSideBooksInitialPage] = useState<number>(0);
   const [flipbookPreviewBook, setFlipbookPreviewBook] = useState<RecommendedBook | null>(null);
   const [editingSingleBook, setEditingSingleBook] = useState<RecommendedBook | null>(null);
+  const [audioResume, setAudioResume] = useState<AudiobookHistoryItem | null>(null);
+  const [showResumePlayer, setShowResumePlayer] = useState<boolean>(false);
+
+  useEffect(() => {
+    setAudioResume(getLastListenedAudiobook());
+    const handleHistoryUpdate = () => {
+      setAudioResume(getLastListenedAudiobook());
+    };
+    window.addEventListener('qbiz_audiobook_history_updated', handleHistoryUpdate);
+    return () => {
+      window.removeEventListener('qbiz_audiobook_history_updated', handleHistoryUpdate);
+    };
+  }, []);
 
   const handleOpenAddSingleBook = () => {
     const newBook: RecommendedBook = {
@@ -373,6 +390,39 @@ export default function RecommendedBooksSection({
           onEdit={() => setShowEditModal(true)}
           editLabel="Cài đặt khối sách"
         />
+      )}
+
+      {/* KHỐI TIẾP TỤC NGHE DỞ SÁCH NÓI (CHUẨN 1 DÒNG TINH GỌN MOBILE) */}
+      {audioResume && audioResume.percent < 98 && audioResume.currentTime > 5 && (
+        <div
+          onClick={() => setShowResumePlayer(true)}
+          className="mx-1 sm:mx-0 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-[#24150b] via-[#1a0e07] to-[#120904] border border-amber-500/40 shadow-md flex items-center justify-between gap-2.5 cursor-pointer hover:border-amber-400 transition-all select-none animate-in fade-in"
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+              <Headphones size={15} />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider">
+                  Đang nghe dở · {audioResume.percent}%
+                </span>
+              </div>
+              <span className="text-xs font-bold text-amber-100 truncate">
+                {audioResume.title}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="h-7 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95 transition-transform"
+          >
+            <Play size={11} className="fill-current" />
+            <span>Nghe tiếp</span>
+          </button>
+        </div>
       )}
 
       {/* TIÊU ĐỀ MỤC & BỘ CHUYỂN CHẾ ĐỘ (CHỈ HIỂN THỊ KHI KHÔNG Ở CHẾ ĐỘ KỆ GỖ 3D ĐỂ TRÁNH LẶP TIÊU ĐỀ) */}
@@ -806,6 +856,18 @@ export default function RecommendedBooksSection({
           setSideBooksInitialPage(0);
         }}
       />
+
+      {/* TRÌNH PHÁT SÁCH NÓI MP3 CHUYÊN NGHIỆP */}
+      {audioResume && (
+        <AudiobookPlayerModal
+          isOpen={showResumePlayer}
+          onClose={() => {
+            setShowResumePlayer(false);
+            setAudioResume(getLastListenedAudiobook());
+          }}
+          book={audioResume}
+        />
+      )}
     </section>
   );
 }

@@ -24,11 +24,13 @@ import {
   Flame,
   Clock,
   Share2,
+  Headphones,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import FlashcardStudyModal from '../../components/FlashcardStudyModal';
 import QuoteCardModal from '../../components/QuoteCardModal';
+import AudiobookPlayerModal from '../../components/AudiobookPlayerModal';
 import BookCoverArt from '../../components/BookCoverArt';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { offlineStorage, CachedBookMetadata, formatBytes } from '../../lib/offlineStorage';
@@ -42,6 +44,13 @@ import {
   getReadingHistory,
   ReadingHistoryItem,
 } from '../../lib/userFavoritesHistory';
+import {
+  AudiobookHistoryItem,
+  getAudiobookHistory,
+  removeAudiobookFromHistory,
+  clearAllAudiobookHistory,
+  formatAudioSeconds,
+} from '../../lib/audiobookHistory';
 
 interface SavedItem {
   id: string;
@@ -254,10 +263,22 @@ function resolveBookMetadata(
 
 export default function SavedBooksPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'all' | 'books' | 'bookmarks' | 'notes' | 'offline'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'books' | 'bookmarks' | 'notes' | 'offline' | 'audio'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'compact' | 'list'>('compact');
   const [userBookmarks, setUserBookmarks] = useState<SavedItem[]>([]);
   const [favoriteBooks, setFavoriteBooks] = useState<FavoriteBookItem[]>([]);
+  const [audiobookHistory, setAudiobookHistory] = useState<AudiobookHistoryItem[]>([]);
+  const [activeAudioBook, setActiveAudioBook] = useState<{
+    id: string;
+    title: string;
+    author: string;
+    coverUrl?: string;
+    audioUrl: string;
+    fallbackUrl?: string;
+    audioNarrator?: string;
+    durationFormatted?: string;
+  } | null>(null);
+  const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
   const [removedCuratedIds, setRemovedCuratedIds] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -448,6 +469,9 @@ export default function SavedBooksPage() {
 
       // 4. Load Reading Stats & Streak
       setReadingStats(readingStreakEngine.getStats());
+
+      // 5. Load Audiobook History
+      setAudiobookHistory(getAudiobookHistory());
     } catch {
       // fallback
     }
@@ -474,16 +498,21 @@ export default function SavedBooksPage() {
     const handleFavoritesOrHistoryUpdated = () => {
       loadData();
     };
+    const handleAudiobookHistoryUpdated = () => {
+      setAudiobookHistory(getAudiobookHistory());
+    };
 
     window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
     window.addEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
     window.addEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
     window.addEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
+    window.addEventListener('qbiz_audiobook_history_updated', handleAudiobookHistoryUpdated);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
       window.removeEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
       window.removeEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
       window.removeEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
+      window.removeEventListener('qbiz_audiobook_history_updated', handleAudiobookHistoryUpdated);
     };
   }, []);
 
@@ -703,8 +732,9 @@ export default function SavedBooksPage() {
       {/* 3. THANH CHUYỂN TABS: TẤT CẢ / SÁCH / DẤU TRANG / GHI CHÚ / NGOẠI TUYẾN */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5">
         {[
-          { id: 'all', label: 'Tất cả', count: allSavedItems.length + allNotes.length + offlineBooks.length },
+          { id: 'all', label: 'Tất cả', count: allSavedItems.length + allNotes.length + offlineBooks.length + audiobookHistory.length },
           { id: 'books', label: 'Sách đã lưu', count: combinedBooks.length },
+          { id: 'audio', label: 'Sách nói', count: audiobookHistory.length },
           { id: 'bookmarks', label: 'Dấu trang', count: userBookmarks.length },
           { id: 'notes', label: 'Sổ tay ghi chú', count: allNotes.length },
           { id: 'offline', label: 'Ngoại tuyến', count: offlineBooks.length },
@@ -997,6 +1027,150 @@ export default function SavedBooksPage() {
         </section>
       )}
 
+      {/* SECTION: LỊCH SỬ NGHE SÁCH NÓI CHUYÊN NGHIỆP */}
+      {(activeTab === 'all' || activeTab === 'audio') && (
+        <section className="flex flex-col gap-3 pt-2 border-t border-[#e6dcce] dark:border-[#553622]/60">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Headphones size={15} className="text-[#8B4513] dark:text-amber-400 shrink-0" />
+              <h2 className="text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wider truncate">
+                LỊCH SỬ NGHE SÁCH NÓI
+              </h2>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/20 shrink-0">
+                {audiobookHistory.length}
+              </span>
+            </div>
+
+            {audiobookHistory.length > 0 && activeTab === 'audio' && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử nghe sách nói?')) {
+                    clearAllAudiobookHistory();
+                  }
+                }}
+                className="text-[11px] font-bold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Trash2 size={12} />
+                <span>Xóa tất cả</span>
+              </button>
+            )}
+          </div>
+
+          {audiobookHistory.length === 0 ? (
+            activeTab === 'audio' && (
+              <div className="p-8 rounded-3xl bg-white dark:bg-[#22150c] border border-dashed border-[#e6dcce] dark:border-[#553622] text-center flex flex-col items-center justify-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <Headphones size={28} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h4 className="text-sm font-bold text-[#2A160A] dark:text-amber-100">
+                    Chưa có lịch sử nghe sách nói
+                  </h4>
+                  <p className="text-xs text-[#7A583E] dark:text-amber-200/70 max-w-xs">
+                    Mọi tác phẩm sách nói MP3 bạn đã nghe sẽ tự động được lưu tiến độ từng giây tại đây.
+                  </p>
+                </div>
+                <Link
+                  href="/danh-muc"
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-all shadow-xs cursor-pointer"
+                >
+                  Khám phá kho sách nói ngay
+                </Link>
+              </div>
+            )
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {audiobookHistory.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-2xs hover:shadow-md transition-all flex items-center gap-3 group"
+                >
+                  {/* Bìa sách nói */}
+                  <div
+                    className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-amber-900/10 dark:border-white/10 cursor-pointer"
+                    onClick={() => {
+                      setActiveAudioBook(item);
+                      setShowAudioPlayer(true);
+                    }}
+                  >
+                    {item.coverUrl && !item.coverUrl.startsWith('style:') ? (
+                      <img
+                        src={item.coverUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-[#2d180c] to-[#452514] flex items-center justify-center">
+                        <Headphones size={22} className="text-amber-400" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <PlayCircle size={24} className="text-white fill-amber-500" />
+                    </div>
+                  </div>
+
+                  {/* Thông tin & Tiến trình */}
+                  <div className="flex flex-col min-w-0 flex-1 gap-1">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <h4
+                        className="text-xs font-black text-[#2A160A] dark:text-amber-100 line-clamp-1 cursor-pointer hover:text-amber-600 dark:hover:text-amber-300 transition-colors"
+                        onClick={() => {
+                          setActiveAudioBook(item);
+                          setShowAudioPlayer(true);
+                        }}
+                      >
+                        {item.title}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => removeAudiobookFromHistory(item.id)}
+                        className="p-1 text-slate-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                        title="Xóa khỏi lịch sử nghe"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-[#7A583E] dark:text-amber-200/70 truncate">
+                      {item.author} {item.audioNarrator ? `• ${item.audioNarrator}` : ''}
+                    </p>
+
+                    {/* Thanh tiến trình & % */}
+                    <div className="flex flex-col gap-1 mt-0.5">
+                      <div className="w-full bg-amber-900/10 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-amber-500 h-full rounded-full transition-all"
+                          style={{ width: `${Math.min(100, Math.max(2, item.percent))}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] font-mono text-[#8B4513] dark:text-amber-300/80">
+                        <span>Đã nghe {item.percent}% ({formatAudioSeconds(item.currentTime)})</span>
+                        <span>{item.duration > 0 ? formatAudioSeconds(item.duration) : item.durationFormatted || '--:--'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nút bấm nghe tiếp nhanh */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveAudioBook(item);
+                      setShowAudioPlayer(true);
+                    }}
+                    className="h-8 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95 transition-all"
+                    title="Nghe tiếp từ điểm dừng"
+                  >
+                    <PlayCircle size={13} className="fill-slate-950 text-amber-500" />
+                    <span>Nghe tiếp</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* 5. SECTION: SỔ TAY GHI CHÚ & TRÍCH DẪN Y KHOA */}
       {(activeTab === 'all' || activeTab === 'notes') && (
         <section className="flex flex-col gap-3 pt-2 border-t border-[#e6dcce] dark:border-[#553622]/60">
@@ -1273,6 +1447,19 @@ export default function SavedBooksPage() {
           isOpen={Boolean(activeQuoteNote)}
           onClose={() => setActiveQuoteNote(null)}
           note={activeQuoteNote}
+        />
+      )}
+
+      {/* TRÌNH PHÁT SÁCH NÓI MP3 CHUYÊN NGHIỆP */}
+      {activeAudioBook && (
+        <AudiobookPlayerModal
+          isOpen={showAudioPlayer}
+          onClose={() => {
+            setShowAudioPlayer(false);
+            setActiveAudioBook(null);
+            setAudiobookHistory(getAudiobookHistory());
+          }}
+          book={activeAudioBook}
         />
       )}
 

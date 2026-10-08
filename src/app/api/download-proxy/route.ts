@@ -95,10 +95,10 @@ export async function GET(req: NextRequest) {
       response.headers.get('content-type') || 'application/octet-stream';
     const contentLength = response.headers.get('content-length');
 
-    // Chặn các file quá lớn (> 120MB) để tránh quá tải bộ nhớ
-    if (contentLength && parseInt(contentLength, 10) > 120 * 1024 * 1024) {
+    // Chặn các file quá lớn (> 500MB) để tránh quá tải bộ nhớ máy chủ
+    if (contentLength && parseInt(contentLength, 10) > 500 * 1024 * 1024) {
       return NextResponse.json(
-        { error: 'Kích thước tệp vượt quá giới hạn cho phép (tối đa 120MB)' },
+        { error: 'Kích thước tệp vượt quá giới hạn cho phép (tối đa 500MB)' },
         { status: 413 }
       );
     }

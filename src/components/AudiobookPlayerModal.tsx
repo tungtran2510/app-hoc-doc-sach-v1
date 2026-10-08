@@ -17,9 +17,12 @@ import {
   ChevronDown,
   Moon,
   Trash2,
+  Clock,
+  Minimize2,
 } from 'lucide-react';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 import { backgroundAudioManager } from '../lib/backgroundAudioManager';
+import { recordAudiobookListening } from '../lib/audiobookHistory';
 import BookCoverArt from './BookCoverArt';
 
 interface AudiobookPlayerModalProps {
@@ -58,13 +61,57 @@ export default function AudiobookPlayerModal({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Khởi tạo audio khi mở modal
+  // Tính năng chuyên nghiệp: Thu nhỏ thành Mini Player bám đáy & Hẹn giờ ngủ
+  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+  const [sleepTimerSeconds, setSleepTimerSeconds] = useState<number | null>(null);
+  const [showSleepMenu, setShowSleepMenu] = useState<boolean>(false);
+
+  // Bộ đếm lùi Hẹn giờ tắt (Sleep Timer)
   useEffect(() => {
-    if (!isOpen || !book) {
+    if (sleepTimerSeconds === null) return;
+    if (sleepTimerSeconds <= 0) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
       setIsPlaying(false);
+      setSleepTimerSeconds(null);
+      backgroundAudioManager.updatePlaybackState('paused');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSleepTimerSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : null));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sleepTimerSeconds]);
+
+  // Hàm ghi lại tiến độ vào Lịch sử nghe chuyên nghiệp
+  const syncHistory = (curTime: number, dur: number) => {
+    if (!book) return;
+    recordAudiobookListening({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      audioUrl: book.audioUrl,
+      fallbackUrl: book.fallbackUrl,
+      audioNarrator: book.audioNarrator,
+      durationFormatted: book.durationFormatted,
+      currentTime: curTime,
+      duration: dur || duration,
+    });
+  };
+
+  // Khởi tạo audio khi mở modal
+  useEffect(() => {
+    if (!isOpen || !book) {
+      if (audioRef.current) {
+        syncHistory(audioRef.current.currentTime, audioRef.current.duration);
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+      setIsMinimized(false);
       return;
     }
 
@@ -84,6 +131,7 @@ export default function AudiobookPlayerModal({
       if (safeInitialTime > 0) {
         audio.currentTime = safeInitialTime;
       }
+      syncHistory(safeInitialTime, audio.duration || 0);
       audio
         .play()
         .then(() => {
@@ -119,7 +167,7 @@ export default function AudiobookPlayerModal({
 
     return () => {
       if (audioRef.current) {
-        audioRef.current.pause();
+        syncHistory(audioRef.current.currentTime, audioRef.current.duration);
       }
       backgroundAudioManager.clearMediaSession();
     };
@@ -186,6 +234,7 @@ export default function AudiobookPlayerModal({
     setCurrentTime(time);
     if (audioRef.current) {
       audioRef.current.currentTime = time;
+      syncHistory(time, audioRef.current.duration || duration);
     }
   };
 
@@ -195,6 +244,7 @@ export default function AudiobookPlayerModal({
       const next = Math.max(0, Math.min(duration || 9999, audioRef.current.currentTime + seconds));
       audioRef.current.currentTime = next;
       setCurrentTime(next);
+      syncHistory(next, audioRef.current.duration || duration);
     }
   };
 
@@ -229,14 +279,8 @@ export default function AudiobookPlayerModal({
     'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Trình phát sách nói ${book.title}`}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col justify-center items-center p-3 sm:p-4 animate-in fade-in duration-200"
-      onClick={onClose}
-    >
-      {/* ẨN AUDIO TAG ĐIỀU KHIỂN CHÍNH */}
+    <>
+      {/* ẨN AUDIO TAG ĐIỀU KHIỂN CHÍNH - LUÔN ĐƯỢC MOUNT ĐỂ KHÔNG GIÁN ĐOẠN PHÁT ÂM THANH */}
       <audio
         ref={audioRef}
         preload="metadata"
@@ -252,7 +296,7 @@ export default function AudiobookPlayerModal({
               const now = Date.now();
               if (now - lastSaveTimeRef.current > 2000) {
                 lastSaveTimeRef.current = now;
-                localStorage.setItem(`audiobook_progress_${book.id}`, cur.toString());
+                syncHistory(cur, audioRef.current.duration || duration);
               }
             }
           }
@@ -275,7 +319,7 @@ export default function AudiobookPlayerModal({
           setIsPlaying(false);
           backgroundAudioManager.updatePlaybackState('paused');
           if (typeof window !== 'undefined' && book?.id && audioRef.current) {
-            localStorage.setItem(`audiobook_progress_${book.id}`, audioRef.current.currentTime.toString());
+            syncHistory(audioRef.current.currentTime, audioRef.current.duration || duration);
           }
         }}
         onEnded={() => {
@@ -316,43 +360,272 @@ export default function AudiobookPlayerModal({
         }}
       />
 
-      {/* KHUNG TRÌNH PHÁT SÁCH NÓI ĐẲNG CẤP - RA CHÍNH GIỮA MÀN HÌNH */}
-      <div
-        className="w-full max-w-[360px] sm:max-w-md bg-gradient-to-b from-[#1f130b] via-[#150d08] to-[#0a0604] border border-amber-500/35 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.9)] p-4 sm:p-5 flex flex-col gap-3 text-white max-h-[88vh] overflow-y-auto no-scrollbar my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* HÀNG TIÊU ĐỀ ĐẦU: NÚT THU GỌN / ĐÓNG + NHÃN + TỐC ĐỘ */}
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
+      {/* THANH PHÁT NỔI BÁM ĐÁY (MINI PLAYER) KHI THU NHỎ ĐỂ DUYỆT SÁCH KHÁC */}
+      {isMinimized && (
+        <div
+          role="region"
+          aria-label={`Thanh phát nổi sách nói ${book.title}`}
+          className="fixed bottom-[68px] left-3 right-3 sm:left-auto sm:right-6 sm:w-96 z-50 bg-[#160e09]/95 backdrop-blur-md border border-amber-500/40 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] p-2 sm:p-2.5 flex items-center justify-between text-white gap-2 select-none animate-in slide-in-from-bottom-3 duration-200"
+        >
+          {/* Nhấn để mở rộng toàn màn hình */}
+          <div
+            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
             onClick={() => {
               playTapSound();
-              onClose();
+              setIsMinimized(false);
             }}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors shrink-0"
-            title="Đóng trình phát sách nói"
-            aria-label="Đóng"
+            title="Nhấn để mở rộng trình phát"
           >
-            <X size={17} />
-          </button>
+            {/* Ảnh bìa tròn xoay khi phát */}
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-amber-500/40 shadow-xs">
+              {displayCover && !displayCover.startsWith('style:') ? (
+                <img
+                  src={displayCover}
+                  alt={book.title}
+                  className={`w-full h-full object-cover ${isPlaying ? 'animate-[spin_8s_linear_infinite]' : ''}`}
+                />
+              ) : (
+                <div className="w-full h-full bg-amber-900/50 flex items-center justify-center">
+                  <Headphones size={18} className="text-amber-400" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
 
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-            <span className="text-[11px] font-black uppercase font-mono tracking-wider text-amber-300 truncate">
-              SÁCH NÓI MP3 CHÍNH HIỆU
-            </span>
+            {/* Tiêu đề & Tiến độ */}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs font-black text-amber-100 line-clamp-1">
+                {book.title}
+              </span>
+              <div className="flex items-center gap-1.5 text-[10px] text-amber-300/80 font-mono">
+                <span>{formatSeconds(currentTime)}</span>
+                <span>/</span>
+                <span>{duration > 0 ? formatSeconds(duration) : book.durationFormatted || '--:--'}</span>
+                {sleepTimerSeconds !== null && (
+                  <span className="text-emerald-400 font-bold ml-1">
+                    🌙 {Math.ceil(sleepTimerSeconds / 60)}p
+                  </span>
+                )}
+              </div>
+              {/* Thanh tiến trình mini cực mỏng */}
+              <div className="w-full bg-white/20 h-1 rounded-full overflow-hidden mt-1">
+                <div
+                  className="bg-amber-400 h-full transition-all duration-300"
+                  style={{
+                    width: `${duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Tùy chọn tốc độ đọc 1 dòng tinh gọn */}
-          <button
-            type="button"
-            onClick={cycleRate}
-            className="h-7 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black cursor-pointer transition-all shrink-0"
-            title="Thay đổi tốc độ phát"
-          >
-            {playbackRate}x
-          </button>
+          {/* Cụm nút điều khiển mini */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Lùi 15s */}
+            <button
+              type="button"
+              onClick={() => skipSeconds(-15)}
+              className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors"
+              title="Lùi 15s"
+            >
+              <RotateCcw size={15} />
+            </button>
+
+            {/* Play / Pause */}
+            <button
+              type="button"
+              onClick={togglePlayPause}
+              className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center shadow-md cursor-pointer transition-transform active:scale-95"
+              title={isPlaying ? 'Tạm dừng' : 'Tiếp tục phát'}
+            >
+              {isLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : isPlaying ? (
+                <Pause size={16} className="fill-current" />
+              ) : (
+                <Play size={16} className="fill-current ml-0.5" />
+              )}
+            </button>
+
+            {/* Mở rộng toàn màn hình */}
+            <button
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setIsMinimized(false);
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-amber-400 hover:text-amber-300 cursor-pointer transition-colors"
+              title="Mở rộng trình phát"
+            >
+              <Sparkles size={15} />
+            </button>
+
+            {/* Đóng hẳn */}
+            <button
+              type="button"
+              onClick={() => {
+                playTapSound();
+                if (audioRef.current) {
+                  syncHistory(audioRef.current.currentTime, audioRef.current.duration);
+                  audioRef.current.pause();
+                }
+                setIsPlaying(false);
+                onClose();
+              }}
+              className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-white/60 hover:text-white cursor-pointer transition-colors"
+              title="Tắt trình phát"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* KHUNG TRÌNH PHÁT SÁCH NÓI ĐẲNG CẤP TOÀN DIỆN (FULL SCREEN MODAL) */}
+      {!isMinimized && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Trình phát sách nói ${book.title}`}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col justify-center items-center p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => {
+            playTapSound();
+            setIsMinimized(true);
+          }}
+        >
+          <div
+            className="w-full max-w-[360px] sm:max-w-md bg-gradient-to-b from-[#1f130b] via-[#150d08] to-[#0a0604] border border-amber-500/35 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.9)] p-4 sm:p-5 flex flex-col gap-3 text-white max-h-[88vh] overflow-y-auto no-scrollbar my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HÀNG TIÊU ĐỀ ĐẦU: NÚT ĐÓNG + NÚT THU NHỎ + NHÃN + HẸN GIỜ + TỐC ĐỘ */}
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    if (audioRef.current) {
+                      syncHistory(audioRef.current.currentTime, audioRef.current.duration);
+                      audioRef.current.pause();
+                    }
+                    setIsPlaying(false);
+                    onClose();
+                  }}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white cursor-pointer transition-colors shrink-0"
+                  title="Dừng và đóng trình phát"
+                  aria-label="Đóng"
+                >
+                  <X size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    setIsMinimized(true);
+                  }}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-amber-300 hover:text-amber-200 cursor-pointer transition-colors shrink-0"
+                  title="Thu nhỏ thành thanh phát nổi"
+                  aria-label="Thu nhỏ"
+                >
+                  <Minimize2 size={15} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                <span className="text-[11px] font-black uppercase font-mono tracking-wider text-amber-300 truncate">
+                  SÁCH NÓI MP3
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Nút Hẹn giờ tắt (Sleep Timer) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTapSound();
+                    setShowSleepMenu((prev) => !prev);
+                  }}
+                  className={`h-7 px-2 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-all shrink-0 ${
+                    sleepTimerSeconds !== null
+                      ? 'bg-emerald-500/25 border border-emerald-500/50 text-emerald-300 animate-pulse'
+                      : 'bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 hover:text-white'
+                  }`}
+                  title="Hẹn giờ tắt khi ngủ"
+                >
+                  <Clock size={13} className={sleepTimerSeconds !== null ? 'text-emerald-400' : 'text-amber-400'} />
+                  <span className="text-[11px]">
+                    {sleepTimerSeconds !== null ? `${Math.ceil(sleepTimerSeconds / 60)}p` : 'Hẹn giờ'}
+                  </span>
+                </button>
+
+                {/* Tùy chọn tốc độ đọc */}
+                <button
+                  type="button"
+                  onClick={cycleRate}
+                  className="h-7 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-black cursor-pointer transition-all shrink-0"
+                  title="Thay đổi tốc độ phát"
+                >
+                  {playbackRate}x
+                </button>
+              </div>
+            </div>
+
+            {/* POPOVER MENU HẸN GIỜ TẮT KHI NGỦ */}
+            {showSleepMenu && (
+              <div className="p-3 rounded-2xl bg-[#140b06] border border-amber-500/40 flex flex-col gap-2 animate-in zoom-in-95 duration-150 shadow-2xl">
+                <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <Clock size={13} />
+                    <span>HẸN GIỜ TẮT KHI NGỦ</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSleepMenu(false)}
+                    className="text-white/60 hover:text-white text-xs cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 text-xs">
+                  {[
+                    { label: 'Tắt hẹn giờ', value: null },
+                    { label: '15 phút', value: 15 * 60 },
+                    { label: '30 phút', value: 30 * 60 },
+                    { label: '45 phút', value: 45 * 60 },
+                    { label: '60 phút', value: 60 * 60 },
+                    {
+                      label: 'Hết tệp này',
+                      value: duration > currentTime ? Math.round(duration - currentTime) : 30 * 60,
+                    },
+                  ].map((opt, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        playTapSound();
+                        setSleepTimerSeconds(opt.value);
+                        setShowSleepMenu(false);
+                      }}
+                      className={`py-1.5 px-2 rounded-xl text-center font-bold transition-all cursor-pointer ${
+                        (opt.value === null && sleepTimerSeconds === null) ||
+                        (opt.value !== null && sleepTimerSeconds !== null && Math.abs(sleepTimerSeconds - opt.value) < 10)
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                          : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/10'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {sleepTimerSeconds !== null && (
+                  <p className="text-[10.5px] text-center text-emerald-300 font-mono font-bold">
+                    🌙 Tự động dừng phát sau: {formatSeconds(sleepTimerSeconds)}
+                  </p>
+                )}
+              </div>
+            )}
 
         {/* ẢNH BÌA ĐĨA NHẠC / SÁCH NÓI NGHỆ THUẬT (CĂN GIỮA HOÀN HẢO) */}
         <div className="flex flex-col items-center justify-center my-0.5">
@@ -531,5 +804,7 @@ export default function AudiobookPlayerModal({
         </div>
       </div>
     </div>
-  );
+  )}
+</>
+);
 }
