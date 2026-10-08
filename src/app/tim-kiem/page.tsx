@@ -21,6 +21,7 @@ import {
   BookmarkPlus,
   Check,
   Loader2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
@@ -28,7 +29,7 @@ import BookDetailModal, { UnifiedBookItem } from '../../components/BookDetailMod
 import OnlineLibrarySection from '../../components/OnlineLibrarySection';
 import FloatingAiButton from '../../components/FloatingAiButton';
 import { playTapSound, playSuccessChime } from '../../lib/audioFeedback';
-import { matchSmartKeywords, CURATED_ONLINE_BOOKS, unifyBookMediaItems } from '../../lib/onlineLibraryData';
+import { matchSmartKeywords, CURATED_ONLINE_BOOKS, unifyBookMediaItems, ONLINE_CATEGORIES } from '../../lib/onlineLibraryData';
 import { offlineStorage } from '../../lib/offlineStorage';
 import { userShelfStorage } from '../../lib/userShelfStorage';
 
@@ -267,6 +268,10 @@ export default function SearchPage() {
 
   // Tab chuyển đổi: Tủ sách hiện có ('local') hoặc Kho sách trực tuyến ('online')
   const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
+
+  // Lọc theo chuyên mục sách ('all' hoặc id chuyên mục)
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false);
 
   // Trạng thái các cuốn sách đã thêm vào Kệ sách
   const [shelfBookIds, setShelfBookIds] = useState<Set<string>>(new Set());
@@ -655,6 +660,99 @@ export default function SearchPage() {
             <ArrowLeft size={18} />
           </button>
 
+          {/* NÚT BỘ LỌC CHUYÊN MỤC CẠNH MŨI TÊN QUAY VỀ (YÊU CẦU NGƯỜI DÙNG) */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setIsFilterOpen((prev) => !prev);
+              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer border shrink-0 ${
+                selectedCategory !== 'all'
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-md ring-2 ring-amber-400/50'
+                  : 'bg-[#e8ded1] dark:bg-white/10 hover:bg-[#ded1c0] dark:hover:bg-white/20 border-[#d5c3b1] dark:border-white/10 text-[#2A160A] dark:text-amber-200'
+              }`}
+              aria-label="Bộ lọc chuyên mục"
+              title={selectedCategory === 'all' ? 'Lọc theo chuyên mục sách' : `Đang lọc: ${ONLINE_CATEGORIES.find(c => c.id === selectedCategory)?.name || selectedCategory}`}
+            >
+              <SlidersHorizontal size={18} />
+              {selectedCategory !== 'all' && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white dark:border-[#2A160A]" />
+              )}
+            </button>
+
+            {/* POPOVER BỘ LỌC CHUYÊN MỤC */}
+            {isFilterOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsFilterOpen(false)}
+                />
+                <div
+                  className="absolute left-0 top-full mt-2 w-64 sm:w-72 rounded-2xl bg-[#FAF6F0] dark:bg-[#1C120C] border border-amber-500/40 shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+                >
+                  <div className="flex items-center justify-between px-2 py-1.5 border-b border-amber-900/10 dark:border-amber-500/20 mb-2">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                      <SlidersHorizontal size={13} className="text-amber-500" />
+                      <span>Bộ lọc chuyên mục</span>
+                    </div>
+                    {selectedCategory !== 'all' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTapSound();
+                          setSelectedCategory('all');
+                        }}
+                        className="text-[11px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Đặt lại
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsFilterOpen(false)}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                        aria-label="Đóng bộ lọc"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1 max-h-64 overflow-y-auto no-scrollbar">
+                    {ONLINE_CATEGORIES.map((cat) => {
+                      const isSelected = selectedCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            playTapSound();
+                            setSelectedCategory(cat.id);
+                            setIsFilterOpen(false);
+                            // Nếu đang ở tab local, tự động chuyển sang tab online để thấy kho sách chuyên mục
+                            if (activeTab === 'local' && cat.id !== 'all') {
+                              setActiveTab('online');
+                            }
+                          }}
+                          className={`w-full px-3 py-2 rounded-xl text-left text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                              : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-[#4A2612] dark:text-amber-100/90'
+                          }`}
+                        >
+                          <span className="truncate">{cat.name}</span>
+                          {isSelected && <Check size={14} className="text-slate-950 shrink-0" strokeWidth={3} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-amber-500">
               <SearchIcon size={17} />
@@ -760,10 +858,31 @@ export default function SearchPage() {
         </button>
       </section>
 
+      {/* CHỈ BÁO ĐANG LỌC CHUYÊN MỤC (NẾU CÓ CHỌN KHÁC TẤT CẢ) */}
+      {selectedCategory !== 'all' && (
+        <div className="flex items-center gap-1.5 px-1 animate-in fade-in">
+          <span className="text-[11px] text-[#7A4B27] dark:text-amber-300/80 font-medium">Chuyên mục:</span>
+          <button
+            type="button"
+            onClick={() => {
+              playTapSound();
+              setSelectedCategory('all');
+            }}
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 text-xs font-bold border border-amber-500/40 hover:bg-amber-500/30 transition-all cursor-pointer"
+            title="Bấm để bỏ lọc chuyên mục"
+          >
+            <span>{ONLINE_CATEGORIES.find((c) => c.id === selectedCategory)?.name || selectedCategory}</span>
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       {/* HIỂN THỊ NỘI DUNG THEO TAB ĐƯỢC CHỌN */}
       {activeTab === 'online' ? (
         <OnlineLibrarySection
           searchQuery={debouncedQuery}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
           onOpenBook={handleOpenOnlineBook}
         />
       ) : (

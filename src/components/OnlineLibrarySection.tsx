@@ -39,6 +39,8 @@ import BookCoverArt from './BookCoverArt';
 
 interface OnlineLibrarySectionProps {
   searchQuery?: string;
+  selectedCategory?: string;
+  onSelectCategory?: (category: string) => void;
   onOpenBook?: (book: {
     id: string;
     title: string;
@@ -59,12 +61,16 @@ interface OnlineLibrarySectionProps {
 
 export default function OnlineLibrarySection({
   searchQuery = '',
+  selectedCategory: propSelectedCategory,
+  onSelectCategory,
   onOpenBook,
   onPlayAudio,
 }: OnlineLibrarySectionProps) {
   // Lọc theo loại sách: 'all' | 'read' (Sách đọc) | 'audio' (Sách nói)
   const [selectedMedium, setSelectedMedium] = useState<'all' | 'read' | 'audio'>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [internalCategory, setInternalCategory] = useState<string>('all');
+  const activeCategory = propSelectedCategory !== undefined ? propSelectedCategory : internalCategory;
+  const setCategory = onSelectCategory || setInternalCategory;
 
   // Trạng thái tải của từng cuốn sách: [bookId]: progress (0-100)
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
@@ -564,7 +570,7 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
       selectedMedium === 'all' ||
       b.medium === 'both' ||
       b.medium === selectedMedium;
-    const matchCategory = selectedCategory === 'all' || b.category === selectedCategory;
+    const matchCategory = activeCategory === 'all' || b.category === activeCategory;
     return matchMedium && matchCategory;
   });
 
@@ -592,9 +598,9 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
           onClick={() => {
             playTapSound();
             setSelectedMedium('read');
-            if (selectedCategory !== 'all') {
-              const hasRead = queryMatchedBooks.some((b) => b.category === selectedCategory && b.medium !== 'audio');
-              if (!hasRead) setSelectedCategory('all');
+            if (activeCategory !== 'all') {
+              const hasRead = queryMatchedBooks.some((b) => b.category === activeCategory && b.medium !== 'audio');
+              if (!hasRead) setCategory('all');
             }
           }}
           className={`h-7 px-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer border flex items-center gap-1 ${
@@ -612,9 +618,9 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
           onClick={() => {
             playTapSound();
             setSelectedMedium('audio');
-            if (selectedCategory !== 'all') {
-              const hasAudio = queryMatchedBooks.some((b) => b.category === selectedCategory && b.medium === 'audio');
-              if (!hasAudio) setSelectedCategory('all');
+            if (activeCategory !== 'all') {
+              const hasAudio = queryMatchedBooks.some((b) => b.category === activeCategory && b.medium === 'audio');
+              if (!hasAudio) setCategory('all');
             }
           }}
           className={`h-7 px-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer border flex items-center gap-1 ${
@@ -654,40 +660,6 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
           <LinkIcon size={11} />
           <span>Dán link</span>
         </button>
-      </div>
-
-      {/* 2. CHUYÊN MỤC / NGUỒN SÁCH: SÁCH VIỆT NAM, THẾ GIỚI, Y HỌC (1 DÒNG CHIP) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
-        {ONLINE_CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => {
-                playTapSound();
-                setSelectedCategory(cat.id);
-                if (cat.id !== 'all' && selectedMedium !== 'all') {
-                  const hasInCurrent = queryMatchedBooks.some(
-                    (b) =>
-                      b.category === cat.id &&
-                      (selectedMedium === 'audio' ? b.medium === 'audio' : b.medium !== 'audio')
-                  );
-                  if (!hasInCurrent) {
-                    setSelectedMedium('all');
-                  }
-                }
-              }}
-              className={`h-6 px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer border ${
-                isSelected
-                  ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-xs'
-                  : 'bg-white/40 dark:bg-white/5 text-[#553218] dark:text-stone-300 border-[#d5c3b1] dark:border-white/10 hover:border-amber-500/50'
-              }`}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
       </div>
 
       {/* 2.5 TRẠNG THÁI TÌM KIẾM TRỰC QUAN (LOADING KHI ĐANG TÌM HOẶC BÁO KẾT QUẢ) */}
