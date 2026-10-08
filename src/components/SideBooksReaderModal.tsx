@@ -843,6 +843,7 @@ export default function SideBooksReaderModal({
         }}
         isDownloaded={isOfflineCached}
         onDownload={handleSaveOffline}
+        onDeleteDownload={handleRemoveOffline}
       />
     );
   }

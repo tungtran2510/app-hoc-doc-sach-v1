@@ -13,6 +13,7 @@ import {
   Sparkles,
   Play,
   Upload,
+  Trash2,
 } from 'lucide-react';
 import {
   CURATED_ONLINE_BOOKS,
@@ -34,7 +35,7 @@ import BookCoverArt from './BookCoverArt';
 
 interface OnlineLibrarySectionProps {
   searchQuery?: string;
-  onOpenBook: (book: {
+  onOpenBook?: (book: {
     id: string;
     title: string;
     author: string;
@@ -184,6 +185,31 @@ export default function OnlineLibrarySection({
     });
   };
 
+  // Xóa sách / audio ngoại tuyến khỏi bộ nhớ máy
+  const handleDeleteCached = async (book: OnlineBookItem) => {
+    playTapSound();
+    if (!confirm(`Bạn có chắc chắn muốn xóa bản tải ngoại tuyến của "${book.title}" khỏi bộ nhớ máy?`)) {
+      return;
+    }
+    const ok = await offlineStorage.removeBookFromOffline(book.id);
+    if (ok) {
+      playSuccessChime();
+      setCachedBookIds((prev) => {
+        const next = new Set(prev);
+        next.delete(book.id);
+        next.delete(offlineStorage.normalizeBookId(book.id));
+        return next;
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('qbiz_book_removed_offline', {
+            detail: { bookId: book.id },
+          })
+        );
+      }
+    }
+  };
+
   // Mở sách đã tải
   const handleOpenDownloaded = async (book: OnlineBookItem) => {
     playTapSound();
@@ -221,7 +247,7 @@ export default function OnlineLibrarySection({
       book.downloadUrl.split('/').pop()?.split('?')[0] ||
       `${book.title}.${cleanExt}`;
 
-    onOpenBook({
+    onOpenBook?.({
       id: book.id,
       title: book.title,
       author: book.author,
@@ -558,14 +584,24 @@ export default function OnlineLibrarySection({
                   </span>
 
                   {isCached ? (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenDownloaded(book)}
-                      className="h-6 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                    >
-                      {book.medium === 'audio' ? <Play size={11} className="fill-current" /> : <BookOpen size={11} />}
-                      <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDownloaded(book)}
+                        className="h-6 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                      >
+                        {book.medium === 'audio' ? <Play size={11} className="fill-current" /> : <BookOpen size={11} />}
+                        <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCached(book)}
+                        className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                        title="Xóa bản tải ngoại tuyến khỏi máy"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
                   ) : isDownloading ? (
                     <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
                       <Loader2 size={11} className="animate-spin" />
@@ -581,24 +617,58 @@ export default function OnlineLibrarySection({
                         <Play size={11} className="fill-current" />
                         <span>Nghe ngay</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(book)}
-                        className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0"
-                        title="Tải nghe ngoại tuyến"
-                      >
-                        <Download size={11} strokeWidth={2.4} />
-                      </button>
+                      {isCached ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCached(book)}
+                          className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                          title="Xóa bản tải ngoại tuyến khỏi máy"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(book)}
+                          className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                          title="Tải nghe ngoại tuyến"
+                        >
+                          <Download size={11} strokeWidth={2.4} />
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(book)}
-                      className="h-6 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                    >
-                      <Download size={11} strokeWidth={2.5} />
-                      <span>Tải về</span>
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isCached ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDownloaded(book)}
+                            className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 active:scale-95 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                          >
+                            <BookOpen size={11} />
+                            <span>Đọc ngay</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCached(book)}
+                            className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                            title="Xóa sách ngoại tuyến khỏi máy"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(book)}
+                          className="h-6 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                        >
+                          <Download size={11} strokeWidth={2.5} />
+                          <span>Tải về</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -653,6 +723,10 @@ export default function OnlineLibrarySection({
           onDownload={() => {
             const found = allAvailableBooks.find((b) => b.id === activeAudioBook.id);
             if (found) handleDownload(found);
+          }}
+          onDeleteDownload={() => {
+            const found = allAvailableBooks.find((b) => b.id === activeAudioBook.id);
+            if (found) handleDeleteCached(found);
           }}
         />
       )}

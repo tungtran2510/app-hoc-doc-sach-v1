@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIsSuperAdminRequest } from '../../../../lib/authServer';
+import { checkIsAdminRequest, checkIsSuperAdminRequest } from '../../../../lib/authServer';
 import { getSupabaseServer } from '../../../../lib/supabaseServer';
 import { InstructorAccount } from '../../../../lib/types';
 
 export async function GET(req: NextRequest) {
-  if (!checkIsSuperAdminRequest(req)) {
+  if (!checkIsAdminRequest(req)) {
     return NextResponse.json(
-      { error: 'Chỉ Chủ sở hữu tối cao mới có quyền truy cập danh sách tài khoản' },
+      { error: 'Cần đăng nhập quản trị viên để truy cập danh sách tài khoản' },
       { status: 403 }
     );
   }
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkIsSuperAdminRequest(req)) {
+  if (!checkIsAdminRequest(req)) {
     return NextResponse.json(
-      { error: 'Chỉ Chủ sở hữu tối cao mới có quyền quản lý tài khoản giảng viên' },
+      { error: 'Cần đăng nhập quản trị viên để quản lý tài khoản' },
       { status: 403 }
     );
   }

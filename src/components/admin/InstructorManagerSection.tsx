@@ -256,37 +256,37 @@ export default function InstructorManagerSection() {
 
       {/* Header Danh sách & Nút thêm */}
       {!isEditing && (
-        <div className="flex items-center justify-between pb-2 border-b border-line">
-          <div>
-            <span className="text-[15px] font-bold text-ink">
-              Tài khoản Giảng viên ({accounts.length})
+        <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-line dark:border-white/10">
+          <div className="min-w-0 flex-1">
+            <span className="text-[14px] sm:text-[15px] font-bold text-ink dark:text-amber-100 truncate block">
+              Tài khoản Khách & Giảng viên ({accounts.length})
             </span>
-            <p className="text-[12px] text-muted">
-              Cấp quyền quản lý và biên tập từng khóa học riêng biệt
+            <p className="text-[11px] sm:text-[12px] text-muted dark:text-amber-200/70 truncate">
+              Cấp tài khoản đăng nhập và phân quyền học tập, đọc sách
             </p>
           </div>
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] bg-primary text-white font-bold text-[13px] hover:bg-primary-dark cursor-pointer shadow-xs transition-colors"
+            className="flex items-center gap-1.5 h-8.5 px-3 rounded-[10px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer shadow-xs transition-colors shrink-0 whitespace-nowrap active:scale-95"
           >
-            <UserPlus size={15} />
-            <span>Thêm giảng viên</span>
+            <UserPlus size={14} strokeWidth={2.5} />
+            <span>+ Cấp tài khoản</span>
           </button>
         </div>
       )}
 
-      {/* FORM THÊM / SỬA GIẢNG VIÊN */}
+      {/* FORM THÊM / SỬA TÀI KHOẢN KHÁCH & GIẢNG VIÊN */}
       {isEditing ? (
-        <form onSubmit={handleSubmitForm} className="flex flex-col gap-3.5 p-4 rounded-[16px] bg-surface-2 border border-line animate-in fade-in duration-150">
-          <div className="flex items-center justify-between border-b border-line pb-2">
-            <span className="text-[14px] font-extrabold text-ink">
-              {editingAccountId ? 'Chỉnh sửa tài khoản Giảng viên' : 'Cấp tài khoản Giảng viên mới'}
+        <form onSubmit={handleSubmitForm} className="flex flex-col gap-3.5 p-4 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between border-b border-line dark:border-white/10 pb-2">
+            <span className="text-[14px] font-extrabold text-ink dark:text-amber-100">
+              {editingAccountId ? 'Chỉnh sửa tài khoản Khách / Giảng viên' : 'Cấp tài khoản Khách / Giảng viên mới'}
             </span>
             <button
               type="button"
               onClick={resetForm}
-              className="text-[13px] text-muted hover:text-ink font-semibold"
+              className="text-[13px] text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-white font-semibold cursor-pointer"
             >
               Hủy
             </button>
@@ -294,32 +294,32 @@ export default function InstructorManagerSection() {
 
           {/* Tên */}
           <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-bold text-ink">
-              Tên Giảng viên / Bác sĩ <span className="text-red-500">*</span>
+            <label className="text-[12px] font-bold text-ink dark:text-amber-200">
+              Họ tên Khách / Giảng viên <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
-              placeholder="Ví dụ: Bs. Minh Tuấn (Chuyên gia Cột sống)"
-              className="w-full h-9 px-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white"
+              placeholder="Ví dụ: Hoàng Tuấn, Bs. Minh, Khách VIP..."
+              className="w-full h-9 px-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08]"
               required
             />
           </div>
 
           {/* SĐT đăng nhập */}
           <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-bold text-ink">
+            <label className="text-[12px] font-bold text-ink dark:text-amber-200">
               Số điện thoại đăng nhập <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Phone size={14} className="absolute left-3 top-2.5 text-muted" />
+              <Phone size={14} className="absolute left-3 top-2.5 text-muted dark:text-amber-200/50" />
               <input
                 type="tel"
                 value={formPhone}
                 onChange={(e) => setFormPhone(e.target.value)}
                 placeholder="Ví dụ: 0912345678"
-                className="w-full h-9 pl-9 pr-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white font-mono"
+                className="w-full h-9 pl-9 pr-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08] font-mono"
                 required
               />
             </div>
@@ -327,58 +327,58 @@ export default function InstructorManagerSection() {
 
           {/* Mật khẩu */}
           <div className="flex flex-col gap-1">
-            <label className="text-[12px] font-bold text-ink">
+            <label className="text-[12px] font-bold text-ink dark:text-amber-200">
               {editingAccountId ? 'Mật khẩu mới (bỏ trống nếu giữ nguyên)' : 'Mật khẩu đăng nhập'} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <KeyRound size={14} className="absolute left-3 top-2.5 text-muted" />
+              <KeyRound size={14} className="absolute left-3 top-2.5 text-muted dark:text-amber-200/50" />
               <input
                 type="text"
                 value={formPassword}
                 onChange={(e) => setFormPassword(e.target.value)}
                 placeholder={editingAccountId ? 'Nhập nếu muốn đổi mật khẩu' : 'Tối thiểu 4 ký tự'}
-                className="w-full h-9 pl-9 pr-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white"
+                className="w-full h-9 pl-9 pr-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08]"
               />
             </div>
           </div>
 
           {/* Phân quyền Chủ đề / Khóa học */}
-          <div className="flex flex-col gap-2 pt-2 border-t border-line">
-            <label className="text-[12px] font-bold text-ink">
+          <div className="flex flex-col gap-2 pt-2 border-t border-line dark:border-white/10">
+            <label className="text-[12px] font-bold text-ink dark:text-amber-200">
               Chủ đề / Khóa học được phân quyền biên tập <span className="text-red-500">*</span>
             </label>
 
-            <label className="flex items-center gap-2 p-2.5 rounded-[10px] bg-white border border-line cursor-pointer hover:border-primary transition-colors">
+            <label className="flex items-center gap-2 p-2.5 rounded-[10px] bg-white dark:bg-[#1a0f08] border border-line dark:border-white/15 cursor-pointer hover:border-amber-500 transition-colors">
               <input
                 type="checkbox"
                 checked={formAllTopics}
                 onChange={(e) => setFormAllTopics(e.target.checked)}
-                className="w-4 h-4 text-primary rounded"
+                className="w-4 h-4 text-amber-500 rounded accent-amber-500"
               />
-              <span className="text-[13px] font-bold text-ink">
+              <span className="text-[13px] font-bold text-ink dark:text-amber-100">
                 Toàn quyền tất cả các chủ đề trong hệ thống
               </span>
             </label>
 
             {!formAllTopics && (
-              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto p-2 bg-white rounded-[10px] border border-line">
+              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto p-2 bg-white dark:bg-[#1a0f08] rounded-[10px] border border-line dark:border-white/15">
                 {topics.length === 0 ? (
-                  <span className="text-[12px] text-muted italic">Đang tải danh sách chủ đề...</span>
+                  <span className="text-[12px] text-muted dark:text-amber-200/60 italic">Đang tải danh sách chủ đề...</span>
                 ) : (
                   topics.map((t) => {
                     const isChecked = formSelectedTopics.includes(t.id) || formSelectedTopics.includes(t.slug);
                     return (
                       <label
                         key={t.id}
-                        className="flex items-center gap-2 p-1.5 hover:bg-surface rounded-[6px] cursor-pointer text-[13px]"
+                        className="flex items-center gap-2 p-1.5 hover:bg-surface-2 dark:hover:bg-white/5 rounded-[6px] cursor-pointer text-[13px]"
                       >
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => handleToggleTopic(t.id)}
-                          className="w-3.5 h-3.5 text-primary rounded"
+                          className="w-3.5 h-3.5 text-amber-500 rounded accent-amber-500"
                         />
-                        <span className="text-ink font-medium">{t.title}</span>
+                        <span className="text-ink dark:text-amber-100 font-medium">{t.title}</span>
                       </label>
                     );
                   })
@@ -392,14 +392,14 @@ export default function InstructorManagerSection() {
             <button
               type="button"
               onClick={resetForm}
-              className="h-9 px-4 rounded-[10px] bg-surface text-ink text-[13px] font-bold hover:bg-line cursor-pointer"
+              className="h-9 px-4 rounded-[10px] bg-surface dark:bg-white/10 text-ink dark:text-amber-200 text-[13px] font-bold hover:bg-line cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-1.5 h-9 px-5 rounded-[10px] bg-primary text-white text-[13px] font-bold hover:bg-primary-dark cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 h-9 px-5 rounded-[10px] bg-amber-500 hover:bg-amber-400 text-slate-950 text-[13px] font-black cursor-pointer disabled:opacity-50 transition-colors"
             >
               {submitting ? (
                 <>
@@ -434,28 +434,28 @@ export default function InstructorManagerSection() {
                 key={acc.id}
                 className={`p-3.5 rounded-[16px] border transition-all ${
                   acc.is_active !== false
-                    ? 'bg-white border-line shadow-xs'
-                    : 'bg-surface border-line opacity-65'
+                    ? 'bg-white dark:bg-[#25170e] border-line dark:border-white/10 shadow-xs'
+                    : 'bg-surface-2 dark:bg-[#1a0f08] border-line dark:border-white/10 opacity-65'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[14px] font-extrabold text-ink">
+                      <span className="text-[14px] font-extrabold text-ink dark:text-amber-100 truncate">
                         {acc.name}
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                           acc.is_active !== false
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
                         }`}
                       >
                         {acc.is_active !== false ? 'Hoạt động' : 'Tạm khóa'}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-[12px] text-muted mt-1 font-mono">
+                    <div className="flex items-center gap-3 text-[12px] text-muted dark:text-amber-200/70 mt-1 font-mono">
                       <span className="flex items-center gap-1">
                         <Phone size={12} />
                         {acc.phone}
@@ -464,7 +464,7 @@ export default function InstructorManagerSection() {
 
                     {/* Danh sách chủ đề được giao */}
                     <div className="mt-2">
-                      <span className="text-[11px] font-bold text-muted uppercase tracking-wider">
+                      <span className="text-[11px] font-bold text-muted dark:text-amber-200/60 uppercase tracking-wider">
                         Phân quyền khóa học:
                       </span>
                       {renderTopicBadge(acc.allowed_topic_ids || [])}
@@ -472,20 +472,20 @@ export default function InstructorManagerSection() {
                   </div>
 
                   {/* Hành động */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleToggleActive(acc)}
                       title={acc.is_active !== false ? 'Tạm khóa tài khoản' : 'Kích hoạt lại'}
-                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-white hover:bg-surface-2 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      {acc.is_active !== false ? <Unlock size={14} /> : <Lock size={14} className="text-amber-600" />}
+                      {acc.is_active !== false ? <Unlock size={14} /> : <Lock size={14} className="text-amber-600 dark:text-amber-400" />}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(acc)}
                       title="Chỉnh sửa tài khoản"
-                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted hover:text-primary hover:bg-surface-2 transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted dark:text-amber-200/70 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-surface-2 dark:hover:bg-white/10 transition-colors cursor-pointer"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -493,7 +493,7 @@ export default function InstructorManagerSection() {
                       type="button"
                       onClick={() => handleDelete(acc)}
                       title="Xóa tài khoản"
-                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-[8px] flex items-center justify-center text-muted dark:text-amber-200/70 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                     >
                       <Trash2 size={14} />
                     </button>

@@ -16,9 +16,11 @@ import {
   Sparkles,
   BookMarked,
   FolderPlus,
+  Headphones,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
+import OnlineLibrarySection from '../../components/OnlineLibrarySection';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { DEFAULT_RECOMMENDED_BOOKS } from '../../data/sample';
 import { RecommendedBook } from '../../lib/types';
@@ -120,6 +122,7 @@ export default function CategoriesPage() {
   const [allBooks, setAllBooks] = useState<RecommendedBook[]>(DEFAULT_RECOMMENDED_BOOKS);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<'shelf_categories' | 'online_audio'>('shelf_categories');
 
   // Modal Thêm / Chỉnh sửa danh mục
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -418,13 +421,56 @@ export default function CategoriesPage() {
         </button>
       </section>
 
-      {/* 2. THANH CUỘN TAB NHANH CÁC DANH MỤC (MOBILE-FIRST 1-CHẠM CHUYỂN DANH MỤC) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 -my-1">
+      {/* 2. CỤM CHUYỂN ĐỔI: TỦ SÁCH CHUYÊN ĐỀ & SÁCH NÓI TRỰC TUYẾN */}
+      <div className="grid grid-cols-2 p-1 rounded-2xl bg-amber-900/10 dark:bg-white/10 gap-1 border border-amber-900/10 dark:border-white/10 select-none">
         <button
           type="button"
-          onClick={() => setSelectedCategoryId('all')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-            selectedCategoryId === 'all'
+          onClick={() => setMainTab('shelf_categories')}
+          className={`h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            mainTab === 'shelf_categories'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+              : 'text-[#6E4223] dark:text-amber-200/80 hover:text-[#2A160A] dark:hover:text-white'
+          }`}
+        >
+          <BookOpen size={14} />
+          <span>Tủ Sách Chuyên Đề</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMainTab('online_audio')}
+          className={`h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            mainTab === 'online_audio'
+              ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+              : 'text-[#6E4223] dark:text-amber-200/80 hover:text-[#2A160A] dark:hover:text-white'
+          }`}
+        >
+          <Headphones size={14} />
+          <span>Sách Nói & Trực Tuyến</span>
+        </button>
+      </div>
+
+      {mainTab === 'online_audio' ? (
+        <OnlineLibrarySection
+          onOpenBook={(b) => {
+            setActiveReaderBook({
+              title: b.title,
+              author: b.author,
+              coverUrl: b.coverUrl,
+              fileUrl: b.fileUrl,
+              pages: b.pages || [],
+              initialPage: 0,
+            });
+          }}
+        />
+      ) : (
+        <>
+          {/* 3. THANH CUỘN TAB NHANH CÁC DANH MỤC (MOBILE-FIRST 1-CHẠM CHUYỂN DANH MỤC) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 -my-1">
+            <button
+              type="button"
+              onClick={() => setSelectedCategoryId('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                selectedCategoryId === 'all'
               ? 'bg-amber-500 text-slate-950 shadow-xs'
               : 'bg-white dark:bg-[#22150c] text-[#6E4223] dark:text-amber-200/80 border border-[#e6dcce] dark:border-[#553622] hover:bg-amber-500/10'
           }`}
@@ -685,6 +731,8 @@ export default function CategoriesPage() {
           </div>
         )}
       </section>
+        </>
+      )}
 
       {/* =========================================================================
           MODAL THÊM / CHỈNH SỬA DANH MỤC & CHỌN CÁC CUỐN SÁCH VÀO DANH MỤC ĐÓ

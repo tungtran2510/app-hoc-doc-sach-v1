@@ -16,6 +16,7 @@ import {
   Loader2,
   ChevronDown,
   Moon,
+  Trash2,
 } from 'lucide-react';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 import { backgroundAudioManager } from '../lib/backgroundAudioManager';
@@ -35,6 +36,7 @@ interface AudiobookPlayerModalProps {
     durationFormatted?: string;
   } | null;
   onDownload?: () => void;
+  onDeleteDownload?: () => void;
   isDownloaded?: boolean;
 }
 
@@ -43,6 +45,7 @@ export default function AudiobookPlayerModal({
   onClose,
   book,
   onDownload,
+  onDeleteDownload,
   isDownloaded = false,
 }: AudiobookPlayerModalProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -476,7 +479,7 @@ export default function AudiobookPlayerModal({
           </button>
         </div>
 
-        {/* HÀNG CUỐI: TẮT ÂM LƯỢNG & NÚT TẢI VỀ NGOẠI TUYẾN */}
+        {/* HÀNG CUỐI: TẮT ÂM LƯỢNG & NÚT TẢI / XÓA VỀ NGOẠI TUYẾN */}
         <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
           <button
             type="button"
@@ -487,29 +490,44 @@ export default function AudiobookPlayerModal({
             <span className="text-[11px] font-medium">{isMuted ? 'Đã tắt âm' : 'Âm thanh'}</span>
           </button>
 
-          {onDownload && (
-            <button
-              type="button"
-              onClick={onDownload}
-              className={`h-7 px-3 rounded-lg text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
-                isDownloaded
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-              }`}
-            >
-              {isDownloaded ? (
-                <>
-                  <CheckCircle2 size={12} />
-                  <span>Đã tải ngoại tuyến</span>
-                </>
-              ) : (
-                <>
-                  <Download size={12} />
-                  <span>Tải nghe ngoại tuyến</span>
-                </>
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-1.5">
+            {/* Nút Xóa bản tải khi đã tải về máy */}
+            {isDownloaded && onDeleteDownload && (
+              <button
+                type="button"
+                onClick={onDeleteDownload}
+                className="h-7 px-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shrink-0"
+                title="Xóa tệp âm thanh ngoại tuyến khỏi máy"
+              >
+                <Trash2 size={12} />
+                <span>Xóa tải</span>
+              </button>
+            )}
+
+            {onDownload && (
+              <button
+                type="button"
+                onClick={isDownloaded ? undefined : onDownload}
+                className={`h-7 px-2.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 ${
+                  isDownloaded
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-default'
+                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer active:scale-95 shadow-sm'
+                }`}
+              >
+                {isDownloaded ? (
+                  <>
+                    <CheckCircle2 size={12} />
+                    <span>Đã lưu offline</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={12} />
+                    <span>Tải nghe ngoại tuyến</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

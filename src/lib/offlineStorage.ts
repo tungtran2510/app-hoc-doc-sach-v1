@@ -174,12 +174,20 @@ class OfflineStorageEngine {
 
     // 2. Tải thêm ảnh bìa về máy (nếu có) để xem offline
     let coverBlob: Blob | null = book.coverBlob || null;
-    if (!coverBlob && book.coverUrl && !book.coverUrl.startsWith('data:')) {
+    const isFetchableCover =
+      book.coverUrl &&
+      !book.coverUrl.startsWith('data:') &&
+      !book.coverUrl.startsWith('style:') &&
+      (book.coverUrl.startsWith('http://') ||
+        book.coverUrl.startsWith('https://') ||
+        book.coverUrl.startsWith('/'));
+
+    if (!coverBlob && isFetchableCover) {
       try {
-        let coverFetchUrl = book.coverUrl;
+        let coverFetchUrl = book.coverUrl!;
         if (typeof window !== 'undefined' && (coverFetchUrl.startsWith('http://') || coverFetchUrl.startsWith('https://'))) {
           if (!coverFetchUrl.startsWith(window.location.origin)) {
-            coverFetchUrl = `/api/download-proxy?url=${encodeURIComponent(book.coverUrl)}`;
+            coverFetchUrl = `/api/download-proxy?url=${encodeURIComponent(book.coverUrl!)}`;
           }
         }
         const coverRes = await fetch(coverFetchUrl);

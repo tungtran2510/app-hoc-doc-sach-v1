@@ -224,9 +224,11 @@ export default function RecommendedBooksSection({
 
     window.addEventListener('qbiz_book_downloaded', handleBookDownloaded);
     window.addEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
+    window.addEventListener('qbiz_book_removed_offline', handleBookDownloaded);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleBookDownloaded);
       window.removeEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
+      window.removeEventListener('qbiz_book_removed_offline', handleBookDownloaded);
     };
   }, []);
 
@@ -288,17 +290,31 @@ export default function RecommendedBooksSection({
       await saveSettingsApi({
         recommended_books: nextBooks,
       });
+    } else {
+      try {
+        localStorage.setItem('qbiz_bookshelf_custom_books', JSON.stringify(nextBooks));
+      } catch {}
     }
   };
 
   const handleDeleteBook = async (index: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa cuốn sách này khỏi danh sách?')) return;
+    const target = books[index];
+    if (!confirm(`Bạn có chắc chắn muốn gỡ cuốn sách "${target?.title || 'này'}" khỏi kệ sách?`)) return;
     const nextBooks = books.filter((_, i) => i !== index);
     setBooks(nextBooks);
+    if (target?.id) {
+      try {
+        await offlineStorage.removeBookFromOffline(target.id);
+      } catch {}
+    }
     if (isAdmin) {
       await saveSettingsApi({
         recommended_books: nextBooks,
       });
+    } else {
+      try {
+        localStorage.setItem('qbiz_bookshelf_custom_books', JSON.stringify(nextBooks));
+      } catch {}
     }
   };
 

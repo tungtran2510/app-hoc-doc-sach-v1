@@ -164,22 +164,22 @@ export default function AdminSettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-0 sm:p-4">
-      <div className="w-full max-w-[480px] max-h-[92vh] bg-white rounded-t-[28px] sm:rounded-[28px] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4">
+      <div className="w-full max-w-[480px] max-h-[92vh] bg-white dark:bg-[#1c1109] rounded-t-[28px] sm:rounded-[28px] flex flex-col overflow-hidden shadow-2xl border border-line dark:border-white/10 animate-in slide-in-from-bottom duration-200">
         {/* Nút kéo */}
-        <div className="w-12 h-1.5 bg-line-strong rounded-full mx-auto mt-3 mb-1 sm:hidden" />
+        <div className="w-12 h-1.5 bg-line-strong dark:bg-white/20 rounded-full mx-auto mt-3 mb-1 sm:hidden" />
 
         {/* Header */}
-        <div className="flex items-center justify-between p-4 px-5 border-b border-line">
+        <div className="flex items-center justify-between p-4 px-5 border-b border-line dark:border-white/10 bg-white dark:bg-[#22150c]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-[10px] bg-primary-soft text-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[10px] bg-primary-soft dark:bg-amber-500/20 text-primary dark:text-amber-300 flex items-center justify-center">
               <Settings size={18} strokeWidth={2.5} />
             </div>
             <div>
-              <h3 className="text-[19px] font-extrabold text-ink leading-tight">
+              <h3 className="text-[18px] sm:text-[19px] font-extrabold text-[#26160c] dark:text-amber-100 leading-tight">
                 Cài đặt quản trị
               </h3>
-              <p className="text-[13px] text-muted leading-tight">
+              <p className="text-[12px] sm:text-[13px] text-[#8a6e59] dark:text-amber-200/70 leading-tight">
                 Tùy chỉnh thông tin, hiển thị và dữ liệu
               </p>
             </div>
@@ -187,22 +187,22 @@ export default function AdminSettingsModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-surface-2 flex items-center justify-center text-muted hover:text-ink cursor-pointer"
+            className="w-8 h-8 rounded-full bg-surface-2 dark:bg-white/10 flex items-center justify-center text-muted dark:text-amber-200 hover:text-ink dark:hover:text-white cursor-pointer"
             aria-label="Đóng"
           >
-            <X size={18} />
+            <X size={17} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className={`grid ${isSuper ? 'grid-cols-4' : 'grid-cols-3'} border-b border-line bg-surface p-1.5 gap-1`}>
+        <div className={`grid ${isSuper ? 'grid-cols-4' : 'grid-cols-3'} border-b border-line dark:border-white/10 bg-surface-2 dark:bg-[#25170e] p-1.5 gap-1`}>
           <button
             type="button"
             onClick={() => setActiveTab('chung')}
-            className={`h-10 rounded-[10px] text-[13px] font-extrabold transition-all cursor-pointer ${
+            className={`h-9 sm:h-10 rounded-[10px] text-[12px] sm:text-[13px] font-extrabold transition-all cursor-pointer ${
               activeTab === 'chung'
-                ? 'bg-white text-primary shadow-xs'
-                : 'text-muted hover:text-ink'
+                ? 'bg-white dark:bg-amber-500 text-primary dark:text-slate-950 shadow-xs font-black'
+                : 'text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-amber-100'
             }`}
           >
             Chung
@@ -210,10 +210,10 @@ export default function AdminSettingsModal({
           <button
             type="button"
             onClick={() => setActiveTab('trai_nghiem')}
-            className={`h-10 rounded-[10px] text-[13px] font-extrabold transition-all cursor-pointer ${
+            className={`h-9 sm:h-10 rounded-[10px] text-[12px] sm:text-[13px] font-extrabold transition-all cursor-pointer ${
               activeTab === 'trai_nghiem'
-                ? 'bg-white text-primary shadow-xs'
-                : 'text-muted hover:text-ink'
+                ? 'bg-white dark:bg-amber-500 text-primary dark:text-slate-950 shadow-xs font-black'
+                : 'text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-amber-100'
             }`}
           >
             Giao diện
@@ -221,27 +221,25 @@ export default function AdminSettingsModal({
           <button
             type="button"
             onClick={() => setActiveTab('du_lieu')}
-            className={`h-10 rounded-[10px] text-[13px] font-extrabold transition-all cursor-pointer ${
+            className={`h-9 sm:h-10 rounded-[10px] text-[12px] sm:text-[13px] font-extrabold transition-all cursor-pointer ${
               activeTab === 'du_lieu'
-                ? 'bg-white text-primary shadow-xs'
-                : 'text-muted hover:text-ink'
+                ? 'bg-white dark:bg-amber-500 text-primary dark:text-slate-950 shadow-xs font-black'
+                : 'text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-amber-100'
             }`}
           >
             Bảo mật
           </button>
-          {isSuper && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('giang_vien')}
-              className={`h-10 rounded-[10px] text-[13px] font-extrabold transition-all cursor-pointer ${
-                activeTab === 'giang_vien'
-                  ? 'bg-white text-primary shadow-xs'
-                  : 'text-muted hover:text-ink'
-              }`}
-            >
-              Giảng viên
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setActiveTab('giang_vien')}
+            className={`h-9 sm:h-10 rounded-[10px] text-[12px] sm:text-[13px] font-extrabold transition-all cursor-pointer ${
+              activeTab === 'giang_vien'
+                ? 'bg-white dark:bg-amber-500 text-primary dark:text-slate-950 shadow-xs font-black'
+                : 'text-muted dark:text-amber-200/70 hover:text-ink dark:hover:text-amber-100'
+            }`}
+          >
+            Khách & Giảng viên
+          </button>
         </div>
 
 
@@ -251,7 +249,7 @@ export default function AdminSettingsModal({
           {activeTab === 'chung' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[14px] font-bold text-ink">
+                <label className="text-[13px] sm:text-[14px] font-bold text-ink dark:text-amber-200">
                   Tên ứng dụng
                 </label>
                 <input
@@ -259,12 +257,12 @@ export default function AdminSettingsModal({
                   value={settings.app_name}
                   onChange={(e) => setSettings({ ...settings, app_name: e.target.value })}
                   placeholder="Ví dụ: Sống Khỏe Mỗi Ngày"
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-line text-[15px] text-ink font-semibold focus:border-primary"
+                  className="w-full h-10 sm:h-11 px-3.5 rounded-[12px] border border-line dark:border-white/15 text-[14px] sm:text-[15px] text-ink dark:text-amber-100 bg-white dark:bg-[#1a0f08] font-semibold focus:border-amber-500"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[14px] font-bold text-ink">
+                <label className="text-[13px] sm:text-[14px] font-bold text-ink dark:text-amber-200">
                   Thông tin tác giả / Chuyên gia sức khỏe
                 </label>
                 <input
@@ -272,13 +270,13 @@ export default function AdminSettingsModal({
                   value={settings.expert_title}
                   onChange={(e) => setSettings({ ...settings, expert_title: e.target.value })}
                   placeholder="Ví dụ: Chuyên gia Phục hồi chức năng Cột sống"
-                  className="w-full h-11 px-3.5 rounded-[12px] border border-line text-[15px] text-ink focus:border-primary"
+                  className="w-full h-10 sm:h-11 px-3.5 rounded-[12px] border border-line dark:border-white/15 text-[14px] sm:text-[15px] text-ink dark:text-amber-100 bg-white dark:bg-[#1a0f08] focus:border-amber-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[14px] font-bold text-ink">
+                  <label className="text-[13px] sm:text-[14px] font-bold text-ink dark:text-amber-200">
                     Số Hotline tư vấn
                   </label>
                   <input
@@ -286,12 +284,12 @@ export default function AdminSettingsModal({
                     value={settings.hotline}
                     onChange={(e) => setSettings({ ...settings, hotline: e.target.value })}
                     placeholder="0988..."
-                    className="w-full h-11 px-3.5 rounded-[12px] border border-line text-[15px] text-ink focus:border-primary"
+                    className="w-full h-10 sm:h-11 px-3.5 rounded-[12px] border border-line dark:border-white/15 text-[14px] sm:text-[15px] text-ink dark:text-amber-100 bg-white dark:bg-[#1a0f08] focus:border-amber-500"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[14px] font-bold text-ink">
+                  <label className="text-[13px] sm:text-[14px] font-bold text-ink dark:text-amber-200">
                     Đường dẫn Zalo
                   </label>
                   <input
@@ -299,7 +297,7 @@ export default function AdminSettingsModal({
                     value={settings.zalo_url}
                     onChange={(e) => setSettings({ ...settings, zalo_url: e.target.value })}
                     placeholder="https://zalo.me/..."
-                    className="w-full h-11 px-3.5 rounded-[12px] border border-line text-[15px] text-ink focus:border-primary"
+                    className="w-full h-10 sm:h-11 px-3.5 rounded-[12px] border border-line dark:border-white/15 text-[14px] sm:text-[15px] text-ink dark:text-amber-100 bg-white dark:bg-[#1a0f08] focus:border-amber-500"
                   />
                 </div>
               </div>
@@ -310,9 +308,9 @@ export default function AdminSettingsModal({
           {activeTab === 'trai_nghiem' && (
             <div className="flex flex-col gap-4">
               {/* Cỡ chữ mặc định */}
-              <div className="flex flex-col gap-2 p-3.5 rounded-[16px] bg-surface-2 border border-line">
-                <span className="text-[14px] font-bold text-ink flex items-center gap-1.5">
-                  <Sliders size={16} className="text-primary" />
+              <div className="flex flex-col gap-2 p-3.5 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10">
+                <span className="text-[14px] font-bold text-ink dark:text-amber-100 flex items-center gap-1.5">
+                  <Sliders size={16} className="text-amber-600 dark:text-amber-400" />
                   <span>Cỡ chữ mặc định khi mở bài học</span>
                 </span>
                 <div className="grid grid-cols-3 gap-2">
@@ -323,8 +321,8 @@ export default function AdminSettingsModal({
                       onClick={() => setSettings({ ...settings, default_font_size: mode })}
                       className={`h-10 rounded-[10px] font-extrabold text-[13px] border transition-all cursor-pointer ${
                         settings.default_font_size === mode
-                          ? 'bg-primary text-white border-primary shadow-xs'
-                          : 'bg-white text-ink border-line hover:border-primary/40'
+                          ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-xs'
+                          : 'bg-white dark:bg-[#1a0f08] text-ink dark:text-amber-100 border-line dark:border-white/15 hover:border-amber-500/50'
                       }`}
                     >
                       {mode === 'small' ? 'Nhỏ' : mode === 'normal' ? 'Vừa' : 'Lớn'}
@@ -334,12 +332,12 @@ export default function AdminSettingsModal({
               </div>
 
               {/* Tự động chuyển video */}
-              <div className="flex items-center justify-between p-3.5 rounded-[16px] bg-surface-2 border border-line">
+              <div className="flex items-center justify-between p-3.5 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10">
                 <div className="flex flex-col gap-0.5 max-w-[80%]">
-                  <span className="text-[15px] font-bold text-ink">
+                  <span className="text-[14px] sm:text-[15px] font-bold text-ink dark:text-amber-100">
                     Tự động chuyển video kế tiếp
                   </span>
-                  <span className="text-[13px] text-muted">
+                  <span className="text-[12px] sm:text-[13px] text-muted dark:text-amber-200/70">
                     Sau khi phát xong 1 video, trình phát tự chọn video tiếp theo trong danh sách
                   </span>
                 </div>
@@ -347,17 +345,17 @@ export default function AdminSettingsModal({
                   type="checkbox"
                   checked={settings.auto_next_video}
                   onChange={(e) => setSettings({ ...settings, auto_next_video: e.target.checked })}
-                  className="w-5 h-5 accent-primary rounded cursor-pointer"
+                  className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
                 />
               </div>
 
               {/* Thanh tiến độ */}
-              <div className="flex items-center justify-between p-3.5 rounded-[16px] bg-surface-2 border border-line">
+              <div className="flex items-center justify-between p-3.5 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10">
                 <div className="flex flex-col gap-0.5 max-w-[80%]">
-                  <span className="text-[15px] font-bold text-ink">
+                  <span className="text-[14px] sm:text-[15px] font-bold text-ink dark:text-amber-100">
                     Hiện thanh tiến độ học tập
                   </span>
-                  <span className="text-[13px] text-muted">
+                  <span className="text-[12px] sm:text-[13px] text-muted dark:text-amber-200/70">
                     Hiển thị thanh tiến trình % trên thẻ Xem tiếp ở trang chủ
                   </span>
                 </div>
@@ -365,7 +363,7 @@ export default function AdminSettingsModal({
                   type="checkbox"
                   checked={settings.show_progress_bar}
                   onChange={(e) => setSettings({ ...settings, show_progress_bar: e.target.checked })}
-                  className="w-5 h-5 accent-primary rounded cursor-pointer"
+                  className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
                 />
               </div>
             </div>
@@ -375,18 +373,18 @@ export default function AdminSettingsModal({
           {activeTab === 'du_lieu' && (
             <div className="flex flex-col gap-4">
               {/* Sao lưu 1 chạm */}
-              <div className="flex flex-col gap-2 p-3.5 rounded-[16px] bg-surface-2 border border-line">
-                <span className="text-[14px] font-bold text-ink">
+              <div className="flex flex-col gap-2 p-3.5 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10">
+                <span className="text-[14px] font-bold text-ink dark:text-amber-100">
                   Sao lưu dữ liệu 1 chạm
                 </span>
-                <p className="text-[13px] text-muted leading-relaxed">
+                <p className="text-[12px] sm:text-[13px] text-muted dark:text-amber-200/70 leading-relaxed">
                   Tải toàn bộ 4 bảng dữ liệu (chủ đề, bài học, các khối và cấu hình) về máy tính để lưu trữ dự phòng.
                 </p>
                 <button
                   type="button"
                   onClick={handleExportBackup}
                   disabled={isExporting}
-                  className="flex items-center justify-center gap-1.5 h-11 rounded-[12px] bg-primary text-white font-bold text-[14px] shadow-xs cursor-pointer hover:bg-primary-dark"
+                  className="flex items-center justify-center gap-1.5 h-10 sm:h-11 rounded-[12px] bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[13px] sm:text-[14px] shadow-xs cursor-pointer active:scale-95 transition-all"
                 >
                   <Download size={16} />
                   <span>{isExporting ? 'Đang xuất tệp...' : 'Tải file sao lưu (JSON)'}</span>
@@ -394,29 +392,29 @@ export default function AdminSettingsModal({
               </div>
 
               {/* Đổi mật khẩu Admin */}
-              <div className="flex flex-col gap-3 p-4 rounded-[16px] bg-surface-2 border border-line">
+              <div className="flex flex-col gap-3 p-4 rounded-[16px] bg-surface-2 dark:bg-[#25170e] border border-line dark:border-white/10">
                 <div className="flex items-center gap-2">
-                  <Key size={16} className="text-primary" />
-                  <span className="text-[14px] font-bold text-ink">
+                  <Key size={16} className="text-amber-600 dark:text-amber-400" />
+                  <span className="text-[14px] font-bold text-ink dark:text-amber-100">
                     Đổi mật khẩu quản trị (Admin)
                   </span>
                 </div>
 
                 {passwordError && (
-                  <div className="p-2.5 rounded-[10px] bg-red-50 border border-red-200 text-red-700 text-[13px] font-bold">
+                  <div className="p-2.5 rounded-[10px] bg-red-500/15 border border-red-500/30 text-red-700 dark:text-red-300 text-[13px] font-bold">
                     {passwordError}
                   </div>
                 )}
 
                 {passwordSuccess && (
-                  <div className="p-2.5 rounded-[10px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-bold">
+                  <div className="p-2.5 rounded-[10px] bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-[13px] font-bold">
                     {passwordSuccess}
                   </div>
                 )}
 
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[12px] font-bold text-ink">
+                    <label className="text-[12px] font-bold text-ink dark:text-amber-200">
                       Mật khẩu hiện tại
                     </label>
                     <input
@@ -424,13 +422,13 @@ export default function AdminSettingsModal({
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Nhập mật khẩu đang dùng"
-                      className="w-full h-9 px-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white"
+                      className="w-full h-9 px-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <label className="text-[12px] font-bold text-ink">
+                      <label className="text-[12px] font-bold text-ink dark:text-amber-200">
                         Mật khẩu mới
                       </label>
                       <input
@@ -438,12 +436,12 @@ export default function AdminSettingsModal({
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Tối thiểu 4 ký tự"
-                        className="w-full h-9 px-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white"
+                        className="w-full h-9 px-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08]"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="text-[12px] font-bold text-ink">
+                      <label className="text-[12px] font-bold text-ink dark:text-amber-200">
                         Nhập lại mật khẩu
                       </label>
                       <input
@@ -451,7 +449,7 @@ export default function AdminSettingsModal({
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Xác nhận lại"
-                        className="w-full h-9 px-3 rounded-[10px] border border-line text-[14px] text-ink focus:border-primary bg-white"
+                        className="w-full h-9 px-3 rounded-[10px] border border-line dark:border-white/15 text-[14px] text-ink dark:text-amber-100 placeholder:text-muted dark:placeholder:text-amber-100/40 focus:border-amber-500 bg-white dark:bg-[#1a0f08]"
                       />
                     </div>
                   </div>
@@ -496,10 +494,10 @@ export default function AdminSettingsModal({
 
 
         {/* Footer */}
-        <div className="p-3.5 px-5 border-t border-line flex items-center justify-between bg-surface">
+        <div className="p-3.5 px-5 border-t border-line dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#22150c]">
           <div>
             {saveSuccessMsg && (
-              <span className="text-[13px] text-primary font-bold">
+              <span className="text-[13px] text-emerald-600 dark:text-emerald-400 font-bold">
                 ✓ {saveSuccessMsg}
               </span>
             )}
@@ -508,16 +506,16 @@ export default function AdminSettingsModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-[44px] px-4 rounded-[12px] bg-surface-2 text-ink font-bold text-[14px] cursor-pointer"
+              className="h-10 px-4 rounded-[12px] bg-surface-2 dark:bg-white/10 text-ink dark:text-amber-200 hover:text-ink dark:hover:text-white font-bold text-[13px] cursor-pointer transition-colors"
             >
               Đóng
             </button>
             <button
               type="button"
               onClick={handleSaveSettings}
-              className="flex items-center justify-center gap-1.5 h-[44px] px-5 rounded-[12px] bg-primary text-white font-extrabold text-[14px] shadow-sm cursor-pointer hover:bg-primary-dark"
+              className="flex items-center justify-center gap-1.5 h-10 px-5 rounded-[12px] bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-[13px] shadow-xs cursor-pointer transition-all"
             >
-              <Save size={16} />
+              <Save size={15} />
               <span>Lưu cài đặt</span>
             </button>
           </div>
