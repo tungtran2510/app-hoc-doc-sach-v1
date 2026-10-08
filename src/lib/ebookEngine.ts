@@ -26,20 +26,47 @@ export interface EbookFormatMeta {
   iconName: string;
 }
 
-export function detectEbookFormat(fileNameOrUrl?: string | null): EbookFormat {
-  if (!fileNameOrUrl) return 'unknown';
-  const clean = fileNameOrUrl.split('?')[0].split('#')[0].toLowerCase();
-  const ext = clean.split('.').pop() || '';
+export function detectEbookFormat(
+  fileNameOrUrl?: string | null,
+  fallbackUrl?: string | null
+): EbookFormat {
+  const detectSingle = (target?: string | null): EbookFormat => {
+    if (!target) return 'unknown';
+    const lower = target.toLowerCase();
 
-  if (ext === 'pdf') return 'pdf';
-  if (ext === 'epub') return 'epub';
-  if (ext === 'mobi') return 'mobi';
-  if (ext === 'azw' || ext === 'azw3') return 'azw3';
-  if (ext === 'fb2') return 'fb2';
-  if (ext === 'cbz') return 'cbz';
-  if (ext === 'cbr') return 'cbr';
-  if (ext === 'txt' || ext === 'text' || ext === 'md') return 'txt';
-  if (ext === 'docx' || ext === 'doc') return 'docx';
+    // Kiểm tra định dạng qua query proxy nếu có
+    if (lower.includes('.epub')) return 'epub';
+    if (lower.includes('.cbz') || lower.includes('.cbr')) return 'cbz';
+    if (lower.includes('.pdf')) return 'pdf';
+    if (lower.includes('.mobi')) return 'mobi';
+    if (lower.includes('.azw3') || lower.includes('.azw')) return 'azw3';
+    if (lower.includes('.fb2')) return 'fb2';
+    if (lower.includes('.docx') || lower.includes('.doc')) return 'docx';
+    if (lower.includes('.txt') || lower.includes('.text') || lower.includes('.md')) return 'txt';
+
+    const clean = lower.split('?')[0].split('#')[0];
+    const ext = clean.split('.').pop() || '';
+
+    if (ext === 'pdf') return 'pdf';
+    if (ext === 'epub') return 'epub';
+    if (ext === 'mobi') return 'mobi';
+    if (ext === 'azw' || ext === 'azw3') return 'azw3';
+    if (ext === 'fb2') return 'fb2';
+    if (ext === 'cbz') return 'cbz';
+    if (ext === 'cbr') return 'cbr';
+    if (ext === 'txt' || ext === 'text' || ext === 'md') return 'txt';
+    if (ext === 'docx' || ext === 'doc') return 'docx';
+
+    return 'unknown';
+  };
+
+  const primary = detectSingle(fileNameOrUrl);
+  if (primary !== 'unknown') return primary;
+
+  if (fallbackUrl) {
+    const fallback = detectSingle(fallbackUrl);
+    if (fallback !== 'unknown') return fallback;
+  }
 
   return 'unknown';
 }

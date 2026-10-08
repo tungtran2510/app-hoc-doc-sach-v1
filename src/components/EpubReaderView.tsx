@@ -171,6 +171,15 @@ export default function EpubReaderView({
   const currentChapter: EpubChapter | undefined = parsedBook?.chapters[currentChapterIdx];
   const totalChapters = parsedBook?.chapters.length || 1;
 
+  // Xử lý nội dung chương với Bionic Reading nếu được kích hoạt
+  const renderedContent = useMemo(() => {
+    if (!currentChapter?.htmlContent) return '';
+    if (activeTypography.bionicReading) {
+      return applyBionicToHtml(currentChapter.htmlContent, activeTypography.bionicIntensity);
+    }
+    return currentChapter.htmlContent;
+  }, [currentChapter?.htmlContent, activeTypography.bionicReading, activeTypography.bionicIntensity]);
+
   // Dọn dẹp âm thanh khi đóng giao diện
   useEffect(() => {
     return () => {
@@ -337,14 +346,6 @@ export default function EpubReaderView({
     );
   }
 
-  // Xử lý nội dung chương với Bionic Reading nếu được kích hoạt
-  const renderedContent = useMemo(() => {
-    if (!currentChapter?.htmlContent) return '';
-    if (activeTypography.bionicReading) {
-      return applyBionicToHtml(currentChapter.htmlContent, activeTypography.bionicIntensity);
-    }
-    return currentChapter.htmlContent;
-  }, [currentChapter?.htmlContent, activeTypography.bionicReading, activeTypography.bionicIntensity]);
 
   return (
     <div

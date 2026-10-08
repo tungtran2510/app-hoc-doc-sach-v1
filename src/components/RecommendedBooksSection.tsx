@@ -29,6 +29,7 @@ import FlipbookViewer from './FlipbookViewer';
 import WoodenBookshelf from './WoodenBookshelf';
 import SideBooksReaderModal from './SideBooksReaderModal';
 import { getBookReaderPageUrls } from '../lib/bookReaderPages';
+import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 
 interface RecommendedBooksSectionProps {
   initialTitle?: string | null;
@@ -147,6 +148,58 @@ export default function RecommendedBooksSection({
       );
     }
   }, [initialTitle, initialSubtitle, initialBooks, initialLayout]);
+
+  // Tự động tải và đồng bộ các cuốn sách đã tải về từ IndexedDB vào Gian trưng bày kệ sách
+  const loadDownloadedBooks = async () => {
+    try {
+      const cached = await offlineStorage.getAllCachedBooks();
+      if (!cached || cached.length === 0) return;
+
+      setBooks((prevBooks) => {
+        const existingIds = new Set(prevBooks.map((b) => b.id));
+        const newDownloadedBooks: RecommendedBook[] = [];
+
+        for (const c of cached) {
+          if (!existingIds.has(c.id)) {
+            newDownloadedBooks.push({
+              id: c.id,
+              title: c.title,
+              author: c.author || 'Tác giả',
+              category: 'Đã tải về',
+              badge_tag: c.format ? c.format.toUpperCase() : 'TẢI VỀ',
+              cover_url: c.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+              description: `Sách ngoại tuyến (${formatBytes(c.fileSize)}) • Sẵn sàng đọc ngay`,
+              pages: [],
+              file_url: c.fileUrl,
+              pdf_url: c.fileUrl,
+              file_name: c.fileName || c.title,
+              is_visible: true,
+            });
+            existingIds.add(c.id);
+          }
+        }
+
+        if (newDownloadedBooks.length === 0) return prevBooks;
+        // Đặt sách ngoại tuyến mới tải lên hàng đầu của kệ sách để người dùng đọc ngay
+        return [...newDownloadedBooks, ...prevBooks];
+      });
+    } catch (err) {
+      console.error('Lỗi nạp sách ngoại tuyến vào kệ sách:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadDownloadedBooks();
+
+    const handleBookDownloaded = () => {
+      loadDownloadedBooks();
+    };
+
+    window.addEventListener('qbiz_book_downloaded', handleBookDownloaded);
+    return () => {
+      window.removeEventListener('qbiz_book_downloaded', handleBookDownloaded);
+    };
+  }, []);
 
   // Lắng nghe sự kiện mở sách trực tiếp từ Trợ lý AI
   useEffect(() => {

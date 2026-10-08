@@ -377,6 +377,12 @@ export default function SavedBooksPage() {
     document.title = 'Đã lưu · Qbiz Books';
     loadData();
     loadOfflineList();
+
+    const handleDownloadEvent = () => {
+      loadOfflineList();
+    };
+    window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
+    return () => window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
   }, []);
 
   const handleOpenOfflineBook = (book: CachedBookMetadata) => {
@@ -387,7 +393,7 @@ export default function SavedBooksPage() {
       pages: [],
       initialPage: book.lastReadPage || 0,
       fileUrl: book.fileUrl,
-      fileName: book.fileUrl?.split('/').pop() || null,
+      fileName: book.fileName || book.fileUrl?.split('/').pop() || null,
     });
   };
 

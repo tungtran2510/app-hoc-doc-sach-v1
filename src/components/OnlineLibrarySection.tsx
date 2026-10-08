@@ -136,6 +136,22 @@ export default function OnlineLibrarySection({
         next.add(offlineStorage.normalizeBookId(book.id));
         return next;
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('qbiz_book_downloaded', {
+            detail: {
+              book: {
+                id: book.id,
+                title: book.title,
+                author: book.author,
+                coverUrl: activeCover,
+                fileUrl: book.downloadUrl,
+                format: book.format,
+              },
+            },
+          })
+        );
+      }
     } else {
       alert(`Không thể tải sách: ${res.error || 'Vui lòng thử lại.'}`);
     }
@@ -175,13 +191,20 @@ export default function OnlineLibrarySection({
     } else {
       const cached = await offlineStorage.getBookFromOffline(book.id);
       const fileUrl = cached?.blobUrl || book.downloadUrl;
+      const cleanExt = book.format === 'audio' ? 'pdf' : book.format;
+      const fileName =
+        cached?.fileName ||
+        book.downloadUrl.split('/').pop()?.split('?')[0] ||
+        `${book.title}.${cleanExt}`;
+
       onOpenBook({
         id: book.id,
         title: book.title,
         author: book.author,
         fileUrl,
         coverUrl: activeCover,
-      });
+        fileName,
+      } as any);
     }
   };
 
@@ -228,6 +251,21 @@ export default function OnlineLibrarySection({
       if (res.success) {
         playSuccessChime();
         setCachedBookIds((prev) => new Set(prev).add(bookId));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('qbiz_book_downloaded', {
+              detail: {
+                book: {
+                  id: bookId,
+                  title: inferredTitle,
+                  author: 'Liên kết trực tiếp',
+                  fileUrl: cleanUrl,
+                  format,
+                },
+              },
+            })
+          );
+        }
         setCustomUrl('');
         setCustomTitle('');
         setShowLinkModal(false);
@@ -240,6 +278,41 @@ export default function OnlineLibrarySection({
       setIsCustomDownloading(false);
     }
   };
+
+  // Tự động tìm kiếm sách mở rộng trên Internet khi người dùng gõ từ khóa (debounce 450ms)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q || q.length < 2) {
+      setExternalBooks([]);
+      setIsSearchingExternal(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const timer = setTimeout(async () => {
+      setIsSearchingExternal(true);
+      try {
+        const [gutenberg, openLib] = await Promise.all([
+          searchOnlineGutenbergBooks(q),
+          searchOpenLibraryBooks(q),
+        ]);
+        if (isCancelled) return;
+        const combined = [...gutenberg, ...openLib];
+        const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
+        const newItems = combined.filter((b) => !existingIds.has(b.id));
+        setExternalBooks(newItems);
+      } catch {
+        // ignore
+      } finally {
+        if (!isCancelled) setIsSearchingExternal(false);
+      }
+    }, 450);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   // Tìm kiếm sách mở rộng trên Internet (Open Library & Gutenberg)
   const handleSearchOnlineSources = async () => {

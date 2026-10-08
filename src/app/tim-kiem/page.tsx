@@ -26,6 +26,7 @@ import OnlineLibrarySection from '../../components/OnlineLibrarySection';
 import FloatingAiButton from '../../components/FloatingAiButton';
 import { playTapSound } from '../../lib/audioFeedback';
 import { matchSmartKeywords, CURATED_ONLINE_BOOKS } from '../../lib/onlineLibraryData';
+import { offlineStorage } from '../../lib/offlineStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -329,17 +330,48 @@ export default function SearchPage() {
     } catch {}
   }, []);
 
-  // Tải danh mục sách từ API
+  // Tải danh mục sách từ API và hợp nhất sách ngoại tuyến đã tải về
   useEffect(() => {
-    fetch('/api/search')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && Array.isArray(data.books)) {
-          setBooks(data.books);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    async function loadAllLocalBooks() {
+      try {
+        const res = await fetch('/api/search');
+        const data = await res.json();
+        let list: SearchBookItem[] = Array.isArray(data?.books) ? [...data.books] : [];
+
+        // Hợp nhất với các đầu sách đã tải về từ IndexedDB
+        try {
+          const cached = await offlineStorage.getAllCachedBooks();
+          const existingIds = new Set(list.map((b) => b.id));
+          for (const c of cached) {
+            if (!existingIds.has(c.id)) {
+              list.unshift({
+                id: c.id,
+                title: c.title,
+                author: c.author || 'Tác giả',
+                description: 'Sách ngoại tuyến đã tải về máy • Mở đọc ngay',
+                cover_url: c.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+                badge_tag: c.format ? c.format.toUpperCase() : 'ĐÃ TẢI',
+                pages_count: c.totalPages || 10,
+                pages: [],
+                file_url: c.fileUrl,
+                pdf_url: c.fileUrl,
+                file_name: c.fileName || c.title,
+              });
+              existingIds.add(c.id);
+            }
+          }
+        } catch {}
+
+        setBooks(list);
+      } catch {}
+      setLoading(false);
+    }
+
+    loadAllLocalBooks();
+
+    const handleDownloadEvent = () => loadAllLocalBooks();
+    window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
+    return () => window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
   }, []);
 
   // Debounce tìm kiếm
@@ -530,7 +562,7 @@ export default function SearchPage() {
       pages: book.pages || [],
       file_url: book.fileUrl,
       pdf_url: book.fileUrl,
-      file_name: book.title,
+      file_name: (book as any).fileName || (book.fileUrl ? book.fileUrl.split('/').pop()?.split('?')[0] : book.title),
     });
   };
 

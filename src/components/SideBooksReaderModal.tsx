@@ -113,7 +113,7 @@ export default function SideBooksReaderModal({
 
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
-  const activeFormat = detectEbookFormat(fileName || activeFileUrl);
+  const activeFormat = detectEbookFormat(fileName, activeFileUrl);
   const isEpub = activeFormat === 'epub';
   const isPdf = activeFormat === 'pdf' || (Boolean(activeFileUrl) && !isEpub && activeFileUrl?.toLowerCase().includes('.pdf'));
   const isCbz = activeFormat === 'cbz' || activeFormat === 'cbr';
