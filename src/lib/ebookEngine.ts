@@ -418,10 +418,17 @@ export async function extractCbzImages(arrayBuffer: ArrayBuffer): Promise<string
   return urls;
 }
 
+export interface PdfOutlineItem {
+  title: string;
+  pageIndex: number;
+  pageNumber: number;
+}
+
 export interface PdfPageProvider {
   numPages: number;
   getPageUrl: (pageNum1Based: number) => Promise<string>;
   getPageText: (pageNum1Based: number) => Promise<string>;
+  getOutline?: () => Promise<PdfOutlineItem[]>;
   destroy: () => void;
 }
 
@@ -517,6 +524,43 @@ export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProv
       } catch (err) {
         console.warn('Không trích xuất được text trang PDF:', err);
         return '';
+      }
+    },
+    getOutline: async (): Promise<PdfOutlineItem[]> => {
+      try {
+        const outline = await pdf.getOutline();
+        if (!outline || !Array.isArray(outline) || outline.length === 0) return [];
+        const result: PdfOutlineItem[] = [];
+        for (const item of outline) {
+          if (!item || !item.title) continue;
+          let pageIdx = 0;
+          try {
+            if (item.dest) {
+              let dest = item.dest;
+              if (typeof dest === 'string') {
+                dest = await pdf.getDestination(dest);
+              }
+              if (Array.isArray(dest) && dest[0]) {
+                const ref = dest[0];
+                const pIdx = await pdf.getPageIndex(ref);
+                if (typeof pIdx === 'number' && pIdx >= 0) {
+                  pageIdx = pIdx;
+                }
+              }
+            }
+          } catch {
+            // bỏ qua lỗi resolve dest cụ thể
+          }
+          result.push({
+            title: item.title,
+            pageIndex: pageIdx,
+            pageNumber: pageIdx + 1,
+          });
+        }
+        return result;
+      } catch (err) {
+        console.warn('Không lấy được outline từ PDF:', err);
+        return [];
       }
     },
     destroy: () => {

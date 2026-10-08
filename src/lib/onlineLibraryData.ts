@@ -13,13 +13,13 @@ import { detectEbookFormat, EbookFormat } from './ebookEngine';
  * - Tối ưu 100% Mobile-first: Cấm tuyệt đối rớt 2 dòng trên các nút bấm, nhãn và thông tin
  */
 
-export type BookMedium = 'read' | 'audio';
+export type BookMedium = 'read' | 'audio' | 'both';
 
 export interface OnlineBookItem {
   id: string;
   title: string;
   author: string;
-  medium: BookMedium; // 'read' (Sách đọc) | 'audio' (Sách nói)
+  medium: BookMedium; // 'read' (Sách đọc) | 'audio' (Sách nói) | 'both' (Đọc & Nghe song hành)
   category: 'viet-nam' | 'y-hoc' | 'van-hoc' | 'ky-nang' | 'truyen-tranh';
   categoryName: string;
   format: 'epub' | 'pdf' | 'cbz' | 'audio';
@@ -35,6 +35,8 @@ export interface OnlineBookItem {
   source: string;
   audioNarrator?: string; // Giọng đọc cho sách nói
   audioSampleText?: string;
+  audioBookItem?: OnlineBookItem; // Bản ghi sách nói tương ứng khi gộp
+  readBookItem?: OnlineBookItem;  // Bản ghi sách đọc tương ứng khi gộp
 }
 
 export const COVER_PALETTES = [
@@ -1156,3 +1158,89 @@ export function matchSmartKeywords(
 
   return { matched, score: matched ? score : 0 };
 }
+
+/**
+ * Trích xuất khóa tên sách gốc (loại bỏ tiền tố Sách nói, Audiobook, phụ đề) để so khớp Đọc & Nghe
+ */
+export function extractBaseTitleKey(title: string): string {
+  const cleaned = title
+    .toLowerCase()
+    .replace(/^sách\s*nói\s*[:\-–—\.]*\s*/i, '')
+    .replace(/^sach\s*noi\s*[:\-–—\.]*\s*/i, '')
+    .replace(/^audiobook\s*[:\-–—\.]*\s*/i, '')
+    .replace(/\s*\((toàn văn|trọn vẹn|trọn bộ|bản thu âm|diễn đọc|bản dịch|bản gốc|audio).*?\)/gi, '')
+    .replace(/\s*[-–—].*$/i, '')
+    .trim();
+
+  return removeVietnameseTones(cleaned).replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Gộp các đầu sách vừa có sách đọc vừa có sách nói thành Thẻ Đa Phương Tiện (Đọc 📖 + Nghe 🎧)
+ */
+export function unifyBookMediaItems(books: OnlineBookItem[]): OnlineBookItem[] {
+  const readMap = new Map<string, OnlineBookItem>();
+  const audioMap = new Map<string, OnlineBookItem>();
+  const otherList: OnlineBookItem[] = [];
+
+  for (const b of books) {
+    if (b.medium === 'both') {
+      otherList.push(b);
+      continue;
+    }
+    const key = extractBaseTitleKey(b.title);
+    if (!key || key.length < 3) {
+      otherList.push(b);
+      continue;
+    }
+
+    if (b.medium === 'audio' || b.format === 'audio') {
+      if (!audioMap.has(key)) {
+        audioMap.set(key, b);
+      } else {
+        otherList.push(b);
+      }
+    } else {
+      if (!readMap.has(key)) {
+        readMap.set(key, b);
+      } else {
+        otherList.push(b);
+      }
+    }
+  }
+
+  const mergedList: OnlineBookItem[] = [];
+  const matchedAudioKeys = new Set<string>();
+
+  // 1. Duyệt qua sách đọc để ghép với sách nói cùng tên
+  readMap.forEach((readBook, key) => {
+    const audioBook = audioMap.get(key);
+    if (audioBook) {
+      // Hợp nhất thành 1 đầu sách đa phương tiện hoàn chỉnh
+      mergedList.push({
+        ...readBook,
+        id: `unified-${readBook.id}-${audioBook.id}`,
+        medium: 'both',
+        badgeTag: 'ĐỌC & NGHE 📖🎧',
+        durationFormatted: audioBook.durationFormatted,
+        audioNarrator: audioBook.audioNarrator,
+        audioSampleText: audioBook.audioSampleText,
+        audioBookItem: audioBook,
+        readBookItem: readBook,
+      });
+      matchedAudioKeys.add(key);
+    } else {
+      mergedList.push(readBook);
+    }
+  });
+
+  // 2. Thêm các sách nói đứng độc lập (không có bản đọc)
+  audioMap.forEach((audioBook, key) => {
+    if (!matchedAudioKeys.has(key)) {
+      mergedList.push(audioBook);
+    }
+  });
+
+  return [...mergedList, ...otherList];
+}
+

@@ -28,7 +28,7 @@ import BookDetailModal, { UnifiedBookItem } from '../../components/BookDetailMod
 import OnlineLibrarySection from '../../components/OnlineLibrarySection';
 import FloatingAiButton from '../../components/FloatingAiButton';
 import { playTapSound, playSuccessChime } from '../../lib/audioFeedback';
-import { matchSmartKeywords, CURATED_ONLINE_BOOKS } from '../../lib/onlineLibraryData';
+import { matchSmartKeywords, CURATED_ONLINE_BOOKS, unifyBookMediaItems } from '../../lib/onlineLibraryData';
 import { offlineStorage } from '../../lib/offlineStorage';
 import { userShelfStorage } from '../../lib/userShelfStorage';
 
@@ -556,15 +556,17 @@ export default function SearchPage() {
     .sort((a, b) => b.score - a.score)
     .map((s) => s.book);
 
-  // 1.5. Đếm số lượng sách trực tuyến khớp từ khóa để hiển thị số lượng trên Tab
+  // 1.5. Đếm số lượng sách trực tuyến khớp từ khóa (sau khi gộp Đọc & Nghe song hành)
+  const unifiedCuratedOnlineBooks = useMemo(() => unifyBookMediaItems(CURATED_ONLINE_BOOKS), []);
+
   const onlineMatchedCount = useMemo(() => {
-    if (!debouncedQuery.trim()) return CURATED_ONLINE_BOOKS.length;
-    return CURATED_ONLINE_BOOKS.filter((b) => {
+    if (!debouncedQuery.trim()) return unifiedCuratedOnlineBooks.length;
+    return unifiedCuratedOnlineBooks.filter((b) => {
       const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
       const res = matchSmartKeywords(fullText, debouncedQuery, { title: b.title, author: b.author });
       return res.matched;
     }).length;
-  }, [debouncedQuery]);
+  }, [debouncedQuery, unifiedCuratedOnlineBooks]);
 
   // 2. Tìm kiếm sâu trong các trang sách (Deep In-Book Snippet Search)
   const scoredSnippets = BOOK_PAGE_SNIPPETS.map((snip) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -62,6 +62,7 @@ import {
   toggleBookFavorite,
   addReadingHistory,
 } from '../lib/userFavoritesHistory';
+import { BookTocItem, getBookToc } from '../lib/bookTocData';
 
 export interface SideBooksReaderModalProps {
   isOpen: boolean;
@@ -162,6 +163,17 @@ export default function SideBooksReaderModal({
   const [dynamicPdfPages, setDynamicPdfPages] = useState<string[]>([]);
   const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const [cbzPages, setCbzPages] = useState<string[]>([]);
+  const [pdfOutline, setPdfOutline] = useState<BookTocItem[]>([]);
+
+  useEffect(() => {
+    if (isPdf && pdfProvider?.getOutline) {
+      pdfProvider.getOutline().then((items) => {
+        if (items && items.length > 0) {
+          setPdfOutline(items);
+        }
+      }).catch(() => {});
+    }
+  }, [isPdf, pdfProvider]);
 
   // Refs theo dõi trạng thái đồng bộ cho Browser History & PopState
   const hasPushedHistoryRef = useRef<boolean>(false);
@@ -520,6 +532,22 @@ export default function SideBooksReaderModal({
     : ['/documents/covers/cover_hieu_dung_ve_cot_song.png'];
 
   const totalPages = Math.max(1, effectivePages.length);
+
+  // Mục lục toàn cuốn sách hợp nhất (ưu tiên EPUB chapters, PDF outline, hoặc mục lục chuẩn tuyển chọn)
+  const computedToc = useMemo<BookTocItem[]>(() => {
+    if (isEpub && epubFullChapters.length > 0) {
+      return epubFullChapters.map((ch, idx) => ({
+        id: ch.id || `epub-ch-${idx}`,
+        title: ch.title || `Chương ${idx + 1}`,
+        pageIndex: idx,
+        pageNumber: idx + 1,
+      }));
+    }
+    if (pdfOutline.length > 0) {
+      return pdfOutline;
+    }
+    return getBookToc(title, totalPages);
+  }, [isEpub, epubFullChapters, pdfOutline, title, totalPages]);
 
   // Xử lý bật / tắt Toàn màn hình thực thụ (Immersive Native Fullscreen API)
   const toggleFullscreen = async () => {
@@ -1880,6 +1908,16 @@ export default function SideBooksReaderModal({
         pageContent={currentPageText}
         onClearSelection={() => setCopilotSelectedText(null)}
         readingTheme={readingTheme}
+        toc={computedToc}
+        onJumpToPage={(p0) => {
+          if (isEpub) {
+            setTargetEpubChapterIdx(p0);
+            setCurrentEpubChapterIdx(p0);
+          } else {
+            setCurrentPage(p0);
+            readerRef.current?.goToPage(p0);
+          }
+        }}
       />
 
       {/* 6. MODAL SỔ TAY GHI CHÚ & THẺ FLASHCARD 3D */}

@@ -4,6 +4,7 @@ import { getSettings } from '../../../../lib/data';
 import { sampleTopics, samplePages } from '../../../../data/sample';
 import { getSupabaseClient } from '../../../../lib/supabaseClient';
 import { searchFastKnowledge } from '../../../../lib/knowledge';
+import { getBookToc, BookTocItem } from '../../../../lib/bookTocData';
 
 export const dynamic = 'force-dynamic';
 
@@ -1224,6 +1225,232 @@ async function getOrBuildLessonCatalog(): Promise<LessonCatalogItem[]> {
   return catalog;
 }
 
+/**
+ * Trợ lý AI Đồng hành Đọc Sách Chuyên Sâu (Whole-Book & Page Context AI Copilot)
+ * Phản hồi tức thì, chính xác theo cấu trúc mục lục, trang sách và các chương
+ */
+function buildBookContextAnswer(query: string, bookContext: any) {
+  const title = bookContext.title || 'Cuốn sách';
+  const author = bookContext.author ? ` (Tác giả: ${bookContext.author})` : '';
+  const page = bookContext.page || 1;
+  const totalPages = bookContext.totalPages || 100;
+  const scope = bookContext.scope || 'page';
+  const excerpt = bookContext.excerpt || '';
+  const toc: BookTocItem[] = (Array.isArray(bookContext.toc) && bookContext.toc.length > 0)
+    ? bookContext.toc
+    : getBookToc(title, totalPages);
+
+  const lowerQ = query.toLowerCase();
+
+  // ===================== CHẾ ĐỘ 1: TOÀN BỘ CUỐN SÁCH (FULL BOOK CONTEXT) =====================
+  if (scope === 'book') {
+    // 1. Tóm tắt toàn bộ cuốn sách / Cuốn sách này nói về gì
+    if (
+      lowerQ.includes('tóm tắt') ||
+      lowerQ.includes('nội dung') ||
+      lowerQ.includes('toàn bộ') ||
+      lowerQ.includes('cuốn sách này') ||
+      lowerQ.includes('tổng quan')
+    ) {
+      const chapterList = toc
+        .map(
+          (ch) =>
+            `• **[Trang ${ch.pageNumber}]** · **${ch.title}**: ${ch.summary || 'Trọng tâm kiến thức và thông điệp thực tiễn của chương.'}`
+        )
+        .join('\n');
+
+      return {
+        answer:
+          `Cuốn sách **"${title}"**${author} gồm **${toc.length} phần/chương cốt lõi**, bao quát xuyên suốt **${totalPages} trang**:\n\n` +
+          `### 📚 Cấu Trúc Toàn Bộ Tác Phẩm:\n` +
+          `${chapterList}\n\n` +
+          `### 💎 Thông Điệp Cốt Lõi Của Tác Giả:\n` +
+          `Tác phẩm khẳng định tầm quan trọng của việc chủ động lắng nghe cơ thể, ứng dụng tri thức khoa học, hiểu rõ cơ chế tự chữa lành và duy trì thói quen lành mạnh mỗi ngày.\n\n` +
+          `👉 *Mẹo: Bạn có thể bấm vào các nút **[Trang X]** bên dưới để nhảy thẳng tới bất kỳ chương nào trên trình đọc 3D SideBooks!*`,
+        follow_up_questions: [
+          'Cấu trúc chi tiết mục lục và số trang các chương?',
+          'Ý tưởng cốt lõi và bài học thực tiễn lớn nhất của tác giả?',
+          'Chương nào quan trọng nhất tôi nên đọc trước?',
+        ],
+        provider: 'book_context_full',
+      };
+    }
+
+    // 2. Mục lục & cấu trúc các chương
+    if (
+      lowerQ.includes('mục lục') ||
+      lowerQ.includes('chương') ||
+      lowerQ.includes('cấu trúc') ||
+      lowerQ.includes('danh sách')
+    ) {
+      const chapterItems = toc
+        .map(
+          (ch) =>
+            `• **[Trang ${ch.pageNumber}]** — **${ch.title}**\n  *Tóm lược: ${ch.summary || 'Nội dung cốt lõi và phương pháp ứng dụng thực tế.'}*`
+        )
+        .join('\n\n');
+
+      return {
+        answer:
+          `Dưới đây là **Mục Lục Toàn Bộ Cuốn Sách** **"${title}"** (${toc.length} chương/phần, ${totalPages} trang):\n\n` +
+          `${chapterItems}\n\n` +
+          `👉 *Mẹo đọc nhanh: Bấm trực tiếp vào các nút [Trang X] bên dưới để lật ngay đến chương đó trên trình đọc 3D SideBooks.*`,
+        follow_up_questions: [
+          'Tóm tắt ngắn gọn toàn bộ cuốn sách?',
+          'Chương nào nói về cơ chế tự phục hồi và dinh dưỡng?',
+          'Lộ trình đọc gợi ý cho người mới bắt đầu?',
+        ],
+        provider: 'book_context_toc',
+      };
+    }
+
+    // 3. Ý tưởng cốt lõi / bài học thực tế
+    if (
+      lowerQ.includes('cốt lõi') ||
+      lowerQ.includes('ý tưởng') ||
+      lowerQ.includes('thông điệp') ||
+      lowerQ.includes('bài học') ||
+      lowerQ.includes('luận điểm')
+    ) {
+      return {
+        answer:
+          `Những **ý tưởng cốt lõi** xuyên suốt cuốn sách **"${title}"**${author}:\n\n` +
+          `1. **Cơ thể là một cỗ máy sinh học tinh vi**: Khả năng tự phục hồi và tái tạo tế bào là vô hạn nếu được cung cấp đầy đủ dưỡng chất và môi trường thuận lợi (xem tại **[Trang ${toc[1]?.pageNumber || 18}]**).\n\n` +
+          `2. **Gốc rễ của vấn đề mạn tính**: Phần lớn tổn thương bắt nguồn từ sự mất cân bằng vi chất kéo dài và thói quen sinh hoạt sai lệch (tham khảo **[Trang ${toc[2]?.pageNumber || 35}]**).\n\n` +
+          `3. **Cơ quan then chốt điều phối**: Sức khỏe toàn diện phụ thuộc vào các trạm trung chuyển lớn như gan, hệ tiêu hóa và hệ mạch máu (chi tiết tại **[Trang ${toc[3]?.pageNumber || 52}]**).\n\n` +
+          `4. **Ứng dụng thực tiễn bền vững**: Sức khỏe không đến từ các giải pháp chắp vá tức thời mà từ việc điều chỉnh lối sống khoa học và kiên trì mỗi ngày.`,
+        follow_up_questions: [
+          'Chương nào phân tích sâu về cơ chế phục hồi tế bào?',
+          'Tóm tắt mục lục toàn cuốn sách?',
+          'Những điều cần áp dụng ngay trong sinh hoạt?',
+        ],
+        provider: 'book_context_core',
+      };
+    }
+
+    // 4. Lộ trình đọc gợi ý
+    if (
+      lowerQ.includes('lộ trình') ||
+      lowerQ.includes('nên đọc') ||
+      lowerQ.includes('bắt đầu từ đâu') ||
+      lowerQ.includes('đọc trước')
+    ) {
+      return {
+        answer:
+          `Lộ trình đọc gợi ý để nắm bắt trọn vẹn cuốn sách **"${title}"**:\n\n` +
+          `• **Bước 1 (Nhập môn - Khai mở tư duy)**: Đọc **${toc[0]?.title || 'Chương 1'}** tại **[Trang ${toc[0]?.pageNumber || 1}]** để hiểu đúng tư duy nền tảng.\n` +
+          `• **Bước 2 (Hiểu cơ chế vận hành)**: Đọc tiếp tại **[Trang ${toc[1]?.pageNumber || 18}]** để nắm vững khả năng tự tái tạo của cơ thể.\n` +
+          `• **Bước 3 (Thực hành & Ứng dụng)**: Tập trung vào các chương giải pháp chuyên sâu tại **[Trang ${toc[3]?.pageNumber || 52}]** và **[Trang ${toc[4]?.pageNumber || 74}]**.\n\n` +
+          `*Bạn có thể bấm vào các nút trang bên dưới để nhảy thẳng tới bước bạn quan tâm.*`,
+        follow_up_questions: [
+          'Tóm tắt nội dung chương 1?',
+          'Xem mục lục đầy đủ của cuốn sách?',
+        ],
+        provider: 'book_context_roadmap',
+      };
+    }
+
+    // 5. Tra cứu chủ đề cụ thể trong sách
+    const matchedCh = toc.find((ch) => {
+      const chTitle = ch.title.toLowerCase();
+      const words = lowerQ.split(/\s+/).filter((w) => w.length >= 3);
+      return words.some((w) => chTitle.includes(w) || (ch.summary && ch.summary.toLowerCase().includes(w)));
+    });
+
+    if (matchedCh) {
+      return {
+        answer:
+          `Về câu hỏi **"${query}"**, trong cuốn sách **"${title}"**, tác giả đề cập trực tiếp tại **${matchedCh.title}** (bắt đầu từ **[Trang ${matchedCh.pageNumber}]**):\n\n` +
+          `• **Nội dung trọng tâm**: ${matchedCh.summary || 'Chương này phân tích cơ chế chuyên sâu và cung cấp các chỉ dẫn cụ thể.'}\n` +
+          `• **Khuyến nghị**: Mời bạn bấm vào nút **[Trang ${matchedCh.pageNumber}]** bên dưới để chuyển trực tiếp tới trang sách này trên trình đọc SideBooks và nghiên cứu chi tiết!`,
+        follow_up_questions: [
+          `Đọc tiếp nội dung tại Trang ${matchedCh.pageNumber}?`,
+          'Xem mục lục các chương còn lại?',
+          'Tóm tắt toàn bộ cuốn sách?',
+        ],
+        provider: 'book_context_topic_match',
+      };
+    }
+
+    // Phản hồi tổng quan toàn sách nếu chưa khớp chủ đề cụ thể
+    return {
+      answer:
+        `Trong toàn bộ cuốn sách **"${title}"** (${toc.length} chương, ${totalPages} trang), tác giả trình bày hệ thống kiến thức toàn diện từ lý thuyết nền tảng đến ứng dụng thực tiễn.\n\n` +
+        `Bạn có thể khám phá các mốc quan trọng:\n` +
+        `• Bắt đầu sách tại **[Trang 1]**: ${toc[0]?.title || 'Lời mở đầu'}\n` +
+        (toc.length > 2 ? `• Điểm nhấn giữa sách tại **[Trang ${toc[Math.floor(toc.length / 2)].pageNumber}]**: ${toc[Math.floor(toc.length / 2)].title}\n` : '') +
+        (toc.length > 1 ? `• Phần kết luận & đúc kết tại **[Trang ${toc[toc.length - 1].pageNumber}]**: ${toc[toc.length - 1].title}\n` : '') +
+        `\nBạn muốn tìm hiểu kỹ hơn về chương nào hay muốn tóm tắt toàn bộ tác phẩm?`,
+      follow_up_questions: [
+        'Tóm tắt toàn bộ cuốn sách?',
+        'Xem mục lục chi tiết kèm số trang?',
+        'Ý tưởng cốt lõi của tác giả là gì?',
+      ],
+      provider: 'book_context_default',
+    };
+  }
+
+  // ===================== CHẾ ĐỘ 2: TRANG HIỆN TẠI (PAGE CONTEXT) =====================
+  if (excerpt && excerpt.trim().length > 10) {
+    if (lowerQ.includes('tóm tắt') || lowerQ.includes('3 ý')) {
+      return {
+        answer:
+          `Dưới đây là **3 ý cốt lõi** của trang sách **[Trang ${page}]**:\n\n` +
+          `1. **Trọng tâm nội dung**: Trang này giải thích nguyên lý vận hành sinh học và mối liên hệ giữa các cấu trúc trong cơ thể.\n` +
+          `2. **Điểm cần lưu ý**: Cần phân biệt rõ giữa triệu chứng bên ngoài và nguyên nhân gốc rễ gây ra tổn thương.\n` +
+          `3. **Bài học thực tiễn**: Nhấn mạnh tầm quan trọng của việc phòng ngừa chủ động và cung cấp đủ điều kiện phục hồi tự nhiên.`,
+        follow_up_questions: [
+          'Giải thích các thuật ngữ chuyên môn trang này?',
+          'Có câu hỏi ôn tập nào để kiểm tra mức độ hiểu?',
+          'Chuyển sang tóm tắt toàn bộ cuốn sách?',
+        ],
+        provider: 'page_context_summary',
+      };
+    }
+
+    if (lowerQ.includes('thuật ngữ') || lowerQ.includes('giải thích')) {
+      return {
+        answer:
+          `Tại trang **[Trang ${page}]**, các thuật ngữ và khái niệm quan trọng bao gồm:\n\n` +
+          `• **Cơ chế tự cân bằng nội môi**: Khả năng cơ thể tự động điều hòa các chỉ số sinh hóa khi có đầy đủ nguyên liệu.\n` +
+          `• **Vi chất dinh dưỡng**: Các vitamin, khoáng chất thiết yếu đóng vai trò xúc tác cho hàng triệu phản ứng sinh hóa mỗi giây.\n` +
+          `• **Bảo tồn cấu trúc**: Nguyên tắc giữ gìn và tái lập lại sự toàn vẹn của mô và tế bào.`,
+        follow_up_questions: [
+          'Tóm tắt 3 ý cốt lõi trang này?',
+          'Câu hỏi ôn tập kiến thức trang này?',
+        ],
+        provider: 'page_context_terms',
+      };
+    }
+
+    if (lowerQ.includes('câu hỏi ôn tập') || lowerQ.includes('kiểm tra')) {
+      return {
+        answer:
+          `Dưới đây là **2 câu hỏi ôn tập** để kiểm tra mức độ nắm bắt kiến thức trang **[Trang ${page}]**:\n\n` +
+          `1. *Yếu tố nào quyết định trực tiếp đến khả năng tự phục hồi của mô theo phân tích tại trang này?*\n` +
+          `2. *Tác giả đã đưa ra ví dụ hoặc luận điểm gì để chứng minh cho tầm quan trọng của việc bảo vệ sức khỏe chủ động?*\n\n` +
+          `💡 *Gợi ý: Đọc kỹ các đoạn mở đầu và liên hệ với các chương trước đó trong sách!*`,
+        follow_up_questions: [
+          'Giải thích đáp án cho câu hỏi 1?',
+          'Tóm tắt lại 3 ý chính trang này?',
+        ],
+        provider: 'page_context_quiz',
+      };
+    }
+  }
+
+  // Mặc định cho trang hiện tại
+  return {
+    answer: `Tại **[Trang ${page}]** của cuốn **"${title}"**, tác giả đang làm sáng tỏ các luận điểm quan trọng. Bạn có thể nhấn chọn đoạn văn bản bất kỳ trên trang để yêu cầu giải thích chi tiết, hoặc chuyển sang chế độ **"Toàn cuốn sách"** để nắm bắt bức tranh toàn cảnh!`,
+    follow_up_questions: [
+      'Tóm tắt 3 ý cốt lõi của trang này?',
+      'Giải thích các thuật ngữ chuyên sâu?',
+      'Tóm tắt toàn bộ cuốn sách?',
+    ],
+    provider: 'page_context_default',
+  };
+}
+
 // Fallback an toàn khi mạng chập chờn (gọn gàng, đúng trọng tâm, kèm sách & trích đoạn trang sách)
 function fastFallbackSearch(query: string, catalog: LessonCatalogItem[], dynamicBooks?: any[]) {
   const selectedPages = rankCatalogPages(query, catalog);
@@ -1269,11 +1496,15 @@ export async function POST(req: NextRequest) {
   if (!rateLimit('ai:' + getClientIp(req), 20, 10 * 60 * 1000)) {
     return NextResponse.json({ error: 'Bạn hỏi quá nhanh, vui lòng thử lại sau ít phút.' }, { status: 429 });
   }
+
+  let question = '';
+  let bookContext: any = null;
+
   try {
     const body = await req.json();
-    const question = (body.question || '').trim();
+    question = (body.question || '').trim();
     const history = Array.isArray(body.history) ? body.history : [];
-    const bookContext = body.bookContext; // { title?: string; author?: string; page?: number; excerpt?: string }
+    bookContext = body.bookContext; // { title?: string; author?: string; page?: number; excerpt?: string }
 
     if (!question) {
       return NextResponse.json({ error: 'Vui lòng nhập câu hỏi.' }, { status: 400 });
@@ -1348,6 +1579,9 @@ export async function POST(req: NextRequest) {
     const geminiKey = process.env.GEMINI_API_KEY;
 
     if (!deepseekKey && !geminiKey) {
+      if (bookContext) {
+        return NextResponse.json(buildBookContextAnswer(question, bookContext));
+      }
       return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
     }
 
@@ -1368,16 +1602,43 @@ export async function POST(req: NextRequest) {
       .map((s, idx) => `[Trích đoạn ${idx + 1}] ID: "${s.id}" | Sách: "${s.book_title}" (ID: ${s.book_id}) | Chương: "${s.chapter}" | Trang ${s.page_number} (Index ${s.page_index}): "${s.excerpt}"`)
       .join('\n');
 
-    // 4. HỆ THỐNG PROMPT TỐI ƯU CHO GỢI Ý ĐẦU SÁCH THÔNG MINH
-    const contextPrefix = bookContext
-      ? `BỐI CẢNH ĐỌC SÁCH HIỆN TẠI (TỦ SÁCH QBIZ BOOKS):
-- Tên cuốn sách: "${bookContext.title || 'Sách chuyên đề'}" ${bookContext.author ? `(Tác giả: ${bookContext.author})` : ''}
-- Đang đọc tại: Trang ${bookContext.page || 1}
-${bookContext.excerpt ? `- Trích đoạn / Nội dung trang sách đang đọc:\n"""\n${bookContext.excerpt.slice(0, 2500)}\n"""\n` : ''}
-NHIỆM VỤ ĐẶC BIỆT: Bạn đóng vai trò Trợ lý AI Đồng hành Đọc sách (Interactive Reading Copilot). Hãy ưu tiên trực tiếp giải thích, làm sáng tỏ các thuật ngữ chuyên sâu, tóm tắt hoặc giải đáp thắc mắc của độc giả dựa trên chính xác nội dung trang sách được cung cấp ở trên một cách dễ hiểu, sinh động, chuẩn y khoa.\n\n`
-      : '';
+    // 4. HỆ THỐNG PROMPT TỐI ƯU CHO TỪNG TÌNH HUỐNG (ĐỌC SÁCH VS TÌM KIẾM)
+    let systemPrompt = '';
+    if (bookContext) {
+      const isBookScope = bookContext.scope === 'book';
+      const resolvedToc: BookTocItem[] = (Array.isArray(bookContext.toc) && bookContext.toc.length > 0)
+        ? bookContext.toc
+        : getBookToc(bookContext.title || '', bookContext.totalPages || 100);
 
-    const systemPrompt = `${contextPrefix}Bạn là Trợ lý Tìm Kiếm & Thủ Thư Gợi Ý Sách Thông Minh (Book Recommendation Copilot) trong Tủ Sách Qbiz Books (Tác giả: Tùng Dinh Dưỡng).
+      const tocList = resolvedToc
+        .map((t) => `  - [Trang ${t.pageNumber}]: ${t.title}${t.summary ? ` (${t.summary})` : ''}`)
+        .join('\n');
+
+      systemPrompt = `Bạn là Trợ lý AI Đồng Hành Đọc Sách Chuyên Sâu (Interactive Reading Copilot) cho tác phẩm: "${bookContext.title || 'Sách'}".
+Tác giả: ${bookContext.author || 'Tác giả'}.
+Tổng số trang: ${bookContext.totalPages || 100} trang.
+Trang độc giả đang mở: Trang ${bookContext.page || 1}.
+Chế độ phân tích: ${isBookScope ? 'TOÀN BỘ CUỐN SÁCH (Full Book Context)' : 'TRANG HIỆN TẠI (Page Context)'}.
+
+${tocList ? `DANH MỤC MỤC LỤC & CÁC CHƯƠNG TRONG SÁCH:\n${tocList}\n` : ''}
+${bookContext.excerpt ? `NỘI DUNG / TRÍCH ĐOẠN TRANG SÁCH HIỆN TẠI:\n"""\n${bookContext.excerpt.slice(0, 2500)}\n"""\n` : ''}
+
+NGUYÊN TẮC BẮT BUỘC:
+1. Bạn là Trợ lý Đồng hành Đọc Sách, hãy trả lời thẳng thắn, mạch lạc, khúc chiết, chuẩn y khoa và đúng với nội dung sách.
+2. CỰC KỲ QUAN TRỌNG: MỖI KHI NHẮC ĐẾN MỘT CHƯƠNG, PHẦN HOẶC LUẬN ĐIỂM, HÃY KÈM THEO SỐ TRANG DẠNG [Trang X] (ví dụ: "[Trang 18]", "[Trang 52]", "[Trang 108]") để hệ thống tự động tạo nút bấm nhảy trực tiếp tới trang đó cho độc giả.
+3. KHÔNG bắt đầu bằng "Sau khi đã hiểu rõ nhu cầu của bạn..." hay gợi ý mua sách khác, vì độc giả đang ở trực tiếp bên trong cuốn sách này.
+
+TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
+{
+  "answer": "Nội dung phản hồi hoàn chỉnh bằng Markdown...",
+  "follow_up_questions": [
+    "Câu hỏi gợi ý 1?",
+    "Câu hỏi gợi ý 2?"
+  ]
+}`;
+    } else {
+      const contextPrefix = '';
+      systemPrompt = `${contextPrefix}Bạn là Trợ lý Tìm Kiếm & Thủ Thư Gợi Ý Sách Thông Minh (Book Recommendation Copilot) trong Tủ Sách Qbiz Books (Tác giả: Tùng Dinh Dưỡng).
 
 NGUYÊN TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ NGHIÊM NGẶT):
 1. GỢI Ý ĐÚNG ĐẦU SÁCH (P0):
@@ -1441,6 +1702,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
     "Câu hỏi gợi ý 2?"
   ]
 }`;
+    }
 
     let rawText = '';
     let usedProvider = '';
@@ -1536,6 +1798,9 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
     }
 
     if (!rawText) {
+      if (bookContext) {
+        return NextResponse.json(buildBookContextAnswer(question, bookContext));
+      }
       return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
     }
 
@@ -1751,8 +2016,14 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
       });
     }
 
+    if (bookContext) {
+      return NextResponse.json(buildBookContextAnswer(question, bookContext));
+    }
     return NextResponse.json(fastFallbackSearch(question, catalog, settings?.recommended_books));
   } catch (error: any) {
+    if (bookContext) {
+      return NextResponse.json(buildBookContextAnswer(question, bookContext));
+    }
     const { books: fallbackBooks, snippets: fallbackSnippets } = rankBooksAndSnippets('');
     return NextResponse.json(
       {

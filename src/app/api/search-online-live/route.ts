@@ -127,20 +127,23 @@ function removeVietnameseTones(str: string): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get('q')?.trim();
+  const pageParam = parseInt(searchParams.get('page') || '1', 10);
+  const page = isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
 
   if (!q || q.length < 2) {
-    return NextResponse.json({ results: [], query: q || '' });
+    return NextResponse.json({ results: [], query: q || '', page: 1, hasMore: false });
   }
 
   const cleanQuery = removeVietnameseTones(q);
   const results: LiveBookResult[] = [];
   const seenTitles = new Set<string>();
 
-  // 1. Kiểm tra nguồn thẩm định cộng đồng (Verified Community Mirrors)
-  for (const [key, book] of Object.entries(VERIFIED_COMMUNITY_MIRRORS)) {
-    if (cleanQuery.includes(key) || key.includes(cleanQuery)) {
-      const normTitle = removeVietnameseTones(book.title);
-      if (!seenTitles.has(normTitle)) {
+  // 1. Kiểm tra nguồn thẩm định cộng đồng (Chỉ nạp ở trang đầu tiên page === 1)
+  if (page === 1) {
+    for (const [key, book] of Object.entries(VERIFIED_COMMUNITY_MIRRORS)) {
+      if (cleanQuery.includes(key) || key.includes(cleanQuery)) {
+        const normTitle = removeVietnameseTones(book.title);
+        if (!seenTitles.has(normTitle)) {
         results.push({
           id: `verified-${key}`,
           title: book.title,
@@ -157,6 +160,7 @@ export async function GET(request: NextRequest) {
           source: 'Thư Viện Thẩm Định Gốc',
         });
         seenTitles.add(normTitle);
+        }
       }
     }
   }
@@ -165,11 +169,12 @@ export async function GET(request: NextRequest) {
   try {
     const gbController = new AbortController();
     const gbTimeout = setTimeout(() => gbController.abort(), 6000); // 6s timeout
+    const gbStartIndex = (page - 1) * 10;
 
     const gbRes = await fetch(
       `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
         q
-      )}&maxResults=10&printType=books`,
+      )}&maxResults=10&startIndex=${gbStartIndex}&printType=books`,
       {
         signal: gbController.signal,
         headers: {
@@ -259,7 +264,7 @@ export async function GET(request: NextRequest) {
         q
       )})+OR+(${encodeURIComponent(
         q
-      )}))+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=8&output=json`,
+      )}))+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=8&page=${page}&output=json`,
       {
         signal: iaController.signal,
         headers: {
@@ -318,7 +323,7 @@ export async function GET(request: NextRequest) {
     const olTimeout = setTimeout(() => olController.abort(), 6000);
 
     const olRes = await fetch(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8`,
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8&page=${page}`,
       {
         signal: olController.signal,
         headers: {
@@ -398,7 +403,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     query: q,
+    page: page,
     count: results.length,
+    hasMore: results.length >= 4,
     results: results,
   });
 }
