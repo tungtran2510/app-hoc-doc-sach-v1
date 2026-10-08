@@ -255,9 +255,11 @@ export async function GET(request: NextRequest) {
     const iaTimeout = setTimeout(() => iaController.abort(), 6000);
 
     const iaRes = await fetch(
-      `https://archive.org/advancedsearch.php?q=(${encodeURIComponent(
+      `https://archive.org/advancedsearch.php?q=(title:(${encodeURIComponent(
         q
-      )})+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year,downloads&sort[]=downloads+desc&rows=8&output=json`,
+      )})+OR+(${encodeURIComponent(
+        q
+      )}))+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=8&output=json`,
       {
         signal: iaController.signal,
         headers: {
@@ -309,6 +311,90 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('Lỗi khi truy vấn Internet Archive:', err);
   }
+
+  // 4. Tìm kiếm qua Open Library API (Kho sách mở toàn cầu & Ebook Catalog)
+  try {
+    const olController = new AbortController();
+    const olTimeout = setTimeout(() => olController.abort(), 6000);
+
+    const olRes = await fetch(
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8`,
+      {
+        signal: olController.signal,
+        headers: {
+          'User-Agent': 'QbizBooks/2.0 (OpenLibraryClient)',
+          Accept: 'application/json',
+        },
+      }
+    );
+    clearTimeout(olTimeout);
+
+    if (olRes.ok) {
+      const olData = await olRes.json();
+      const docs = olData.docs;
+      if (Array.isArray(docs)) {
+        for (const doc of docs) {
+          const title = doc.title || '';
+          if (!title) continue;
+
+          const normTitle = removeVietnameseTones(title);
+          if (seenTitles.has(normTitle)) continue;
+
+          const authors =
+            Array.isArray(doc.author_name) && doc.author_name.length > 0
+              ? doc.author_name.join(', ')
+              : 'Nhiều tác giả';
+
+          let coverUrl = '';
+          if (doc.cover_i) {
+            coverUrl = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
+          } else if (doc.isbn && doc.isbn[0]) {
+            coverUrl = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-M.jpg`;
+          }
+
+          const pages = doc.number_of_pages_median || undefined;
+          let dlUrl: string | undefined = undefined;
+          let format: 'pdf' | 'epub' = 'pdf';
+
+          if (doc.ia && Array.isArray(doc.ia) && doc.ia.length > 0) {
+            const iaId = doc.ia[0];
+            const pdfUrl = `https://archive.org/download/${iaId}/${iaId}.pdf`;
+            dlUrl = `/api/download-proxy?url=${encodeURIComponent(pdfUrl)}`;
+            format = 'pdf';
+          }
+
+          results.push({
+            id: `ol-${doc.key?.replace(/\//g, '-') || Math.random().toString(36).substring(7)}`,
+            title: title,
+            author: authors,
+            description: `Tác phẩm tra cứu từ Thư viện Mở Quốc Tế (Open Library). ${doc.first_publish_year ? `Năm xuất bản đầu: ${doc.first_publish_year}. ` : ''}${pages ? `Độ dài: ${pages} trang.` : ''}`,
+            coverUrl: coverUrl || '/documents/covers/cover_dinh_duong_hoc_that_truyen.png',
+            format: format,
+            pagesCount: pages,
+            fileSizeFormatted: pages ? `${pages} trang` : 'Sách mở',
+            downloadUrl: dlUrl,
+            previewUrl: doc.key ? `https://openlibrary.org${doc.key}` : undefined,
+            badgeTag: dlUrl ? 'BẢN SỐ HÓA 📖' : 'THƯ VIỆN MỞ 🌐',
+            source: 'Open Library',
+            year: doc.first_publish_year ? String(doc.first_publish_year) : undefined,
+          });
+          seenTitles.add(normTitle);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Lỗi khi truy vấn Open Library:', err);
+  }
+
+  // Sắp xếp thông minh: Các tác phẩm khớp sát nhất với tiêu đề tìm kiếm được ưu tiên hàng đầu
+  const normQ = removeVietnameseTones(q.toLowerCase());
+  results.sort((a, b) => {
+    const normA = removeVietnameseTones(a.title.toLowerCase());
+    const normB = removeVietnameseTones(b.title.toLowerCase());
+    const matchA = normA === normQ ? 100 : normA.startsWith(normQ) ? 80 : normA.includes(normQ) ? 50 : 0;
+    const matchB = normB === normQ ? 100 : normB.startsWith(normQ) ? 80 : normB.includes(normQ) ? 50 : 0;
+    return matchB - matchA;
+  });
 
   return NextResponse.json({
     query: q,
