@@ -344,12 +344,18 @@ export default function SearchPage() {
           const existingIds = new Set(list.map((b) => b.id));
           for (const c of cached) {
             if (!existingIds.has(c.id)) {
+              const storedCustomCover =
+                typeof window !== 'undefined'
+                  ? localStorage.getItem(`custom_cover_${c.id}`)
+                  : null;
+              const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || '';
+
               list.unshift({
                 id: c.id,
                 title: c.title,
                 author: c.author || 'Tác giả',
                 description: 'Sách ngoại tuyến đã tải về máy • Mở đọc ngay',
-                cover_url: c.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+                cover_url: bookCover,
                 badge_tag: c.format ? c.format.toUpperCase() : 'ĐÃ TẢI',
                 pages_count: c.totalPages || 10,
                 pages: [],
@@ -556,7 +562,7 @@ export default function SearchPage() {
       title: book.title,
       author: book.author,
       description: '',
-      cover_url: book.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+      cover_url: book.coverUrl || '',
       badge_tag: 'SÁCH MỞ',
       pages_count: 10,
       pages: book.pages || [],

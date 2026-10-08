@@ -12,19 +12,25 @@ import {
   Image as ImageIcon,
   Sparkles,
   Play,
+  Upload,
 } from 'lucide-react';
 import {
   CURATED_ONLINE_BOOKS,
+  ONLINE_CATEGORIES,
   OnlineBookItem,
   BookMedium,
   downloadAndSaveOnlineBook,
   searchOnlineGutenbergBooks,
   searchOpenLibraryBooks,
+  searchOnlineLibriVoxAudiobooks,
   matchSmartKeywords,
 } from '../lib/onlineLibraryData';
 import { offlineStorage } from '../lib/offlineStorage';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 import CoverCustomizerModal from './CoverCustomizerModal';
+import ImportBookModal from './ImportBookModal';
+import AudiobookPlayerModal from './AudiobookPlayerModal';
+import BookCoverArt from './BookCoverArt';
 
 interface OnlineLibrarySectionProps {
   searchQuery?: string;
@@ -53,6 +59,7 @@ export default function OnlineLibrarySection({
 }: OnlineLibrarySectionProps) {
   // Lọc theo loại sách: 'all' | 'read' (Sách đọc) | 'audio' (Sách nói)
   const [selectedMedium, setSelectedMedium] = useState<'all' | 'read' | 'audio'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Trạng thái tải của từng cuốn sách: [bookId]: progress (0-100)
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
@@ -62,15 +69,28 @@ export default function OnlineLibrarySection({
   const [customCovers, setCustomCovers] = useState<Record<string, string>>({});
   const [editingCoverBook, setEditingCoverBook] = useState<OnlineBookItem | null>(null);
 
-  // Trạng thái dán link tải nhanh
+  // Trạng thái dán link và tải file từ máy
   const [showLinkModal, setShowLinkModal] = useState<boolean>(false);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [customUrl, setCustomUrl] = useState<string>('');
   const [customTitle, setCustomTitle] = useState<string>('');
   const [isCustomDownloading, setIsCustomDownloading] = useState<boolean>(false);
 
-  // Sách tìm kiếm mở rộng trực tuyến từ Internet (Gutenberg, Open Library)
+  // Sách tìm kiếm mở rộng trực tuyến từ Internet (Gutenberg, Open Library, LibriVox)
   const [externalBooks, setExternalBooks] = useState<OnlineBookItem[]>([]);
   const [isSearchingExternal, setIsSearchingExternal] = useState<boolean>(false);
+
+  // Trạng thái phát Sách Nói trực tuyến / ngoại tuyến
+  const [activeAudioBook, setActiveAudioBook] = useState<{
+    id: string;
+    title: string;
+    author: string;
+    coverUrl?: string;
+    audioUrl: string;
+    audioNarrator?: string;
+    durationFormatted?: string;
+  } | null>(null);
+  const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
 
   // Quét danh sách các cuốn sách đã có trong IndexedDB và nạp bìa tùy biến từ localStorage
   useEffect(() => {
@@ -168,44 +188,45 @@ export default function OnlineLibrarySection({
     playTapSound();
     const activeCover = customCovers[book.id] || book.coverUrl;
 
-    if (book.medium === 'audio') {
-      if (onPlayAudio) {
-        onPlayAudio({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          coverUrl: activeCover,
-          audioUrl: book.downloadUrl,
-          sampleText: book.audioSampleText,
-        });
-      } else {
-        // Fallback đọc text
-        onOpenBook({
-          id: book.id,
-          title: book.title,
-          author: book.author,
-          fileUrl: book.downloadUrl,
-          coverUrl: activeCover,
-        });
-      }
-    } else {
+    if (book.medium === 'audio' || book.format === 'audio') {
       const cached = await offlineStorage.getBookFromOffline(book.id);
-      const fileUrl = cached?.blobUrl || book.downloadUrl;
-      const cleanExt = book.format === 'audio' ? 'pdf' : book.format;
-      const fileName =
-        cached?.fileName ||
-        book.downloadUrl.split('/').pop()?.split('?')[0] ||
-        `${book.title}.${cleanExt}`;
-
-      onOpenBook({
+      const audioUrl = cached?.blobUrl || book.downloadUrl;
+      const audioPayload = {
         id: book.id,
         title: book.title,
         author: book.author,
-        fileUrl,
         coverUrl: activeCover,
-        fileName,
-      } as any);
+        audioUrl,
+        audioNarrator: book.audioNarrator,
+        durationFormatted: book.durationFormatted,
+      };
+      setActiveAudioBook(audioPayload);
+      setShowAudioPlayer(true);
+      if (onPlayAudio) {
+        onPlayAudio({
+          ...audioPayload,
+          sampleText: book.audioSampleText,
+        });
+      }
+      return;
     }
+
+    const cached = await offlineStorage.getBookFromOffline(book.id);
+    const fileUrl = cached?.blobUrl || book.downloadUrl;
+    const cleanExt = book.format;
+    const fileName =
+      cached?.fileName ||
+      book.downloadUrl.split('/').pop()?.split('?')[0] ||
+      `${book.title}.${cleanExt}`;
+
+    onOpenBook({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      fileUrl,
+      coverUrl: activeCover,
+      fileName,
+    } as any);
   };
 
   // Áp dụng bìa mới tùy biến
@@ -214,6 +235,13 @@ export default function OnlineLibrarySection({
     try {
       localStorage.setItem(`custom_cover_${bookId}`, newCoverUrl);
       await offlineStorage.updateBookCover(bookId, newCoverUrl);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('qbiz_book_metadata_updated', {
+            detail: { bookId, coverUrl: newCoverUrl },
+          })
+        );
+      }
     } catch {}
   };
 
@@ -292,12 +320,13 @@ export default function OnlineLibrarySection({
     const timer = setTimeout(async () => {
       setIsSearchingExternal(true);
       try {
-        const [gutenberg, openLib] = await Promise.all([
+        const [gutenberg, openLib, librivox] = await Promise.all([
           searchOnlineGutenbergBooks(q),
           searchOpenLibraryBooks(q),
+          searchOnlineLibriVoxAudiobooks(q),
         ]);
         if (isCancelled) return;
-        const combined = [...gutenberg, ...openLib];
+        const combined = [...gutenberg, ...openLib, ...librivox];
         const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
         const newItems = combined.filter((b) => !existingIds.has(b.id));
         setExternalBooks(newItems);
@@ -314,18 +343,19 @@ export default function OnlineLibrarySection({
     };
   }, [searchQuery]);
 
-  // Tìm kiếm sách mở rộng trên Internet (Open Library & Gutenberg)
+  // Tìm kiếm sách mở rộng trên Internet (Open Library, Gutenberg & LibriVox)
   const handleSearchOnlineSources = async () => {
     const q = searchQuery.trim();
     if (!q || isSearchingExternal) return;
     playTapSound();
     setIsSearchingExternal(true);
     try {
-      const [gutenberg, openLib] = await Promise.all([
+      const [gutenberg, openLib, librivox] = await Promise.all([
         searchOnlineGutenbergBooks(q),
         searchOpenLibraryBooks(q),
+        searchOnlineLibriVoxAudiobooks(q),
       ]);
-      const combined = [...gutenberg, ...openLib];
+      const combined = [...gutenberg, ...openLib, ...librivox];
       const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
       const newItems = combined.filter((b) => !existingIds.has(b.id));
       setExternalBooks(newItems);
@@ -339,6 +369,10 @@ export default function OnlineLibrarySection({
   // Lọc theo thuật toán NLP thông minh (khớp cả câu dài tự nhiên)
   const scoredBooks = allAvailableBooks.map((b) => {
     if (!searchQuery.trim()) return { book: b, matched: true, score: 1 };
+    // Sách tìm kiếm từ Internet API trả về trực tiếp theo từ khóa này nên luôn hiển thị
+    const isFromExternalSearch = externalBooks.some((eb) => eb.id === b.id);
+    if (isFromExternalSearch) return { book: b, matched: true, score: 95 };
+
     const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
     const res = matchSmartKeywords(fullText, searchQuery);
     return { book: b, matched: res.matched, score: res.score };
@@ -352,9 +386,11 @@ export default function OnlineLibrarySection({
   const readCount = queryMatchedBooks.filter((b) => b.medium === 'read').length;
   const audioCount = queryMatchedBooks.filter((b) => b.medium === 'audio').length;
 
-  // Lọc theo loại sách được chọn
+  // Lọc theo loại sách và chuyên mục được chọn
   const filteredBooks = queryMatchedBooks.filter((b) => {
-    return selectedMedium === 'all' || b.medium === selectedMedium;
+    const matchMedium = selectedMedium === 'all' || b.medium === selectedMedium;
+    const matchCategory = selectedCategory === 'all' || b.category === selectedCategory;
+    return matchMedium && matchCategory;
   });
 
   return (
@@ -408,18 +444,57 @@ export default function OnlineLibrarySection({
           <span>Sách nói ({audioCount})</span>
         </button>
 
+        {/* Nút Tải tệp từ máy */}
+        <button
+          type="button"
+          onClick={() => {
+            playTapSound();
+            setShowImportModal(true);
+          }}
+          className="h-7 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all ml-auto"
+          title="Đưa sách từ máy (.epub, .pdf, .cbz) vào thư viện"
+        >
+          <Upload size={11} />
+          <span>Tải tệp</span>
+        </button>
+
+        {/* Nút Dán link trực tiếp */}
         <button
           type="button"
           onClick={() => {
             playTapSound();
             setShowLinkModal(true);
           }}
-          className="h-7 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all ml-auto"
+          className="h-7 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer transition-all"
           title="Tải từ liên kết trực tiếp"
         >
           <LinkIcon size={11} />
           <span>Dán link</span>
         </button>
+      </div>
+
+      {/* 2. CHUYÊN MỤC / NGUỒN SÁCH: SÁCH VIỆT NAM, THẾ GIỚI, Y HỌC (1 DÒNG CHIP) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+        {ONLINE_CATEGORIES.map((cat) => {
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => {
+                playTapSound();
+                setSelectedCategory(cat.id);
+              }}
+              className={`h-6 px-2.5 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer border ${
+                isSelected
+                  ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-xs'
+                  : 'bg-white/40 dark:bg-white/5 text-[#553218] dark:text-stone-300 border-[#d5c3b1] dark:border-white/10 hover:border-amber-500/50'
+              }`}
+            >
+              {cat.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* 2. DANH SÁCH SÁCH TRỰC TUYẾN (SÁCH ĐỌC & SÁCH NÓI ĐỒNG BỘ) */}
@@ -439,12 +514,14 @@ export default function OnlineLibrarySection({
               className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/40 shadow-xs flex items-center gap-2.5 transition-all"
             >
               {/* Ảnh bìa + Nút sửa bìa nhỏ ở góc */}
-              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-slate-100 dark:bg-black/40 border border-amber-500/20 shrink-0 shadow-xs group">
-                <img
-                  src={displayCover}
-                  alt={book.title}
-                  className="w-full h-full object-cover block"
-                  loading="lazy"
+              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs group">
+                <BookCoverArt
+                  coverUrl={displayCover}
+                  title={book.title}
+                  author={book.author}
+                  format={book.format}
+                  medium={book.medium}
+                  className="w-full h-full"
                 />
 
                 {/* Nút chỉnh bìa nhỏ tinh gọn */}
@@ -455,7 +532,7 @@ export default function OnlineLibrarySection({
                     playTapSound();
                     setEditingCoverBook(book);
                   }}
-                  className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded bg-black/75 hover:bg-amber-500 text-white hover:text-slate-950 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
+                  className="absolute bottom-0.5 right-0.5 z-20 w-5 h-5 rounded bg-black/75 hover:bg-amber-500 text-white hover:text-slate-950 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
                   title="Tùy biến ảnh bìa sách"
                 >
                   <ImageIcon size={10} />
@@ -492,7 +569,6 @@ export default function OnlineLibrarySection({
                     {book.source} • {book.durationFormatted || book.fileSizeFormatted}
                   </span>
 
-                  {/* Nút hành động đơn dòng chuẩn */}
                   {isCached ? (
                     <button
                       type="button"
@@ -506,6 +582,25 @@ export default function OnlineLibrarySection({
                     <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
                       <Loader2 size={11} className="animate-spin" />
                       <span>{progress}%</span>
+                    </div>
+                  ) : book.medium === 'audio' ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDownloaded(book)}
+                        className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                      >
+                        <Play size={11} className="fill-current" />
+                        <span>Nghe ngay</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(book)}
+                        className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0"
+                        title="Tải nghe ngoại tuyến"
+                      >
+                        <Download size={11} strokeWidth={2.4} />
+                      </button>
                     </div>
                   ) : (
                     <button
@@ -527,7 +622,7 @@ export default function OnlineLibrarySection({
           <div className="py-7 px-3 rounded-2xl bg-white/40 dark:bg-white/5 border border-dashed border-amber-500/20 text-center flex flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
             <BookOpen size={24} className="text-amber-500 opacity-60" />
             <span className="text-xs font-bold text-[#2A160A] dark:text-amber-100">
-              Không tìm thấy sách phù hợp trong kho nội bộ
+              Không tìm thấy sách trực tuyến phù hợp
             </span>
             {searchQuery.trim() && (
               <button
@@ -541,7 +636,7 @@ export default function OnlineLibrarySection({
                 ) : (
                   <Globe size={13} />
                 )}
-                <span>Tìm trên Kho Mở Quốc Tế (Open Library & Gutenberg)</span>
+                <span>Tìm trên Kho Mở Quốc Tế (Gutenberg, LibriVox & Open Library)</span>
               </button>
             )}
           </div>
@@ -557,6 +652,20 @@ export default function OnlineLibrarySection({
           currentCoverUrl={customCovers[editingCoverBook.id] || editingCoverBook.coverUrl}
           onClose={() => setEditingCoverBook(null)}
           onApplyCover={(newUrl) => handleApplyCustomCover(editingCoverBook.id, newUrl)}
+        />
+      )}
+
+      {/* MODAL PHÁT SÁCH NÓI MP3 */}
+      {activeAudioBook && (
+        <AudiobookPlayerModal
+          isOpen={showAudioPlayer}
+          onClose={() => setShowAudioPlayer(false)}
+          book={activeAudioBook}
+          isDownloaded={cachedBookIds.has(activeAudioBook.id)}
+          onDownload={() => {
+            const found = allAvailableBooks.find((b) => b.id === activeAudioBook.id);
+            if (found) handleDownload(found);
+          }}
         />
       )}
 
@@ -624,6 +733,14 @@ export default function OnlineLibrarySection({
           </form>
         </div>
       )}
+      {/* MODAL NHẬP TỆP SÁCH TỪ MÁY */}
+      <ImportBookModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={(newBook) => {
+          setCachedBookIds((prev) => new Set(prev).add(newBook.id));
+        }}
+      />
     </div>
   );
 }

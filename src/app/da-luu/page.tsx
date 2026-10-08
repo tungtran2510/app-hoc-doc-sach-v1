@@ -29,6 +29,7 @@ import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import FlashcardStudyModal from '../../components/FlashcardStudyModal';
 import QuoteCardModal from '../../components/QuoteCardModal';
+import BookCoverArt from '../../components/BookCoverArt';
 import { getBookReaderPageUrls } from '../../lib/bookReaderPages';
 import { offlineStorage, CachedBookMetadata, formatBytes } from '../../lib/offlineStorage';
 import { readingNotesStorage, ReadingNoteItem } from '../../lib/readingNotes';
@@ -382,7 +383,11 @@ export default function SavedBooksPage() {
       loadOfflineList();
     };
     window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
-    return () => window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
+    window.addEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+    return () => {
+      window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
+      window.removeEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+    };
   }, []);
 
   const handleOpenOfflineBook = (book: CachedBookMetadata) => {
@@ -604,12 +609,12 @@ export default function SavedBooksPage() {
           <div className="p-3.5 rounded-3xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm dark:shadow-xl flex flex-col gap-3.5 transition-all">
             <div className="flex items-center gap-3">
               {/* Ảnh bìa bên trái chuẩn A4 đứng */}
-              <div className="relative w-20 sm:w-24 aspect-[1/1.42] rounded-xl overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] shrink-0 border border-amber-900/10 dark:border-white/10 shadow-sm p-0.5 flex items-center justify-center">
-                <img
-                  src={continueBook.coverUrl}
-                  alt={continueBook.title}
-                  className="w-full h-full object-contain"
-                  loading="eager"
+              <div className="relative w-20 sm:w-24 aspect-[1/1.42] rounded-xl overflow-hidden shrink-0 border border-amber-900/10 dark:border-white/10 shadow-sm">
+                <BookCoverArt
+                  coverUrl={continueBook.coverUrl}
+                  title={continueBook.title}
+                  author={continueBook.subtitle}
+                  className="w-full h-full"
                 />
                 <div className="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-black/60 backdrop-blur-xs flex items-center justify-center text-amber-300 border border-white/20">
                   <BookOpen size={13} className="text-amber-400" />
@@ -762,16 +767,17 @@ export default function SavedBooksPage() {
                   {/* Khối giữa: Ảnh bìa + Badge định dạng */}
                   <div
                     onClick={() => handleOpenItem(item)}
-                    className="relative w-full aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shadow-xs cursor-pointer p-0.5 flex items-center justify-center"
+                    className="relative w-full aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs cursor-pointer group"
                   >
-                    <img
-                      src={item.coverUrl}
-                      alt={item.title}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                      loading="lazy"
+                    <BookCoverArt
+                      coverUrl={item.coverUrl}
+                      title={item.title}
+                      author={item.subtitle}
+                      format={item.badgeNumber}
+                      className="w-full h-full"
                     />
                     {item.badgeNumber && (
-                      <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-amber-600 text-white font-mono font-black text-[10px] shadow-sm uppercase">
+                      <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-amber-600 text-white font-mono font-black text-[10px] shadow-sm uppercase z-10">
                         {item.badgeNumber}
                       </div>
                     )}
@@ -802,15 +808,16 @@ export default function SavedBooksPage() {
                   className="p-2.5 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
                 >
                   {/* Bên trái: Thumbnail tỷ lệ A4 với Badge */}
-                  <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shrink-0 p-0.5 flex items-center justify-center">
-                    <img
-                      src={item.coverUrl}
-                      alt={item.title}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                      loading="lazy"
+                  <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs">
+                    <BookCoverArt
+                      coverUrl={item.coverUrl}
+                      title={item.title}
+                      author={item.subtitle}
+                      format={item.badgeNumber}
+                      className="w-full h-full"
                     />
                     {item.badgeNumber && (
-                      <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-amber-600 text-white font-mono font-bold text-[9px] uppercase shadow-xs">
+                      <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-amber-600 text-white font-mono font-bold text-[9px] uppercase shadow-xs z-10">
                         {item.badgeNumber}
                       </div>
                     )}
@@ -1029,18 +1036,15 @@ export default function SavedBooksPage() {
                   className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 shadow-sm dark:shadow-md flex items-center justify-between gap-3 cursor-pointer transition-all group"
                 >
                   {/* Thumbnail bìa hoặc icon */}
-                  <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden bg-[#F5EFE6] dark:bg-[#160e08] border border-amber-900/10 dark:border-white/10 shrink-0 p-0.5 flex items-center justify-center">
-                    {book.coverUrl ? (
-                      <img
-                        src={book.coverUrl}
-                        alt={book.title}
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <BookOpen size={24} className="text-amber-700 dark:text-amber-400" />
-                    )}
-                    <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-emerald-600 text-white font-mono font-bold text-[8.5px] uppercase shadow-xs">
+                  <div className="relative w-12 sm:w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs">
+                    <BookCoverArt
+                      coverUrl={book.coverUrl}
+                      title={book.title}
+                      author={book.author}
+                      format={book.format}
+                      className="w-full h-full"
+                    />
+                    <div className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-emerald-600 text-white font-mono font-bold text-[8.5px] uppercase shadow-xs z-10">
                       {book.format}
                     </div>
                   </div>

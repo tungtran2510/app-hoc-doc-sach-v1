@@ -156,18 +156,44 @@ export default function RecommendedBooksSection({
       if (!cached || cached.length === 0) return;
 
       setBooks((prevBooks) => {
-        const existingIds = new Set(prevBooks.map((b) => b.id));
-        const newDownloadedBooks: RecommendedBook[] = [];
+        const cachedMap = new Map(cached.map((c) => [c.id, c]));
+        // Cập nhật thông tin các cuốn sách offline đã có trong kệ
+        let updatedList = prevBooks.map((b) => {
+          const c = cachedMap.get(b.id);
+          if (c) {
+            const storedCustomCover =
+              typeof window !== 'undefined'
+                ? localStorage.getItem(`custom_cover_${c.id}`)
+                : null;
+            const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || b.cover_url || '';
+            return {
+              ...b,
+              title: c.title || b.title,
+              author: c.author || b.author,
+              cover_url: bookCover,
+            };
+          }
+          return b;
+        });
 
+        // Bổ sung các cuốn sách offline mới
+        const existingIds = new Set(updatedList.map((b) => b.id));
+        const newDownloadedBooks: RecommendedBook[] = [];
         for (const c of cached) {
           if (!existingIds.has(c.id)) {
+            const storedCustomCover =
+              typeof window !== 'undefined'
+                ? localStorage.getItem(`custom_cover_${c.id}`)
+                : null;
+            const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || '';
+
             newDownloadedBooks.push({
               id: c.id,
               title: c.title,
               author: c.author || 'Tác giả',
               category: 'Đã tải về',
               badge_tag: c.format ? c.format.toUpperCase() : 'TẢI VỀ',
-              cover_url: c.coverUrl || '/documents/covers/cover_hieu_dung_ve_cot_song.png',
+              cover_url: bookCover,
               description: `Sách ngoại tuyến (${formatBytes(c.fileSize)}) • Sẵn sàng đọc ngay`,
               pages: [],
               file_url: c.fileUrl,
@@ -179,9 +205,10 @@ export default function RecommendedBooksSection({
           }
         }
 
-        if (newDownloadedBooks.length === 0) return prevBooks;
-        // Đặt sách ngoại tuyến mới tải lên hàng đầu của kệ sách để người dùng đọc ngay
-        return [...newDownloadedBooks, ...prevBooks];
+        if (newDownloadedBooks.length > 0) {
+          return [...newDownloadedBooks, ...updatedList];
+        }
+        return updatedList;
       });
     } catch (err) {
       console.error('Lỗi nạp sách ngoại tuyến vào kệ sách:', err);
@@ -196,8 +223,10 @@ export default function RecommendedBooksSection({
     };
 
     window.addEventListener('qbiz_book_downloaded', handleBookDownloaded);
+    window.addEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleBookDownloaded);
+      window.removeEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
     };
   }, []);
 

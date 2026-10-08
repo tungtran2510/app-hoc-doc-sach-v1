@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { X, Check, Upload, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { COVER_PALETTES } from '../lib/onlineLibraryData';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
+import BookCoverArt from './BookCoverArt';
 
 interface CoverCustomizerModalProps {
   isOpen: boolean;
@@ -87,13 +88,15 @@ export default function CoverCustomizerModal({
 
         {/* XEM TRƯỚC BÌA ĐANG CHỌN */}
         <div className="flex flex-col items-center justify-center py-1">
-          <div className="w-24 aspect-[1/1.42] rounded-lg overflow-hidden border-2 border-amber-500 shadow-lg bg-black/50 relative">
-            <img
-              src={selectedCover || defaultCoverUrl}
-              alt="Bìa sách"
-              className="w-full h-full object-cover"
+          <div className="w-24 aspect-[1/1.42] rounded-lg overflow-hidden border-2 border-amber-500 shadow-xl relative">
+            <BookCoverArt
+              coverUrl={selectedCover || defaultCoverUrl}
+              title={bookTitle}
+              author="Tác giả"
+              className="w-full h-full"
             />
           </div>
+          <span className="text-[10px] text-amber-300/80 mt-1 font-medium">Xem trước hiển thị thực tế</span>
         </div>
 
         {/* NÚT TẢI ẢNH TỪ MÁY */}
@@ -113,11 +116,11 @@ export default function CoverCustomizerModal({
           <span className="whitespace-nowrap">Tải ảnh từ điện thoại lên</span>
         </button>
 
-        {/* CÁC MẪU BÌA CÓ SẴN (1 DÒNG CHIP) */}
+        {/* CÁC PHONG CÁCH BÌA TUYỂN CHỌN */}
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
             <Sparkles size={11} />
-            <span>Mẫu bìa tuyển chọn:</span>
+            <span>Phong cách bìa chuẩn xuất bản:</span>
           </span>
 
           <div className="grid grid-cols-2 gap-1.5">
@@ -136,8 +139,12 @@ export default function CoverCustomizerModal({
                       : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'
                   }`}
                 >
-                  <div className="w-5 h-7 rounded bg-black/40 overflow-hidden shrink-0 border border-white/10">
-                    <img src={palUrl} alt="" className="w-full h-full object-cover" />
+                  <div className="w-5 aspect-[1/1.42] rounded overflow-hidden shrink-0 border border-white/10 shadow-xs">
+                    <BookCoverArt
+                      coverUrl={pal.url}
+                      title={bookTitle}
+                      className="w-full h-full"
+                    />
                   </div>
                   <span className="text-[11px] font-bold truncate flex-1">{pal.name}</span>
                   {isSelected && <Check size={12} className="text-amber-400 shrink-0" />}

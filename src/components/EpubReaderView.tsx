@@ -35,6 +35,7 @@ interface EpubReaderViewProps {
   fileUrl: string;
   bookTitle?: string;
   author?: string | null;
+  coverUrl?: string | null;
   readingTheme?: 'dark' | 'sepia' | 'ivory';
   typographySettings?: TypographySettings;
   onOpenTypographyModal?: () => void;
@@ -48,6 +49,7 @@ export default function EpubReaderView({
   fileUrl,
   bookTitle,
   author,
+  coverUrl,
   readingTheme = 'sepia',
   typographySettings,
   onOpenTypographyModal,
@@ -212,6 +214,15 @@ export default function EpubReaderView({
 
   const startChapterAudio = (startIdx: number = 0) => {
     if (!currentChapter) return;
+    const effectiveTitle = bookTitle || parsedBook?.title || 'Sách Nói';
+    const effectiveAuthor = author || parsedBook?.author || 'Giọng đọc AI';
+    const effectiveCover = coverUrl || parsedBook?.coverUrl || undefined;
+    bookAudioPlayer.setBookContext(
+      effectiveTitle,
+      effectiveAuthor,
+      effectiveCover,
+      currentChapter.title || `Chương ${currentChapterIdx + 1}`
+    );
     const paras = extractParagraphsFromHtml(currentChapter.htmlContent);
     if (paras.length === 0) {
       const raw = contentRef.current?.textContent?.trim() || '';
@@ -263,6 +274,15 @@ export default function EpubReaderView({
       setTimeout(() => {
         const nextCh = parsedBook.chapters[idx];
         if (nextCh) {
+          const effectiveTitle = bookTitle || parsedBook?.title || 'Sách Nói';
+          const effectiveAuthor = author || parsedBook?.author || 'Giọng đọc AI';
+          const effectiveCover = coverUrl || parsedBook?.coverUrl || undefined;
+          bookAudioPlayer.setBookContext(
+            effectiveTitle,
+            effectiveAuthor,
+            effectiveCover,
+            nextCh.title || `Chương ${idx + 1}`
+          );
           const paras = extractParagraphsFromHtml(nextCh.htmlContent);
           bookAudioPlayer.setQueue(paras, 0);
           bookAudioPlayer.play(0);

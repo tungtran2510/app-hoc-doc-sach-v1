@@ -18,6 +18,7 @@ export interface OfflineBookMeta {
   title: string;
   author?: string | null;
   coverUrl?: string | null;
+  customCoverUrl?: string | null;
   coverBlob?: Blob | null;
   fileUrl: string;
   fileName?: string | null;
@@ -345,6 +346,65 @@ class OfflineStorageEngine {
         const req = store.delete(id);
 
         req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Cập nhật thông tin tiêu đề, tác giả, ảnh bìa cho cuốn sách đã lưu ngoại tuyến
+   */
+  public async updateBookMetadata(
+    idOrUrl: string,
+    updates: {
+      title?: string;
+      author?: string | null;
+      coverUrl?: string | null;
+      coverBlob?: Blob | null;
+    }
+  ): Promise<boolean> {
+    try {
+      const db = await this.getDB();
+      const id = this.normalizeBookId(idOrUrl);
+
+      return new Promise<boolean>((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+
+        req.onsuccess = () => {
+          const rec: OfflineBookData | undefined = req.result;
+          if (!rec) {
+            const urlIndex = store.index('fileUrl');
+            const urlReq = urlIndex.get(idOrUrl);
+            urlReq.onsuccess = () => {
+              const urlRec: OfflineBookData | undefined = urlReq.result;
+              if (!urlRec) {
+                resolve(false);
+                return;
+              }
+              if (updates.title !== undefined) urlRec.title = updates.title;
+              if (updates.author !== undefined) urlRec.author = updates.author;
+              if (updates.coverUrl !== undefined) urlRec.coverUrl = updates.coverUrl;
+              if (updates.coverBlob !== undefined) urlRec.coverBlob = updates.coverBlob;
+              const putReq = store.put(urlRec);
+              putReq.onsuccess = () => resolve(true);
+              putReq.onerror = () => resolve(false);
+            };
+            urlReq.onerror = () => resolve(false);
+            return;
+          }
+          if (updates.title !== undefined) rec.title = updates.title;
+          if (updates.author !== undefined) rec.author = updates.author;
+          if (updates.coverUrl !== undefined) rec.coverUrl = updates.coverUrl;
+          if (updates.coverBlob !== undefined) rec.coverBlob = updates.coverBlob;
+
+          const putReq = store.put(rec);
+          putReq.onsuccess = () => resolve(true);
+          putReq.onerror = () => resolve(false);
+        };
         req.onerror = () => resolve(false);
       });
     } catch {

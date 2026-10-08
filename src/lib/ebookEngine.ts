@@ -14,6 +14,7 @@ export type EbookFormat =
   | 'cbr'
   | 'txt'
   | 'docx'
+  | 'audio'
   | 'unknown';
 
 export interface EbookFormatMeta {
@@ -38,6 +39,7 @@ export function detectEbookFormat(
     if (lower.includes('.epub')) return 'epub';
     if (lower.includes('.cbz') || lower.includes('.cbr')) return 'cbz';
     if (lower.includes('.pdf')) return 'pdf';
+    if (lower.includes('.mp3') || lower.includes('.m4a') || lower.includes('.ogg') || lower.includes('.wav') || lower.includes('.audio')) return 'audio';
     if (lower.includes('.mobi')) return 'mobi';
     if (lower.includes('.azw3') || lower.includes('.azw')) return 'azw3';
     if (lower.includes('.fb2')) return 'fb2';
@@ -49,6 +51,7 @@ export function detectEbookFormat(
 
     if (ext === 'pdf') return 'pdf';
     if (ext === 'epub') return 'epub';
+    if (ext === 'mp3' || ext === 'm4a' || ext === 'ogg' || ext === 'wav') return 'audio';
     if (ext === 'mobi') return 'mobi';
     if (ext === 'azw' || ext === 'azw3') return 'azw3';
     if (ext === 'fb2') return 'fb2';
@@ -145,6 +148,16 @@ export function getEbookFormatMeta(format: EbookFormat): EbookFormatMeta {
         badgeBorder: 'border-blue-500/30',
         description: 'Tài liệu Microsoft Word',
         iconName: 'FileEdit',
+      };
+    case 'audio':
+      return {
+        format: 'audio',
+        label: 'SÁCH NÓI MP3',
+        badgeBg: 'bg-purple-500/15 dark:bg-purple-950/60',
+        badgeText: 'text-purple-600 dark:text-purple-300',
+        badgeBorder: 'border-purple-500/30',
+        description: 'Sách nói âm thanh MP3 mở thế giới',
+        iconName: 'Headphones',
       };
     default:
       return {

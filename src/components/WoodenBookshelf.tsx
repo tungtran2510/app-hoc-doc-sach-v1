@@ -36,13 +36,20 @@ import {
   CheckCircle2,
   Check,
   HardDrive,
+  Upload,
+  UploadCloud,
+  ShieldCheck,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
+import ImportBookModal from './ImportBookModal';
+import QuickEditBookModal from './QuickEditBookModal';
+import { applyBookOverride } from '../lib/userBooksManager';
 
 export type BookshelfThemeStyle = 'classic_wood' | 'dark_walnut' | 'minimal_white' | 'luxury_modern';
 export type BookshelfCols = 2 | 3 | 4 | 5;
 
 import SyncBackupModal from './SyncBackupModal';
+import BookCoverArt from './BookCoverArt';
 
 interface WoodenBookshelfProps {
   books: RecommendedBook[];
@@ -155,25 +162,33 @@ export default function WoodenBookshelf({
 
   // Trạng thái hiển thị Cảnh báo khi người dùng muốn thoát ra khỏi hẳn phần mềm
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [hasExitedApp, setHasExitedApp] = useState<boolean>(false);
+  const [showImportBookModal, setShowImportBookModal] = useState<boolean>(false);
+  const [editingCustomBook, setEditingCustomBook] = useState<RecommendedBook | null>(null);
+  const [overrideVersion, setOverrideVersion] = useState<number>(0);
   const isExitingRef = useRef<boolean>(false);
+
+  // Lắng nghe sự kiện cập nhật thông tin sách để cập nhật tức thì
+  useEffect(() => {
+    const onUpdate = () => setOverrideVersion((v) => v + 1);
+    window.addEventListener('qbiz_book_metadata_updated', onUpdate);
+    window.addEventListener('qbiz_book_downloaded', onUpdate);
+    return () => {
+      window.removeEventListener('qbiz_book_metadata_updated', onUpdate);
+      window.removeEventListener('qbiz_book_downloaded', onUpdate);
+    };
+  }, []);
 
   const handleConfirmExit = () => {
     isExitingRef.current = true;
     setShowExitConfirm(false);
+    setShowSettingsMenu(false);
     try {
       window.close();
     } catch {}
-    setTimeout(() => {
-      try {
-        if (window.opener) {
-          window.close();
-        } else if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = 'about:blank';
-        }
-      } catch {}
-    }, 120);
+    // Không dùng window.history.back() để tránh bị nhảy giật lại trang trước
+    // Kích hoạt màn hình Safe Exit chuyên nghiệp bảo vệ dữ liệu
+    setHasExitedApp(true);
   };
 
   const handleToggleShowTitles = () => {
@@ -559,10 +574,11 @@ export default function WoodenBookshelf({
   }, [books]);
 
   const activeBooks = React.useMemo(() => {
-    let list =
+    let list = (
       selectedCategory === 'all'
         ? [...books]
-        : books.filter((b) => (b.category || b.tag) === selectedCategory);
+        : books.filter((b) => (b.category || b.tag) === selectedCategory)
+    ).map((b) => applyBookOverride(b));
 
     if (sortBy === 'recent') {
       list.sort((a, b) => {
@@ -578,7 +594,7 @@ export default function WoodenBookshelf({
       );
     }
     return list;
-  }, [books, selectedCategory, sortBy, bookProgressMap, lastReadBookTitle]);
+  }, [books, selectedCategory, sortBy, bookProgressMap, lastReadBookTitle, overrideVersion]);
 
   const visibleBooks = activeBooks.filter((b) => isAdmin || b.is_visible !== false);
 
@@ -885,10 +901,11 @@ export default function WoodenBookshelf({
             className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
           >
             <div className="relative w-8 h-11 sm:w-9 sm:h-12 rounded-md overflow-hidden shrink-0 border border-amber-900/20 shadow-xs">
-              <img
-                src={lastReadBook.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png'}
-                alt={lastReadBook.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              <BookCoverArt
+                coverUrl={lastReadBook.cover_url}
+                title={lastReadBook.title}
+                author={lastReadBook.author}
+                className="w-full h-full"
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -940,6 +957,18 @@ export default function WoodenBookshelf({
 
         {/* CỤM NÚT SẮP XẾP VÀ KÍNH LÚP THU NHỎ / PHÓNG TO SÁCH */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Nút Đưa sách từ máy vào kệ */}
+          <button
+            type="button"
+            onClick={() => setShowImportBookModal(true)}
+            className="h-7 px-2 sm:px-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Đưa sách từ máy (.epub, .pdf, .cbz) vào kệ sách"
+          >
+            <Upload size={12} strokeWidth={2.4} />
+            <span className="hidden xs:inline">+ Đưa sách vào</span>
+            <span className="xs:hidden">+ Sách</span>
+          </button>
+
           {/* Nút Đổi Sắp Xếp Sách */}
           <button
             type="button"
@@ -1084,23 +1113,14 @@ export default function WoodenBookshelf({
                             />
                           </div>
                         )}
-                        {/* Ảnh bìa sách */}
-                        {book.cover_url ? (
-                          <img
-                            src={book.cover_url}
-                            alt={book.title}
-                            className="w-full h-full object-cover block"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-amber-900 to-stone-900 flex flex-col justify-between p-2 text-center">
-                            <span className="text-[9px] font-bold text-amber-300">Qbiz Books</span>
-                            <span className="text-[11px] font-bold text-white line-clamp-3">
-                              {book.title}
-                            </span>
-                            <span className="text-[9px] text-amber-200/80">{book.author || 'Y học'}</span>
-                          </div>
-                        )}
+                        {/* Ảnh bìa sách nghệ thuật chuẩn xuất bản */}
+                        <BookCoverArt
+                          coverUrl={book.cover_url}
+                          title={book.title}
+                          author={book.author}
+                          format="epub"
+                          className="w-full h-full"
+                        />
 
                         {/* Lớp bóng uốn cong gáy sách 3D và phản chiếu kính */}
                         <div
@@ -1819,6 +1839,22 @@ export default function WoodenBookshelf({
                 </Link>
               )}
 
+              {/* ĐƯA SÁCH TỪ MÁY VÀO KỆ (DÀNH CHO TẤT CẢ NGƯỜI DÙNG) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsMenu(false);
+                  setShowImportBookModal(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-200 cursor-pointer whitespace-nowrap"
+              >
+                <div className="flex items-center gap-2">
+                  <Upload size={16} className="text-amber-700 dark:text-amber-400" />
+                  <span>Đưa sách từ máy vào kệ</span>
+                </div>
+                <span className="text-[11px] text-amber-700 dark:text-amber-300 font-bold">+Sách</span>
+              </button>
+
               {/* NÚT THOÁT PHẦN MỀM CÓ CẢNH BÁO (TRONG MENU CÀI ĐẶT) */}
               <div className="h-px bg-[#e8dccb] dark:bg-white/10 my-0.5" />
               <button
@@ -1932,10 +1968,11 @@ export default function WoodenBookshelf({
             {/* Thông tin đầu sách */}
             <div className="flex gap-3.5 items-start">
               <div className="w-20 shrink-0 aspect-[1/1.42] rounded-md overflow-hidden shadow-lg border border-amber-500/30">
-                <img
-                  src={quickPeekBook.cover_url || '/logo.png'}
-                  alt={quickPeekBook.title}
-                  className="w-full h-full object-cover"
+                <BookCoverArt
+                  coverUrl={quickPeekBook.cover_url}
+                  title={quickPeekBook.title}
+                  author={quickPeekBook.author}
+                  className="w-full h-full"
                 />
               </div>
               <div className="flex-1 min-w-0 pr-6">
@@ -1977,6 +2014,19 @@ export default function WoodenBookshelf({
                 onClick={() => {
                   const b = quickPeekBook;
                   setQuickPeekBook(null);
+                  setEditingCustomBook(b);
+                }}
+                className="px-3 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-300 font-bold text-xs flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0"
+                title="Sửa tiêu đề, tác giả & ảnh bìa sách"
+              >
+                <Edit2 size={13} strokeWidth={2.4} />
+                <span>Sửa tiêu đề</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const b = quickPeekBook;
+                  setQuickPeekBook(null);
                   onReadBook3D(b);
                 }}
                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all cursor-pointer"
@@ -1987,7 +2037,7 @@ export default function WoodenBookshelf({
               <button
                 type="button"
                 onClick={() => setQuickPeekBook(null)}
-                className="px-3.5 py-2.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[#4a2810] dark:text-slate-200 font-bold text-xs active:scale-95 transition-all cursor-pointer"
+                className="px-3 py-2.5 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-[#4a2810] dark:text-slate-200 font-bold text-xs active:scale-95 transition-all cursor-pointer"
               >
                 Đóng
               </button>
@@ -2001,6 +2051,73 @@ export default function WoodenBookshelf({
         isOpen={showSyncModal}
         onClose={() => setShowSyncModal(false)}
       />
+
+      {/* MODAL NHẬP SÁCH TỪ THIẾT BỊ CỦA BẠN (.EPUB, .PDF, .CBZ) */}
+      <ImportBookModal
+        isOpen={showImportBookModal}
+        onClose={() => setShowImportBookModal(false)}
+        onImportSuccess={(newBook) => {
+          setZoomToast(`✓ Đã đưa cuốn sách "${newBook.title}" vào kệ!`);
+          setTimeout(() => setZoomToast(null), 3000);
+        }}
+      />
+
+      {/* MODAL SỬA TIÊU ĐỀ & BÌA SÁCH */}
+      <QuickEditBookModal
+        isOpen={Boolean(editingCustomBook)}
+        book={editingCustomBook}
+        onClose={() => setEditingCustomBook(null)}
+        onSaved={(updatedBook) => {
+          setZoomToast(`✓ Đã lưu thay đổi: "${updatedBook.title}"`);
+          setTimeout(() => setZoomToast(null), 3000);
+        }}
+        onDeleted={(id) => {
+          setZoomToast('✓ Đã xóa sách khỏi bộ nhớ máy.');
+          setTimeout(() => setZoomToast(null), 3000);
+        }}
+      />
+
+      {/* MÀN HÌNH ĐÃ THOÁT ỨNG DỤNG AN TOÀN (SAFE EXIT SCREEN) */}
+      {hasExitedApp && (
+        <div className="fixed inset-0 z-[200] bg-[#0c0805] text-[#f7eee1] flex flex-col items-center justify-center p-5 text-center select-none animate-in fade-in duration-200">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mb-4 shadow-xl shadow-amber-900/20">
+            <ShieldCheck size={36} strokeWidth={2.2} className="text-amber-400" />
+          </div>
+          <h2 className="text-lg sm:text-xl font-black uppercase tracking-wider text-amber-200 mb-2">
+            ĐÃ THOÁT ỨNG DỤNG AN TOÀN
+          </h2>
+          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 max-w-xs mb-6 text-xs text-amber-100/80 leading-relaxed space-y-1.5">
+            <p className="flex items-center justify-center gap-1.5 text-emerald-400 font-bold">
+              <CheckCircle2 size={14} />
+              <span>Tiến độ đọc đã được bảo lưu trọn vẹn</span>
+            </p>
+            <p className="text-[11.5px] opacity-75">
+              Bạn có thể an tâm đóng tab trình duyệt này hoặc vuốt tắt ứng dụng để rời đi.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5 w-full max-w-xs">
+            <button
+              type="button"
+              onClick={() => setHasExitedApp(false)}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-black text-xs shadow-lg active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <BookOpen size={15} strokeWidth={2.5} />
+              <span>Mở lại ứng dụng đọc sách</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  window.close();
+                } catch {}
+              }}
+              className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+            >
+              Đóng cửa sổ này
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

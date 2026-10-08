@@ -6,6 +6,8 @@
  * Tích hợp cơ chế tự động chống dừng âm thanh (SpeechSynthesis Keep-Alive Heartbeat)
  */
 
+import { backgroundAudioManager } from './backgroundAudioManager';
+
 export interface SpeechVoiceOption {
   voice: SpeechSynthesisVoice;
   name: string;
@@ -35,6 +37,11 @@ class BookAudioPlayerEngine {
   private isPaused: boolean = false;
   private rate: number = 1.0;
   private selectedVoice: SpeechSynthesisVoice | null = null;
+
+  private bookTitle: string = 'Qbiz Sách Nói';
+  private author: string = 'Giọng đọc AI';
+  private chapterTitle: string = '';
+  private coverUrl: string = '';
 
   private onStateChangeCallback: ((state: AudioPlayerState) => void) | null = null;
   private onChapterFinishCallback: (() => void) | null = null;
@@ -140,6 +147,32 @@ class BookAudioPlayerEngine {
     this.notifyState();
   }
 
+  public setBookContext(title: string, author?: string, coverUrl?: string, chapterTitle?: string) {
+    if (title) this.bookTitle = title;
+    if (author) this.author = author;
+    if (coverUrl) this.coverUrl = coverUrl;
+    if (chapterTitle) this.chapterTitle = chapterTitle;
+
+    if (this.isPlaying && !this.isPaused) {
+      this.syncMediaSession();
+    }
+  }
+
+  private syncMediaSession() {
+    backgroundAudioManager.setupMediaSession({
+      title: this.chapterTitle ? `${this.bookTitle} · ${this.chapterTitle}` : this.bookTitle,
+      artist: this.author,
+      album: 'Qbiz Books · Giọng đọc AI',
+      artworkUrl: this.coverUrl || '/icon.png',
+      onPlay: () => this.resume(),
+      onPause: () => this.pause(),
+      onSeekBackward: () => this.prev(),
+      onSeekForward: () => this.next(),
+      onPreviousTrack: () => this.prev(),
+      onNextTrack: () => this.next(),
+    });
+  }
+
   public play(startIndex?: number) {
     if (!this.synth || this.queue.length === 0) return;
 
@@ -154,6 +187,9 @@ class BookAudioPlayerEngine {
 
     this.isPlaying = true;
     this.isPaused = false;
+    backgroundAudioManager.startSilentAudioKeepAlive();
+    this.syncMediaSession();
+    backgroundAudioManager.updatePlaybackState('playing');
     this.speakCurrent();
   }
 
@@ -186,6 +222,13 @@ class BookAudioPlayerEngine {
       this.isPlaying = true;
       this.isPaused = false;
       this.startHeartbeat();
+      backgroundAudioManager.startSilentAudioKeepAlive();
+      backgroundAudioManager.updatePlaybackState('playing');
+      backgroundAudioManager.updatePositionState(
+        this.currentIndex + 1,
+        Math.max(1, this.queue.length),
+        this.rate
+      );
       this.notifyState();
       this.onParagraphChangeCallback?.(this.currentIndex, rawText);
     };
@@ -200,6 +243,8 @@ class BookAudioPlayerEngine {
           // Kết thúc danh sách
           this.isPlaying = false;
           this.isPaused = false;
+          backgroundAudioManager.stopSilentAudioKeepAlive();
+          backgroundAudioManager.clearMediaSession();
           this.notifyState();
           this.onChapterFinishCallback?.();
         }
@@ -250,6 +295,8 @@ class BookAudioPlayerEngine {
     this.clearHeartbeat();
     this.synth.pause();
     this.isPaused = true;
+    backgroundAudioManager.stopSilentAudioKeepAlive();
+    backgroundAudioManager.updatePlaybackState('paused');
     this.notifyState();
   }
 
@@ -259,6 +306,9 @@ class BookAudioPlayerEngine {
       this.synth.resume();
       this.isPaused = false;
       this.startHeartbeat();
+      backgroundAudioManager.startSilentAudioKeepAlive();
+      this.syncMediaSession();
+      backgroundAudioManager.updatePlaybackState('playing');
       this.notifyState();
     } else {
       this.play();
@@ -307,6 +357,8 @@ class BookAudioPlayerEngine {
     this.isPlaying = false;
     this.isPaused = false;
     this.currentUtterance = null;
+    backgroundAudioManager.stopSilentAudioKeepAlive();
+    backgroundAudioManager.clearMediaSession();
     this.notifyState();
   }
 

@@ -13,12 +13,14 @@ import {
   ChevronUp,
   ChevronDown,
   RotateCcw,
+  Moon,
 } from 'lucide-react';
 import {
   bookAudioPlayer,
   AudioPlayerState,
   SpeechVoiceOption,
 } from '../lib/audioSpeech';
+import { backgroundAudioManager } from '../lib/backgroundAudioManager';
 
 interface BookAudioPlayerBarProps {
   onClose: () => void;
@@ -37,6 +39,19 @@ export default function BookAudioPlayerBar({
   const [voices, setVoices] = useState<SpeechVoiceOption[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [autoNext, setAutoNext] = useState(true);
+  const [isWakeLockActive, setIsWakeLockActive] = useState<boolean>(() =>
+    backgroundAudioManager.isWakeLockActive()
+  );
+
+  const handleToggleWakeLock = async (enabled: boolean) => {
+    if (enabled) {
+      const ok = await backgroundAudioManager.acquireWakeLock();
+      setIsWakeLockActive(ok);
+    } else {
+      await backgroundAudioManager.releaseWakeLock();
+      setIsWakeLockActive(false);
+    }
+  };
 
   useEffect(() => {
     // Đăng ký listener cập nhật trạng thái
@@ -84,15 +99,33 @@ export default function BookAudioPlayerBar({
       : 0;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-xl animate-in slide-in-from-bottom-5 duration-300">
-      {/* KHUNG NỔI CHÍNH */}
-      <div className="rounded-2xl bg-slate-950/95 dark:bg-black/95 text-white backdrop-blur-md border border-amber-500/30 shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-3 sm:p-4 flex flex-col gap-2.5">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Khung điều khiển sách nói AI"
+      className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* KHUNG ĐIỀU KHIỂN NẰM CHÍNH GIỮA MÀN HÌNH - KHÔNG CHE CHÂN TRANG */}
+      <div
+        className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#1c120c] via-[#140b07] to-black text-white border border-amber-500/35 shadow-[0_20px_60px_rgba(0,0,0,0.85)] p-4 flex flex-col gap-3 my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* THANH TIẾN TRÌNH SIÊU MỎNG */}
-        <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+        <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
           <div
             className="bg-gradient-to-r from-amber-500 to-amber-300 h-full transition-all duration-300 rounded-full"
             style={{ width: `${progressPercent}%` }}
           />
+        </div>
+
+        {/* HUY HIỆU TẮT MÀN HÌNH VẪN ĐỌC (CHUẨN 1 DÒNG RULE 3) */}
+        <div className="flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10.5px] font-medium">
+          <div className="flex items-center gap-1.5 truncate">
+            <Moon size={11} className="shrink-0 text-emerald-400" />
+            <span className="truncate">Tắt màn hình vẫn đọc · Điều khiển màn hình khóa</span>
+          </div>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
         </div>
 
         {/* HÀNG THÔNG TIN ĐOẠN ĐỌC */}
@@ -261,6 +294,25 @@ export default function BookAudioPlayerBar({
                 <div className="w-8 h-4 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
               </label>
             </div>
+
+            {/* Tùy chọn Giữ sáng màn hình khi đọc */}
+            {backgroundAudioManager.isWakeLockSupported() && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-white/5">
+                <span className="text-white/70 flex items-center gap-1">
+                  <Moon size={13} className="text-emerald-400" />
+                  Giữ sáng màn hình khi đọc:
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isWakeLockActive}
+                    onChange={(e) => handleToggleWakeLock(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-8 h-4 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+            )}
           </div>
         )}
       </div>

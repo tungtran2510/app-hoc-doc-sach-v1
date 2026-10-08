@@ -37,6 +37,7 @@ import ReaderSearchModal from './ReaderSearchModal';
 import ReaderTypographyModal from './ReaderTypographyModal';
 import ReaderSoundModal from './ReaderSoundModal';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
+import AudiobookPlayerModal from './AudiobookPlayerModal';
 import { readingNotesStorage } from '../lib/readingNotes';
 import { bookAudioPlayer, extractParagraphsFromPdfText } from '../lib/audioSpeech';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
@@ -114,9 +115,20 @@ export default function SideBooksReaderModal({
   // Nhận diện định dạng Ebook
   const activeFileUrl = fileUrl || pdfUrl;
   const activeFormat = detectEbookFormat(fileName, activeFileUrl);
-  const isEpub = activeFormat === 'epub';
-  const isPdf = activeFormat === 'pdf' || (Boolean(activeFileUrl) && !isEpub && activeFileUrl?.toLowerCase().includes('.pdf'));
-  const isCbz = activeFormat === 'cbz' || activeFormat === 'cbr';
+  const isAudio =
+    activeFormat === 'audio' ||
+    Boolean(
+      activeFileUrl &&
+        (activeFileUrl.toLowerCase().includes('.mp3') ||
+          activeFileUrl.toLowerCase().includes('.m4a') ||
+          activeFileUrl.toLowerCase().includes('.audio'))
+    ) ||
+    Boolean(fileName && (fileName.toLowerCase().endsWith('.mp3') || fileName.toLowerCase().endsWith('.m4a')));
+  const isEpub = activeFormat === 'epub' && !isAudio;
+  const isPdf =
+    (activeFormat === 'pdf' || (Boolean(activeFileUrl) && !isEpub && activeFileUrl?.toLowerCase().includes('.pdf'))) &&
+    !isAudio;
+  const isCbz = (activeFormat === 'cbz' || activeFormat === 'cbr') && !isAudio;
 
   // State cho bộ đọc PDF động (On-Demand Provider)
   const [pdfProvider, setPdfProvider] = useState<PdfPageProvider | null>(null);
@@ -638,6 +650,12 @@ export default function SideBooksReaderModal({
         setTimeout(() => setAudioNotice(null), 3500);
         return;
       }
+      bookAudioPlayer.setBookContext(
+        title,
+        author || 'Tác giả',
+        coverUrl || undefined,
+        `Trang ${pageNum1Based} / ${totalPages}`
+      );
       const paras = extractParagraphsFromPdfText(text);
       bookAudioPlayer.setQueue(paras, 0);
       bookAudioPlayer.play(0);
@@ -731,6 +749,25 @@ export default function SideBooksReaderModal({
   };
 
   if (!isOpen) return null;
+
+  if (isAudio) {
+    return (
+      <AudiobookPlayerModal
+        isOpen={isOpen}
+        onClose={onClose}
+        book={{
+          id: title,
+          title,
+          author: author || 'Tác giả',
+          coverUrl: coverUrl || undefined,
+          audioUrl: activeFileUrl || '',
+          durationFormatted: 'Sách nói MP3',
+        }}
+        isDownloaded={isOfflineCached}
+        onDownload={handleSaveOffline}
+      />
+    );
+  }
 
   return (
     <div
@@ -1202,6 +1239,7 @@ export default function SideBooksReaderModal({
             fileUrl={activeFileUrl}
             bookTitle={title}
             author={author}
+            coverUrl={coverUrl}
             readingTheme={readingTheme}
             typographySettings={typographySettings}
             onOpenTypographyModal={() => setShowTypographyModal(true)}
