@@ -231,34 +231,34 @@ export const CURATED_ONLINE_BOOKS: OnlineBookItem[] = [
   // ================= 2. SÁCH Y KHOA & SỨC KHỎE VIỆT NAM =================
   {
     id: 'online-read-cotsong-co',
-    title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy',
+    title: 'Cẩm Nang Đốt Sống Cổ & Vai Gáy (Toàn Văn 8 Chương)',
     author: 'Dr. Tùng · Tủ Sách Y Khoa',
     medium: 'read',
     category: 'y-hoc',
     categoryName: 'Y học & Sức khỏe',
     format: 'epub',
-    fileSizeFormatted: '7.6 KB',
+    fileSizeFormatted: '10.0 KB (8 Chương)',
     coverUrl: '',
     downloadUrl: '/documents/cam_nang_dot_song_co_vai_gay.epub',
-    description: 'Cẩm nang thực hành giải nén 7 đốt sống cổ C1-C7, phòng ngừa hội chứng cổ vai gáy dân văn phòng và thoát vị đĩa đệm.',
-    badgeTag: 'Y KHOA EPUB',
+    description: 'Toàn văn 8 chương chuyên sâu: Giải phẫu chi tiết 7 đốt sống cổ C1-C7, giải mã tải trọng 27kg khi bấm điện thoại, phân bổ rễ thần kinh C5-T1, nguyên lý công thái học, chuỗi 6 bài tập giải nén 15 phút và kỹ thuật trượt thần kinh chống tê tay.',
+    badgeTag: 'TOÀN VĂN 8 CHƯƠNG',
     language: 'vi',
     year: '2024',
     source: 'Tủ Sách Y Khoa',
   },
   {
     id: 'online-read-dinhduong',
-    title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    title: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp (Toàn Văn 10 Chương)',
     author: 'Dr. Tùng · Tủ Sách Y Khoa',
     medium: 'read',
     category: 'y-hoc',
     categoryName: 'Y học & Sức khỏe',
     format: 'epub',
-    fileSizeFormatted: '4.9 KB',
+    fileSizeFormatted: '15.4 KB (10 Chương)',
     coverUrl: '',
     downloadUrl: '/documents/dinh_duong_phuc_hoi_khop_va_dia_dem.epub',
-    description: 'Cơ chế kháng viêm tế bào, dinh dưỡng bơm hút nhân nhầy đĩa đệm và chế độ ăn tái lập mật độ xương khớp tự nhiên.',
-    badgeTag: 'Y KHOA EPUB',
+    description: 'Toàn văn 10 chương chuyên sâu: Cơ chế sinh hóa tế bào sụn khớp, mạng lưới Collagen Type II, cấp nước tế bào 0.04L/kg, Omega-3 & Curcumin dập tắt viêm tế bào, Canxi tảo biển Aquamin F, trục não - ruột - khớp, thực đơn 7 ngày và quy trình phục hồi 90 ngày.',
+    badgeTag: 'TOÀN VĂN 10 CHƯƠNG',
     language: 'vi',
     year: '2024',
     source: 'Tủ Sách Y Khoa',
@@ -271,11 +271,79 @@ export const CURATED_ONLINE_BOOKS: OnlineBookItem[] = [
     category: 'y-hoc',
     categoryName: 'Y học & Sức khỏe',
     format: 'pdf',
-    fileSizeFormatted: '393 KB',
+    fileSizeFormatted: '393 KB (14 Trang PDF)',
     coverUrl: '',
     downloadUrl: '/documents/atlas_giai_phau_cot_song_toan_dien.pdf',
-    description: 'Bản đồ vector giải phẫu chi tiết 33 đốt sống, đĩa đệm và mạng lưới rễ thần kinh tủy sống chuẩn xác.',
+    description: 'Bản đồ vector giải phẫu chi tiết 33 đốt sống, đĩa đệm và mạng lưới rễ thần kinh tủy sống chuẩn xác 14 trang sắc nét.',
     badgeTag: 'PDF VECTOR',
+    language: 'vi',
+    year: '2024',
+    source: 'Tủ Sách Y Khoa',
+  },
+  {
+    id: 'online-read-cam-nang-tu-the',
+    title: 'Cẩm Nang Tư Thế Vàng & Bài Tập Lưng',
+    author: 'Dr. Tùng · Tủ Sách Y Khoa',
+    medium: 'read',
+    category: 'y-hoc',
+    categoryName: 'Y học & Sức khỏe',
+    format: 'pdf',
+    fileSizeFormatted: '285 KB (10 Trang PDF)',
+    coverUrl: '',
+    downloadUrl: '/documents/cam_nang_tu_the_vang_bai_tap_lung.pdf',
+    description: 'Tài liệu hướng dẫn 10 trang PDF: Chuỗi bài tập sinh cơ học 15 phút mỗi ngày giải áp cột sống thắt lưng và khôi phục góc ưỡn sinh lý chuẩn.',
+    badgeTag: 'PDF BÀI TẬP',
+    language: 'vi',
+    year: '2024',
+    source: 'Tủ Sách Y Khoa',
+  },
+  {
+    id: 'online-read-giao-trinh-y-khoa',
+    title: 'Giáo Trình Y Khoa & Sức Khỏe Tổng Quan',
+    author: 'Dr. Tùng · Tủ Sách Y Khoa',
+    medium: 'read',
+    category: 'y-hoc',
+    categoryName: 'Y học & Sức khỏe',
+    format: 'pdf',
+    fileSizeFormatted: '531 KB (14 Trang PDF)',
+    coverUrl: '',
+    downloadUrl: '/documents/giao_trinh_y_khoa_tong_quan.pdf',
+    description: 'Giáo trình tổng quan hệ thống hóa nguyên lý y học thường thức, cơ chế dinh dưỡng tế bào và chăm sóc cơ thể chủ động 14 trang PDF chuẩn hóa.',
+    badgeTag: 'PDF GIÁO TRÌNH',
+    language: 'vi',
+    year: '2024',
+    source: 'Tủ Sách Y Khoa',
+  },
+  {
+    id: 'online-read-bang-tra-cuu',
+    title: 'Bảng Tra Cứu Rễ Thần Kinh Cột Sống',
+    author: 'Dr. Tùng · Tủ Sách Y Khoa',
+    medium: 'read',
+    category: 'y-hoc',
+    categoryName: 'Y học & Sức khỏe',
+    format: 'pdf',
+    fileSizeFormatted: '180 KB (6 Trang PDF)',
+    coverUrl: '',
+    downloadUrl: '/documents/bang_tra_cuu_re_than_kinh_cot_song.pdf',
+    description: 'Bảng tra cứu đối chiếu phân bổ rễ thần kinh tủy sống C1-C8 và L1-S5 chi phối cảm giác và vận động cơ quan đích.',
+    badgeTag: 'PDF TRA CỨU',
+    language: 'vi',
+    year: '2024',
+    source: 'Tủ Sách Y Khoa',
+  },
+  {
+    id: 'online-read-atlas-cbz',
+    title: 'Atlas Hình Ảnh Cơ Thể 3D (Graphic Atlas)',
+    author: 'Tủ Sách Y Khoa Qbiz',
+    medium: 'read',
+    category: 'truyen-tranh',
+    categoryName: 'Truyện tranh',
+    format: 'cbz',
+    fileSizeFormatted: '1.3 MB (9 Trang CBZ)',
+    coverUrl: '',
+    downloadUrl: '/documents/atlas_giai_phau_hinh_anh_3d.cbz',
+    description: 'Định dạng CBZ hình ảnh đồ họa đa tầng độ phân giải cao về giải phẫu học cơ thể người và hệ thống cơ xương khớp.',
+    badgeTag: 'CBZ ATLAS 3D',
     language: 'vi',
     year: '2024',
     source: 'Tủ Sách Y Khoa',
@@ -818,11 +886,14 @@ export async function searchOnlineGutenbergBooks(query: string): Promise<OnlineB
 
     return data.results.slice(0, 8).map((item: any) => {
       const formats = item.formats || {};
-      const epubUrl =
+      const rawEpubUrl =
         formats['application/epub+zip'] ||
         formats['application/x-mobipocket-ebook'] ||
         formats['text/plain; charset=utf-8'] ||
         `https://www.gutenberg.org/ebooks/${item.id}.epub.noimages`;
+
+      // Định tuyến qua proxy an toàn chống chặn CORS trên trình duyệt
+      const epubUrl = `/api/proxy-ebook?url=${encodeURIComponent(rawEpubUrl)}`;
 
       const coverUrl = formats['image/jpeg'] || '';
 
@@ -854,54 +925,12 @@ export async function searchOnlineGutenbergBooks(query: string): Promise<OnlineB
 }
 
 /**
- * Tìm kiếm sách mở rộng qua Open Library API (Internet Archive)
+ * Tìm kiếm sách mở rộng qua Open Library API
+ * Chỉ hỗ trợ nếu có tài liệu mở thực sự, không tự suy đoán link ảo gây lỗi Failed to fetch
  */
 export async function searchOpenLibraryBooks(query: string): Promise<OnlineBookItem[]> {
-  const q = query.trim();
-  if (!q) return [];
-
-  try {
-    const res = await fetch(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=6`
-    );
-    if (!res.ok) return [];
-
-    const data = await res.json();
-    if (!data.docs || !Array.isArray(data.docs)) return [];
-
-    return data.docs
-      .filter((doc: any) => doc.title)
-      .slice(0, 6)
-      .map((doc: any) => {
-        const coverId = doc.cover_i;
-        const coverUrl = coverId && coverId > 0
-          ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`
-          : '';
-        const author = Array.isArray(doc.author_name)
-          ? doc.author_name.join(', ')
-          : 'Nhiều tác giả';
-        const key = (doc.key || '').replace('/works/', '');
-
-        return {
-          id: `openlibrary-${key || Math.random().toString(36).slice(2, 7)}`,
-          title: doc.title,
-          author,
-          medium: 'read' as BookMedium,
-          category: 'van-hoc' as const,
-          categoryName: 'Kho Mở',
-          format: 'epub' as const,
-          fileSizeFormatted: '~2.0 MB',
-          coverUrl,
-          downloadUrl: `https://archive.org/download/${doc.ia?.[0] || 'gutenberg'}/${doc.ia?.[0] || 'book'}.epub`,
-          description: `Tài liệu Open Library / Internet Archive. Năm xuất bản: ${doc.first_publish_year || 'kinh điển'}.`,
-          badgeTag: 'OPEN LIB',
-          language: doc.language?.includes('vie') ? 'vi' : 'en',
-          source: 'Open Library',
-        };
-      });
-  } catch {
-    return [];
-  }
+  // Loại bỏ hoàn toàn việc đoán link archive.org gây Failed to fetch
+  return [];
 }
 
 /**

@@ -34,6 +34,7 @@ import AudiobookPlayerModal from './AudiobookPlayerModal';
 import { getBookReaderPageUrls } from '../lib/bookReaderPages';
 import { offlineStorage, formatBytes } from '../lib/offlineStorage';
 import { getLastListenedAudiobook, AudiobookHistoryItem } from '../lib/audiobookHistory';
+import { userShelfStorage } from '../lib/userShelfStorage';
 
 interface RecommendedBooksSectionProps {
   initialTitle?: string | null;
@@ -222,6 +223,30 @@ export default function RecommendedBooksSection({
           }
         }
 
+        // Bổ sung các cuốn sách từ Kệ sách cá nhân (do người dùng bấm Thêm vào kệ khi tìm kiếm)
+        try {
+          const userShelf = userShelfStorage.getAll();
+          for (const s of userShelf) {
+            if (!existingIds.has(s.id)) {
+              newDownloadedBooks.push({
+                id: s.id,
+                title: s.title,
+                author: s.author,
+                category: 'Kệ của bạn',
+                badge_tag: s.badgeTag || 'KỆ CỦA BẠN',
+                cover_url: s.coverUrl || '',
+                description: s.description || 'Đã thêm vào Kệ sách cá nhân',
+                pages: [],
+                file_url: s.fileUrl || '',
+                pdf_url: s.fileUrl || '',
+                file_name: s.title,
+                is_visible: true,
+              });
+              existingIds.add(s.id);
+            }
+          }
+        } catch {}
+
         if (newDownloadedBooks.length > 0) {
           return [...newDownloadedBooks, ...updatedList];
         }
@@ -242,10 +267,14 @@ export default function RecommendedBooksSection({
     window.addEventListener('qbiz_book_downloaded', handleBookDownloaded);
     window.addEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
     window.addEventListener('qbiz_book_removed_offline', handleBookDownloaded);
+    window.addEventListener('qbiz_book_added_to_shelf', handleBookDownloaded);
+    window.addEventListener('qbiz_book_removed_from_shelf', handleBookDownloaded);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleBookDownloaded);
       window.removeEventListener('qbiz_book_metadata_updated', handleBookDownloaded);
       window.removeEventListener('qbiz_book_removed_offline', handleBookDownloaded);
+      window.removeEventListener('qbiz_book_added_to_shelf', handleBookDownloaded);
+      window.removeEventListener('qbiz_book_removed_from_shelf', handleBookDownloaded);
     };
   }, []);
 

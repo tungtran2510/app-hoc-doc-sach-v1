@@ -14,6 +14,8 @@ import {
   Play,
   Upload,
   Trash2,
+  BookmarkPlus,
+  Check,
 } from 'lucide-react';
 import {
   CURATED_ONLINE_BOOKS,
@@ -27,6 +29,7 @@ import {
   matchSmartKeywords,
 } from '../lib/onlineLibraryData';
 import { offlineStorage } from '../lib/offlineStorage';
+import { userShelfStorage } from '../lib/userShelfStorage';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 import CoverCustomizerModal from './CoverCustomizerModal';
 import ImportBookModal from './ImportBookModal';
@@ -93,6 +96,55 @@ export default function OnlineLibrarySection({
     durationFormatted?: string;
   } | null>(null);
   const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
+
+  // Trạng thái các cuốn sách đã thêm vào Kệ sách gỗ trang chủ
+  const [shelfBookIds, setShelfBookIds] = useState<Set<string>>(new Set());
+  const [shelfToast, setShelfToast] = useState<string | null>(null);
+
+  // Đồng bộ danh sách ID sách trên Kệ sách
+  useEffect(() => {
+    const updateShelfIds = () => {
+      const all = userShelfStorage.getAll();
+      setShelfBookIds(new Set(all.map((b) => b.id)));
+    };
+    updateShelfIds();
+
+    window.addEventListener('qbiz_book_added_to_shelf', updateShelfIds);
+    window.addEventListener('qbiz_book_removed_from_shelf', updateShelfIds);
+    return () => {
+      window.removeEventListener('qbiz_book_added_to_shelf', updateShelfIds);
+      window.removeEventListener('qbiz_book_removed_from_shelf', updateShelfIds);
+    };
+  }, []);
+
+  const handleToggleShelf = (book: OnlineBookItem) => {
+    playTapSound();
+    const activeCover = customCovers[book.id] || book.coverUrl;
+    if (shelfBookIds.has(book.id)) {
+      userShelfStorage.remove(book.id);
+      setShelfBookIds((prev) => {
+        const next = new Set(prev);
+        next.delete(book.id);
+        return next;
+      });
+      setShelfToast(`Đã bỏ "${book.title}" khỏi Kệ sách`);
+    } else {
+      userShelfStorage.add({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: activeCover,
+        fileUrl: book.downloadUrl,
+        format: book.format,
+        badgeTag: book.badgeTag,
+        description: book.description,
+      });
+      playSuccessChime();
+      setShelfBookIds((prev) => new Set(prev).add(book.id));
+      setShelfToast(`✓ Đã thêm "${book.title}" vào Kệ sách!`);
+    }
+    setTimeout(() => setShelfToast(null), 2500);
+  };
 
   // Quét danh sách các cuốn sách đã có trong IndexedDB và nạp bìa tùy biến từ localStorage
   useEffect(() => {
@@ -543,6 +595,18 @@ export default function OnlineLibrarySection({
         })}
       </div>
 
+      {/* 2.5 TRẠNG THÁI TÌM KIẾM TRỰC QUAN (LOADING KHI ĐANG TÌM HOẶC BÁO KẾT QUẢ) */}
+      {isSearchingExternal ? (
+        <div className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-bold animate-pulse shadow-2xs">
+          <Loader2 size={14} className="animate-spin text-amber-500 shrink-0" />
+          <span>Đang tìm kiếm sách trong thư viện, vui lòng chờ...</span>
+        </div>
+      ) : searchQuery.trim().length > 0 ? (
+        <div className="flex items-center justify-between px-1 text-[11px] text-[#7A4B27] dark:text-amber-300 font-bold">
+          <span>Tìm thấy {filteredBooks.length} cuốn sách phù hợp với &ldquo;{searchQuery.trim()}&rdquo;</span>
+        </div>
+      ) : null}
+
       {/* 2. DANH SÁCH SÁCH TRỰC TUYẾN (SÁCH ĐỌC & SÁCH NÓI ĐỒNG BỘ) */}
       <div className="flex flex-col gap-2">
         {filteredBooks.map((book) => {
@@ -601,41 +665,40 @@ export default function OnlineLibrarySection({
                     {book.source} • {book.durationFormatted || book.fileSizeFormatted}
                   </span>
 
-                  {isCached ? (
-                    <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* NÚT THÊM VÀO KỆ SÁCH (1 DÒNG TINH GỌN, CHUẨN MOBILE) */}
+                    {shelfBookIds.has(book.id) ? (
                       <button
                         type="button"
-                        onClick={() => handleOpenDownloaded(book)}
-                        className="h-6 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                        onClick={() => handleToggleShelf(book)}
+                        className="h-6 px-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
+                        title="Sách đã có trên Kệ sách gỗ. Bấm để bỏ"
                       >
-                        {book.medium === 'audio' ? <Play size={11} className="fill-current" /> : <BookOpen size={11} />}
-                        <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
+                        <Check size={11} strokeWidth={2.5} />
+                        <span>Đã trên kệ</span>
                       </button>
+                    ) : (
                       <button
                         type="button"
-                        onClick={() => handleDeleteCached(book)}
-                        className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                        title="Xóa bản tải ngoại tuyến khỏi máy"
+                        onClick={() => handleToggleShelf(book)}
+                        className="h-6 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
+                        title="Thêm vào Kệ sách gỗ trên trang chủ"
                       >
-                        <Trash2 size={11} />
+                        <BookmarkPlus size={11} />
+                        <span>+ Kệ</span>
                       </button>
-                    </div>
-                  ) : isDownloading ? (
-                    <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
-                      <Loader2 size={11} className="animate-spin" />
-                      <span>{progress}%</span>
-                    </div>
-                  ) : book.medium === 'audio' ? (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenDownloaded(book)}
-                        className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                      >
-                        <Play size={11} className="fill-current" />
-                        <span>Nghe ngay</span>
-                      </button>
-                      {isCached ? (
+                    )}
+
+                    {isCached ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDownloaded(book)}
+                          className="h-6 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                        >
+                          {book.medium === 'audio' ? <Play size={10} className="fill-current" /> : <BookOpen size={10} />}
+                          <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteCached(book)}
@@ -644,7 +707,22 @@ export default function OnlineLibrarySection({
                         >
                           <Trash2 size={11} />
                         </button>
-                      ) : (
+                      </div>
+                    ) : isDownloading ? (
+                      <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
+                        <Loader2 size={11} className="animate-spin" />
+                        <span>{progress}%</span>
+                      </div>
+                    ) : book.medium === 'audio' ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDownloaded(book)}
+                          className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                        >
+                          <Play size={10} className="fill-current" />
+                          <span>Nghe ngay</span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleDownload(book)}
@@ -653,51 +731,28 @@ export default function OnlineLibrarySection({
                         >
                           <Download size={11} strokeWidth={2.4} />
                         </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 shrink-0">
-                      {isCached ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDownloaded(book)}
-                            className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 active:scale-95 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                          >
-                            <BookOpen size={11} />
-                            <span>Đọc ngay</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCached(book)}
-                            className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                            title="Xóa sách ngoại tuyến khỏi máy"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDownloaded(book)}
-                            className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                          >
-                            <BookOpen size={11} />
-                            <span>Đọc ngay</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDownload(book)}
-                            className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                            title="Tải đọc ngoại tuyến"
-                          >
-                            <Download size={11} strokeWidth={2.4} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDownloaded(book)}
+                          className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                        >
+                          <BookOpen size={10} />
+                          <span>Đọc ngay</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(book)}
+                          className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                          title="Tải đọc ngoại tuyến"
+                        >
+                          <Download size={11} strokeWidth={2.4} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -831,6 +886,13 @@ export default function OnlineLibrarySection({
           setCachedBookIds((prev) => new Set(prev).add(newBook.id));
         }}
       />
+
+      {/* THÔNG BÁO TOAST KHI THÊM / BỎ KHỎI KỆ SÁCH */}
+      {shelfToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-[#2A160A] text-amber-300 border border-amber-500/40 text-xs font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150 whitespace-nowrap">
+          {shelfToast}
+        </div>
+      )}
     </div>
   );
 }

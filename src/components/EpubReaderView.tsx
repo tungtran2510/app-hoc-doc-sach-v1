@@ -189,9 +189,24 @@ export default function EpubReaderView({
           // fallback to fileUrl
         }
 
-        const res = await fetch(targetUrl);
+        // Nếu là URL bên ngoài (không phải blob: hay nội bộ /documents), chuyển qua API proxy để chống chặn CORS
+        let fetchUrl = targetUrl;
+        if (
+          typeof window !== 'undefined' &&
+          (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) &&
+          !targetUrl.includes(window.location.host)
+        ) {
+          fetchUrl = `/api/proxy-ebook?url=${encodeURIComponent(targetUrl)}`;
+        }
+
+        const res = await fetch(fetchUrl);
         if (!res.ok) {
-          throw new Error(`Không thể tải tệp EPUB (Mã lỗi ${res.status}).`);
+          let errDetail = `Mã lỗi ${res.status}`;
+          try {
+            const errJson = await res.json();
+            if (errJson?.error) errDetail = errJson.error;
+          } catch {}
+          throw new Error(`Không thể mở tệp EPUB này: ${errDetail}`);
         }
 
         const buffer = await res.arrayBuffer();
@@ -207,7 +222,12 @@ export default function EpubReaderView({
       } catch (err: any) {
         if (!isCancelled) {
           console.error('Lỗi nạp EPUB:', err);
-          setError(err.message || 'Không thể mở tệp EPUB này.');
+          const rawMsg = err?.message || '';
+          if (rawMsg.includes('Failed to fetch')) {
+            setError('Máy chủ nguồn giới hạn quyền truy cập từ xa hoặc tệp không sẵn sàng trên kho mở.');
+          } else {
+            setError(rawMsg || 'Không thể mở tệp EPUB này.');
+          }
         }
       } finally {
         if (!isCancelled) {
@@ -416,20 +436,39 @@ export default function EpubReaderView({
 
   if (error || !parsedBook) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center">
-          <AlertCircle size={28} />
+      <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center max-w-sm mx-auto">
+        <div className="w-13 h-13 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center shadow-xs">
+          <BookOpen size={26} />
         </div>
-        <p className="text-sm font-bold text-red-200">
-          {error || 'Không tìm thấy nội dung cuốn sách.'}
+        <h3 className="text-sm font-black text-amber-100">
+          Chưa thể mở tệp sách này
+        </h3>
+        <p className="text-xs text-amber-200/80 leading-relaxed font-medium">
+          {error || 'Máy chủ kho lưu trữ nguồn từ xa giới hạn truy cập hoặc tệp sách chưa sẵn sàng.'}
         </p>
-        <a
-          href={fileUrl}
-          download
-          className="mt-2 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors"
-        >
-          Tải tệp EPUB gốc về máy
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+          {fileUrl && (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-8 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+            >
+              <span>Mở nguồn gốc</span>
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                window.history.back();
+              }
+            }}
+            className="h-8 px-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-xs transition-all cursor-pointer"
+          >
+            Quay lại
+          </button>
+        </div>
       </div>
     );
   }

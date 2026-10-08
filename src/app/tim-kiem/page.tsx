@@ -18,15 +18,19 @@ import {
   FileText,
   Compass,
   Globe,
+  BookmarkPlus,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import BottomNav from '../../components/BottomNav';
 import SideBooksReaderModal from '../../components/SideBooksReaderModal';
 import BookDetailModal, { UnifiedBookItem } from '../../components/BookDetailModal';
 import OnlineLibrarySection from '../../components/OnlineLibrarySection';
 import FloatingAiButton from '../../components/FloatingAiButton';
-import { playTapSound } from '../../lib/audioFeedback';
+import { playTapSound, playSuccessChime } from '../../lib/audioFeedback';
 import { matchSmartKeywords, CURATED_ONLINE_BOOKS } from '../../lib/onlineLibraryData';
 import { offlineStorage } from '../../lib/offlineStorage';
+import { userShelfStorage } from '../../lib/userShelfStorage';
 
 export const dynamic = 'force-dynamic';
 
@@ -263,6 +267,53 @@ export default function SearchPage() {
 
   // Tab chuyển đổi: Tủ sách hiện có ('local') hoặc Kho sách trực tuyến ('online')
   const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
+
+  // Trạng thái các cuốn sách đã thêm vào Kệ sách
+  const [shelfBookIds, setShelfBookIds] = useState<Set<string>>(new Set());
+  const [shelfToast, setShelfToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateShelfIds = () => {
+      const all = userShelfStorage.getAll();
+      setShelfBookIds(new Set(all.map((b) => b.id)));
+    };
+    updateShelfIds();
+
+    window.addEventListener('qbiz_book_added_to_shelf', updateShelfIds);
+    window.addEventListener('qbiz_book_removed_from_shelf', updateShelfIds);
+    return () => {
+      window.removeEventListener('qbiz_book_added_to_shelf', updateShelfIds);
+      window.removeEventListener('qbiz_book_removed_from_shelf', updateShelfIds);
+    };
+  }, []);
+
+  const handleToggleShelf = (book: SearchBookItem) => {
+    playTapSound();
+    if (shelfBookIds.has(book.id)) {
+      userShelfStorage.remove(book.id);
+      setShelfBookIds((prev) => {
+        const next = new Set(prev);
+        next.delete(book.id);
+        return next;
+      });
+      setShelfToast(`Đã bỏ "${book.title}" khỏi Kệ sách`);
+    } else {
+      userShelfStorage.add({
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        coverUrl: book.cover_url,
+        fileUrl: book.file_url || book.pdf_url || '',
+        format: book.file_url?.endsWith('.pdf') ? 'pdf' : 'epub',
+        badgeTag: book.badge_tag,
+        description: book.description,
+      });
+      playSuccessChime();
+      setShelfBookIds((prev) => new Set(prev).add(book.id));
+      setShelfToast(`✓ Đã thêm "${book.title}" vào Kệ sách!`);
+    }
+    setTimeout(() => setShelfToast(null), 2500);
+  };
 
   // Lắng nghe sự kiện mở sách từ Trợ lý AI bám đuổi (FloatingAiButton)
   useEffect(() => {
@@ -866,10 +917,10 @@ export default function SearchPage() {
       </div>
 
       {/* 8. DANH SÁCH SÁCH TÌM THẤY (CÓ HIGHLIGHT TỪ KHÓA) */}
-      {loading ? (
-        <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#8B4513] dark:text-amber-200/70">
-          <div className="w-7 h-7 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs">Đang tìm kiếm trong kho sách...</span>
+      {(loading || (query.trim().length > 0 && query !== debouncedQuery)) ? (
+        <div className="py-8 flex flex-col items-center justify-center gap-2 text-amber-700 dark:text-amber-200">
+          <div className="w-8 h-8 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-bold animate-pulse">Đang tìm kiếm sách trong thư viện, vui lòng chờ...</span>
         </div>
       ) : matchedBooks.length === 0 && matchedSnippets.length === 0 ? (
         <div className="py-10 px-4 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex flex-col items-center justify-center text-center gap-3 shadow-sm">
@@ -931,14 +982,37 @@ export default function SearchPage() {
                   </span>
                 </div>
 
-                {/* Nút hành động */}
-                <div className="flex items-center gap-2 mt-2 pt-1">
+                {/* Nút hành động (1 dòng tinh gọn, chuẩn mobile) */}
+                <div className="flex items-center gap-1.5 mt-2 pt-1">
+                  {/* NÚT THÊM VÀO KỆ SÁCH */}
+                  {shelfBookIds.has(book.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleShelf(book)}
+                      className="h-6 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap active:scale-95 shrink-0"
+                      title="Sách đã có trên Kệ sách gỗ. Bấm để bỏ"
+                    >
+                      <Check size={11} strokeWidth={2.5} />
+                      <span>Đã trên kệ</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleShelf(book)}
+                      className="h-6 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap active:scale-95 shrink-0"
+                      title="Thêm vào Kệ sách gỗ trên trang chủ"
+                    >
+                      <BookmarkPlus size={11} />
+                      <span>+ Kệ</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => handleOpenBook(book)}
-                    className="px-3 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
+                    className="h-6 px-2.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10.5px] flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs whitespace-nowrap shrink-0"
                   >
-                    <BookOpen size={12} strokeWidth={2.5} />
+                    <BookOpen size={11} strokeWidth={2.5} />
                     <span>Đọc 3D</span>
                   </button>
                   <button
@@ -1029,6 +1103,13 @@ export default function SearchPage() {
 
       {/* NÚT AI BÁM ĐUỔI THÔNG MINH (TỰ ĐỘNG NHẬN DIỆN TRANG TÌM KIẾM ĐỂ DÀI HƠN THÀNH 'NHỜ AI TÌM SÁCH') */}
       <FloatingAiButton />
+
+      {/* THÔNG BÁO TOAST KHI THÊM / BỎ KHỎI KỆ SÁCH */}
+      {shelfToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-[#2A160A] text-amber-300 border border-amber-500/40 text-xs font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150 whitespace-nowrap">
+          {shelfToast}
+        </div>
+      )}
 
       {/* THANH ĐIỀU HƯỚNG DƯỚI CÙNG */}
       <BottomNav />
