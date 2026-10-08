@@ -380,9 +380,9 @@ export default function SideBooksReaderModal({
           }
         } catch {}
 
-        // Timeout an toàn 4.0 giây để bảo vệ app không bao giờ bị kẹt spinner
+        // Timeout an toàn 12.0 giây để bảo vệ app khi tải thư viện PDF trên mạng di động
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('PDF loading timeout sau 4.0s')), 4000)
+          setTimeout(() => reject(new Error('PDF loading timeout sau 12.0s')), 12000)
         );
 
         const provider = await Promise.race([
@@ -710,14 +710,27 @@ export default function SideBooksReaderModal({
   }, [isOpen]);
 
   const startPdfPageAudio = async (pageNum1Based: number) => {
-    if (!pdfProvider) return;
     try {
-      const text = await pdfProvider.getPageText(pageNum1Based);
-      if (!text || text.length < 5) {
-        setAudioNotice('Trang PDF này không chứa văn bản số hoá hoặc là bản scan ảnh.');
-        setTimeout(() => setAudioNotice(null), 3500);
-        return;
+      let text = '';
+      if (pdfProvider) {
+        try {
+          text = await pdfProvider.getPageText(pageNum1Based);
+        } catch (err) {
+          console.warn('Lỗi getPageText từ pdfProvider:', err);
+        }
       }
+
+      // Nếu không có text từ PDF.js (ví dụ scan ảnh / infographic), dùng currentPageText hoặc lời dẫn thông minh
+      if (!text || text.trim().length < 5) {
+        if (currentPageText && currentPageText.trim().length >= 5) {
+          text = currentPageText;
+        } else {
+          text = `Trang ${pageNum1Based}, cuốn sách ${title}. Nội dung trang này ở định dạng hình ảnh đồ họa trực quan. Bạn có thể bấm nút Trợ lý AI ở thanh trên cùng để hỏi đáp và phân tích chi tiết.`;
+          setAudioNotice('Trang ở định dạng hình ảnh. Đang phát lời dẫn AI.');
+          setTimeout(() => setAudioNotice(null), 3500);
+        }
+      }
+
       bookAudioPlayer.setBookContext(
         title,
         author || 'Tác giả',
@@ -725,6 +738,9 @@ export default function SideBooksReaderModal({
         `Trang ${pageNum1Based} / ${totalPages}`
       );
       const paras = extractParagraphsFromPdfText(text);
+      if (paras.length === 0) {
+        paras.push(text);
+      }
       bookAudioPlayer.setQueue(paras, 0);
       bookAudioPlayer.play(0);
     } catch (err) {

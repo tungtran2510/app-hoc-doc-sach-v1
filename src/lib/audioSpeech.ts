@@ -187,6 +187,7 @@ class BookAudioPlayerEngine {
 
     this.isPlaying = true;
     this.isPaused = false;
+    this.notifyState();
     backgroundAudioManager.startSilentAudioKeepAlive();
     this.syncMediaSession();
     backgroundAudioManager.updatePlaybackState('playing');
