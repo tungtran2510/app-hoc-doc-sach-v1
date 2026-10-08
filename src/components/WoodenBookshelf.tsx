@@ -50,6 +50,8 @@ export type BookshelfCols = 2 | 3 | 4 | 5;
 
 import SyncBackupModal from './SyncBackupModal';
 import BookCoverArt from './BookCoverArt';
+import { logoutAdmin } from '../lib/adminAuth';
+import { clearUserPhone, getUserPhone } from '../lib/userSync';
 
 interface WoodenBookshelfProps {
   books: RecommendedBook[];
@@ -179,16 +181,37 @@ export default function WoodenBookshelf({
     };
   }, []);
 
-  const handleConfirmExit = () => {
+  const handleLogoutAccount = async () => {
+    isExitingRef.current = true;
+    setShowExitConfirm(false);
+    setShowSettingsMenu(false);
+    try {
+      if (isAdmin || onLogout) {
+        await logoutAdmin();
+        if (onLogout) onLogout();
+      }
+      clearUserPhone();
+      showToast('✓ Đã đăng xuất tài khoản thành công!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (err) {
+      console.error('Logout error:', err);
+      showToast('✓ Đã đăng xuất tài khoản.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+  };
+
+  const handleExitApp = () => {
     isExitingRef.current = true;
     setShowExitConfirm(false);
     setShowSettingsMenu(false);
     try {
       window.close();
     } catch {}
-    // Không dùng window.history.back() để tránh bị nhảy giật lại trang trước
-    // Kích hoạt màn hình Safe Exit chuyên nghiệp bảo vệ dữ liệu
-    setHasExitedApp(true);
+    showToast('💡 Bạn có thể vuốt tắt tab trình duyệt để thoát hẳn ứng dụng');
   };
 
   const handleToggleShowTitles = () => {
@@ -837,13 +860,13 @@ export default function WoodenBookshelf({
               )}
             </button>
 
-            {/* Nút Cảnh Báo Thoát Khỏi Hẳn Phần Mềm */}
+            {/* Nút Đăng Xuất Tài Khoản */}
             <button
               type="button"
               onClick={() => setShowExitConfirm(true)}
               className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-red-500/15 dark:bg-red-500/20 hover:bg-red-500/30 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
-              title="Thoát khỏi phần mềm (Cảnh báo xác nhận)"
-              aria-label="Thoát phần mềm"
+              title="Đăng xuất tài khoản"
+              aria-label="Đăng xuất tài khoản"
             >
               <LogOut size={14} strokeWidth={2.4} />
             </button>
@@ -1867,10 +1890,10 @@ export default function WoodenBookshelf({
               >
                 <div className="flex items-center gap-2">
                   <LogOut size={16} className="text-red-500 dark:text-red-400" />
-                  <span className="font-bold text-red-700 dark:text-red-200">Thoát phần mềm</span>
+                  <span className="font-bold text-red-700 dark:text-red-200">Đăng xuất tài khoản</span>
                 </div>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30 font-bold">
-                  Cảnh báo
+                  Đăng xuất
                 </span>
               </button>
             </div>
@@ -1878,7 +1901,7 @@ export default function WoodenBookshelf({
         </div>
       )}
 
-      {/* MODAL CẢNH BÁO KHI NGƯỜI DÙNG THOÁT RA KHỎI HẲN PHẦN MỀM */}
+      {/* MODAL XÁC NHẬN ĐĂNG XUẤT TÀI KHOẢN & THOÁT KHỎI PHIÊN ĐỌC SÁCH */}
       {showExitConfirm && (
         <div
           role="dialog"
@@ -1890,51 +1913,65 @@ export default function WoodenBookshelf({
           }}
         >
           <div
-            className="w-full max-w-[330px] rounded-2xl bg-gradient-to-b from-[#FAF6EF] via-[#F4ECE0] to-[#EAE0D0] dark:from-[#25170e] dark:via-[#1f130b] dark:to-[#140b06] border border-amber-800/20 dark:border-amber-600/40 p-5 text-[#2c180c] dark:text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
+            className="w-full max-w-[340px] rounded-2xl bg-gradient-to-b from-[#FAF6EF] via-[#F4ECE0] to-[#EAE0D0] dark:from-[#25170e] dark:via-[#1f130b] dark:to-[#140b06] border border-amber-800/20 dark:border-amber-600/40 p-5 text-[#2c180c] dark:text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icon cảnh báo hình tam giác phát sáng */}
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500/15 to-red-500/15 dark:from-amber-500/25 dark:to-red-500/20 border border-amber-500/30 dark:border-amber-500/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-lg shadow-amber-900/10 dark:shadow-amber-900/30">
-              <AlertTriangle size={26} strokeWidth={2.4} className="text-amber-600 dark:text-amber-400 animate-pulse" />
+            {/* Icon Đăng xuất nổi bật */}
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-red-500/15 to-amber-500/15 dark:from-red-500/25 dark:to-amber-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 flex items-center justify-center shadow-lg shadow-red-900/10 dark:shadow-red-900/30">
+              <LogOut size={26} strokeWidth={2.4} className="text-red-600 dark:text-red-400" />
             </div>
 
-            {/* Tiêu đề Cảnh báo */}
+            {/* Tiêu đề & Thông điệp */}
             <div className="flex flex-col gap-1">
               <h3 className="text-[15px] font-black tracking-wide text-[#2c180c] dark:text-amber-100 uppercase">
-                Xác nhận thoát phần mềm
+                Xác nhận đăng xuất
               </h3>
               <p className="text-[12px] text-[#6a4224] dark:text-amber-200/85 leading-relaxed px-1">
-                Bạn có chắc chắn muốn thoát khỏi ứng dụng đọc sách không?
+                {isAdmin
+                  ? 'Bạn đang đăng nhập quyền Quản trị viên. Bạn có chắc chắn muốn đăng xuất tài khoản?'
+                  : typeof window !== 'undefined' && getUserPhone()
+                  ? `Bạn đang liên kết số ${getUserPhone()}. Bạn có muốn đăng xuất tài khoản khỏi thiết bị này?`
+                  : 'Bạn có chắc chắn muốn đăng xuất tài khoản và thoát khỏi phiên đọc sách?'}
               </p>
             </div>
 
             {/* Khối thông báo an toàn dữ liệu */}
             <div className="w-full p-2 rounded-xl bg-emerald-50 dark:bg-black/40 border border-emerald-200/80 dark:border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-800 dark:text-emerald-300/90 font-medium">
               <CheckCircle2 size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <span>Tiến độ đọc đã được lưu an toàn</span>
+              <span>Tiến độ đọc và sách đã lưu an toàn 100%</span>
             </div>
 
-            {/* 2 nút hành động chuẩn Mobile */}
+            {/* Các nút hành động chuẩn Mobile */}
             <div className="w-full flex flex-col gap-2 pt-1">
-              {/* Nút 1: Ở lại đọc sách */}
+              {/* Nút 1: ĐĂNG XUẤT TÀI KHOẢN (PRIMARY) */}
+              <button
+                type="button"
+                onClick={handleLogoutAccount}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <LogOut size={14} strokeWidth={2.4} />
+                <span>Đăng xuất tài khoản</span>
+              </button>
+
+              {/* Nút 2: Ở lại đọc sách */}
               <button
                 type="button"
                 onClick={() => {
                   isExitingRef.current = false;
                   setShowExitConfirm(false);
                 }}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                className="w-full py-2 rounded-xl bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/15 border border-[#d8c5aa] dark:border-white/15 text-stone-800 dark:text-stone-200 font-bold text-xs transition-all cursor-pointer active:scale-95"
               >
                 Ở lại đọc sách
               </button>
 
-              {/* Nút 2: Thoát hẳn phần mềm */}
+              {/* Nút 3: Thoát / Đóng ứng dụng */}
               <button
                 type="button"
-                onClick={handleConfirmExit}
-                className="w-full py-2.5 rounded-xl bg-red-100/80 hover:bg-red-200/80 dark:bg-red-950/40 dark:hover:bg-red-900/50 border border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-300 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                onClick={handleExitApp}
+                className="text-[11px] text-[#8B4513] dark:text-amber-400/80 hover:underline pt-0.5 cursor-pointer"
               >
-                Thoát phần mềm
+                Đóng / Thoát ứng dụng
               </button>
             </div>
           </div>

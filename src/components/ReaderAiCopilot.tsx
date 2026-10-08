@@ -20,6 +20,10 @@ import {
   Lightbulb,
   FileText,
   BrainCircuit,
+  ChevronDown,
+  ChevronUp,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { bookAudioPlayer } from '../lib/audioSpeech';
 
@@ -100,6 +104,14 @@ export default function ReaderAiCopilot({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [readingSpeechIdx, setReadingSpeechIdx] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsCollapsed(false);
+    }
+  }, [isOpen, selectedText]);
 
   // Micro nghe liên tục (SpeechRecognition)
   const [isListening, setIsListening] = useState(false);
@@ -350,50 +362,125 @@ export default function ReaderAiCopilot({
     <aside
       role="complementary"
       aria-label="Trợ lý AI Đọc Sách"
-      className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] max-w-full bg-[#FAF6F0] dark:bg-[#1C120C] text-[#2A160A] dark:text-[#F5EFE6] border-l border-amber-900/20 dark:border-amber-500/20 shadow-2xl flex flex-col animate-in slide-in-from-right duration-250 select-none"
+      className={`fixed bottom-0 inset-x-0 sm:bottom-4 sm:right-4 sm:inset-x-auto sm:w-[440px] max-w-full z-50 flex flex-col bg-[#FAF6F0]/98 dark:bg-[#1C120C]/98 text-[#2A160A] dark:text-[#F5EFE6] rounded-t-3xl sm:rounded-2xl border-t sm:border border-amber-500/40 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom duration-250 select-none transition-all ${
+        isCollapsed
+          ? 'h-12 overflow-hidden cursor-pointer'
+          : isExpanded
+          ? 'h-[75vh] sm:h-[620px]'
+          : 'h-[48vh] sm:h-[480px]'
+      }`}
     >
-      {/* 1. HEADER TRỢ LÝ AI */}
-      <header className="p-3.5 border-b border-amber-900/15 dark:border-amber-500/20 bg-white/70 dark:bg-[#251810]/80 backdrop-blur-md flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 text-white flex items-center justify-center shadow-sm shrink-0">
-            <Sparkles size={16} className="animate-pulse" />
+      {/* 1. HEADER TRỢ LÝ AI (KÈM THANH THU NHỎ / MỞ RỘNG) */}
+      {isCollapsed ? (
+        <div
+          onClick={() => setIsCollapsed(false)}
+          className="h-12 px-4 flex items-center justify-between gap-2 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent hover:bg-amber-500/25 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles size={16} className="text-amber-500 animate-pulse shrink-0" />
+            <span className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate">
+              Trợ lý AI Đang Sẵn Sàng · Bấm để tiếp tục trò chuyện
+            </span>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-xs font-black text-[#2A160A] dark:text-amber-200 uppercase tracking-wide truncate flex items-center gap-1.5">
-              <span>Hỏi AI Đồng Hành</span>
-              <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono text-[9px]">
-                Copilot
-              </span>
-            </h2>
-            <p className="text-[10.5px] text-[#6E4223] dark:text-amber-300/70 truncate">
-              Trang {currentPage + 1}/{totalPages} · {bookTitle}
-            </p>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCollapsed(false);
+              }}
+              className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 cursor-pointer"
+              title="Mở rộng khung"
+              aria-label="Mở rộng"
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-red-500 cursor-pointer"
+              title="Đóng"
+              aria-label="Đóng"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
+      ) : (
+        <header className="px-3.5 pt-2 pb-2.5 border-b border-amber-900/15 dark:border-amber-500/20 bg-white/70 dark:bg-[#251810]/80 backdrop-blur-md flex flex-col gap-1 shrink-0">
+          {/* Thanh kéo nhỏ gọn trên điện thoại */}
+          <div
+            onClick={() => setIsCollapsed(true)}
+            className="w-10 h-1 bg-amber-500/40 hover:bg-amber-500/70 rounded-full mx-auto mb-1 cursor-pointer transition-colors sm:hidden"
+            title="Kéo hoặc bấm để thu gọn"
+          />
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={handleClearHistory}
-            className="w-8 h-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
-            title="Xóa lịch sử hội thoại"
-            aria-label="Xóa lịch sử hội thoại"
-          >
-            <RotateCcw size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer"
-            title="Đóng trợ lý AI"
-            aria-label="Đóng"
-          >
-            <X size={17} />
-          </button>
-        </div>
-      </header>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Sparkles size={14} className="animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-xs font-black text-[#2A160A] dark:text-amber-200 uppercase tracking-wide truncate flex items-center gap-1.5">
+                  <span>Hỏi AI Đồng Hành</span>
+                  <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono text-[9px]">
+                    Copilot
+                  </span>
+                </h2>
+                <p className="text-[10px] text-[#6E4223] dark:text-amber-300/70 truncate">
+                  Trang {currentPage + 1}/{totalPages} · {bookTitle}
+                </p>
+              </div>
+            </div>
 
-      {/* 2. KHỐI TRÍCH ĐOẠN ĐANG ĐƯỢC CHỌN (NẾU CÓ) */}
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={handleClearHistory}
+                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                title="Xóa lịch sử hội thoại"
+                aria-label="Xóa lịch sử"
+              >
+                <RotateCcw size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                title={isExpanded ? 'Thu nhỏ lại' : 'Mở rộng khung'}
+                aria-label={isExpanded ? 'Thu nhỏ' : 'Mở rộng'}
+              >
+                {isExpanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCollapsed(true)}
+                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                title="Thu gọn xuống thanh đáy"
+                aria-label="Thu gọn"
+              >
+                <ChevronDown size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer"
+                title="Đóng trợ lý AI"
+                aria-label="Đóng"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
+
+      {!isCollapsed && (
+        <>
+          {/* 2. KHỐI TRÍCH ĐOẠN ĐANG ĐƯỢC CHỌN (NẾU CÓ) */}
       {selectedText && (
         <div className="p-2.5 mx-3 mt-2.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 flex flex-col gap-1.5 shrink-0 animate-in fade-in">
           <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider">
@@ -639,6 +726,8 @@ export default function ReaderAiCopilot({
           </button>
         </form>
       </footer>
+        </>
+      )}
     </aside>
   );
 }

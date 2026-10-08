@@ -573,7 +573,7 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="flex-1 flex flex-col px-3 sm:px-4 pt-2.5 pb-24 gap-3.5 max-w-[640px] w-full mx-auto select-none">
+    <main className="flex-1 flex flex-col px-3 sm:px-4 pt-2.5 pb-32 gap-3.5 max-w-[640px] w-full mx-auto select-none">
       {/* 1. THANH TÌM KIẾM ĐẦU TRANG & MICRO VOICE SEARCH */}
       <section className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
@@ -606,7 +606,7 @@ export default function SearchPage() {
                   saveToRecentSearches(query);
                 }
               }}
-              placeholder={isListening ? 'Đang lắng nghe bạn nói...' : 'Mô tả kiểu sách bạn cần (vd: Dinh dưỡng cho người Việt)...'}
+              placeholder={isListening ? 'Đang lắng nghe bạn nói...' : 'Tìm kiếm sách, tác giả, chủ đề y khoa...'}
               className={`w-full h-[46px] pl-11 pr-20 rounded-2xl border text-[#2A160A] dark:text-[#fdf7ee] text-[13.5px] placeholder:text-[#9e8574] focus:outline-none transition-all shadow-sm ${
                 isListening
                   ? 'bg-red-500/10 border-red-500 ring-2 ring-red-500/30'
@@ -748,7 +748,7 @@ export default function SearchPage() {
       {/* 3. GỢI Ý TỪ KHÓA TÌM KIẾM PHỔ BIẾN (CHIPS) */}
       <section
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1"
+        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-1"
       >
         <span className="text-[11px] font-bold text-[#8B4513] dark:text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
           <Sparkles size={12} />

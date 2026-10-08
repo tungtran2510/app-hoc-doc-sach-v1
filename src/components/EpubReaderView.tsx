@@ -13,10 +13,13 @@ import {
   Headphones,
   Sparkles,
   ArrowUpDown,
+  Check,
+  Bookmark,
 } from 'lucide-react';
 import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
 import { offlineStorage } from '../lib/offlineStorage';
+import { readingNotesStorage } from '../lib/readingNotes';
 import {
   TypographySettings,
   DEFAULT_TYPOGRAPHY,
@@ -91,9 +94,31 @@ export default function EpubReaderView({
 
   const activeTypography = typographySettings || localTypography;
 
-  // State bôi đen văn bản & Floating Tooltip Hỏi AI
+  // State bôi đen văn bản & Floating Tooltip Hỏi AI & Lưu đoạn trích
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [bubbleCoords, setBubbleCoords] = useState<{ x: number; y: number } | null>(null);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  const handleSaveQuote = (text: string) => {
+    if (!text || !text.trim()) return;
+    try {
+      readingNotesStorage.saveNote({
+        bookTitle: bookTitle || parsedBook?.title || 'Sách',
+        page: currentChapterIdx + 1,
+        selectedText: text.trim(),
+        color: 'amber',
+      });
+      setSaveToast('✓ Đã lưu đoạn trích vào Sổ tay!');
+      setTimeout(() => setSaveToast(null), 2500);
+    } catch (err) {
+      console.warn('Lỗi lưu đoạn trích:', err);
+    }
+    setSelectedText(null);
+    setBubbleCoords(null);
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch {}
+  };
 
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -416,6 +441,11 @@ export default function EpubReaderView({
       onTouchEnd={handleTouchEnd}
     >
       <style jsx global>{`
+        .epub-rendered-content,
+        .epub-rendered-content * {
+          user-select: text !important;
+          -webkit-user-select: text !important;
+        }
         .epub-rendered-content h1,
         .epub-rendered-content h2,
         .epub-rendered-content h3 {
@@ -507,7 +537,7 @@ export default function EpubReaderView({
             onCenterClick?.();
           }
         }}
-        className="flex-1 overflow-y-auto px-4 sm:px-10 md:px-16 lg:px-24 py-4 sm:py-8 max-w-3xl mx-auto w-full"
+        className="flex-1 overflow-y-auto px-4 sm:px-10 md:px-16 lg:px-24 pt-20 sm:pt-24 pb-24 max-w-3xl mx-auto w-full"
         style={{ WebkitOverflowScrolling: 'touch', scrollBehavior: 'auto', overscrollBehaviorY: 'contain' }}
       >
         {readingMode === 'scroll' ? (
@@ -711,12 +741,24 @@ export default function EpubReaderView({
         />
       )}
 
-      {/* FLOATING ACTION TOOLTIP: HỎI TRỢ LÝ AI & LƯU GHI CHÚ KHI BÔI ĐEN CHỮ */}
+      {/* FLOATING ACTION TOOLTIP: BÔI ĐEN & LƯU + HỎI TRỢ LÝ AI KHI CHỌN CHỮ */}
       {selectedText && bubbleCoords && (
         <div
           style={{ top: bubbleCoords.y, left: bubbleCoords.x }}
-          className="fixed z-50 flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/95 text-white border border-amber-500/50 shadow-2xl animate-in zoom-in-95 pointer-events-auto"
+          className="fixed z-50 flex items-center gap-1.5 p-1 rounded-xl bg-slate-950/95 text-white border border-amber-500/50 shadow-2xl animate-in zoom-in-95 pointer-events-auto select-none backdrop-blur-md"
         >
+          {/* Nút 1: Bôi đen & Lưu trực tiếp vào Sổ tay */}
+          <button
+            type="button"
+            onClick={() => handleSaveQuote(selectedText)}
+            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95 whitespace-nowrap"
+            title="Lưu đoạn trích này vào Sổ tay"
+          >
+            <span>📌</span>
+            <span>Lưu đoạn trích</span>
+          </button>
+
+          {/* Nút 2: Hỏi AI về đoạn trích */}
           {onOpenAiCopilot && (
             <button
               type="button"
@@ -726,13 +768,15 @@ export default function EpubReaderView({
                 setBubbleCoords(null);
                 onOpenAiCopilot(text);
               }}
-              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+              className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95 whitespace-nowrap"
+              title="Hỏi Trợ lý AI giải thích hoặc tóm tắt đoạn này"
             >
-              <Sparkles size={12} />
+              <Sparkles size={12} className="text-amber-400" />
               <span>Hỏi AI</span>
             </button>
           )}
 
+          {/* Nút 3: Ghi chú thêm suy nghĩ */}
           {onOpenNotesModal && (
             <button
               type="button"
@@ -742,11 +786,20 @@ export default function EpubReaderView({
                 setBubbleCoords(null);
                 onOpenNotesModal(text);
               }}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95"
+              className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95 whitespace-nowrap hidden xs:flex"
+              title="Thêm suy nghĩ cá nhân vào Sổ tay"
             >
-              <span>Lưu chép</span>
+              <span>Ghi chú</span>
             </button>
           )}
+        </div>
+      )}
+
+      {/* TOAST THÔNG BÁO LƯU ĐOẠN TRÍCH THÀNH CÔNG */}
+      {saveToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-2xl flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 border border-emerald-400 pointer-events-none">
+          <Check size={14} />
+          <span>{saveToast}</span>
         </div>
       )}
     </div>

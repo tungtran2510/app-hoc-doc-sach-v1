@@ -482,7 +482,7 @@ export default function AiAssistantPage() {
       const errorMsg: ChatMessage = {
         id: `ai-err-${Date.now()}`,
         role: 'assistant',
-        text: 'Xin lỗi bạn, kết nối tới Trợ lý AI bị gián đoạn một chút. Bạn vui lòng thử lại hoặc bấm vào các chủ đề bài học ngoài trang chủ nhé!',
+        text: 'Xin lỗi bạn, kết nối tới Trợ lý AI bị gián đoạn một chút. Bạn vui lòng thử lại hoặc bấm vào các cuốn sách trên kệ sách nhé!',
         timestamp: Date.now(),
       };
       saveMessages([...updatedMessages, errorMsg]);
@@ -604,7 +604,7 @@ export default function AiAssistantPage() {
               </div>
 
               <p className="text-[12.5px] text-slate-600 dark:text-amber-100/90 leading-snug pt-1 border-t border-slate-100 dark:border-[#3d2617]">
-                Tra cứu nhanh cấu trúc cơ thể, thói quen sinh hoạt đúng, bài tập an toàn hoặc tìm bài học trong ứng dụng!
+                Tra cứu nhanh cấu trúc cơ thể, thói quen sinh hoạt đúng, bài tập an toàn hoặc tìm sách y khoa trong ứng dụng!
               </p>
             </div>
 
@@ -783,7 +783,7 @@ export default function AiAssistantPage() {
                     <div className="w-full max-w-[96%] sm:max-w-[90%] flex flex-col gap-1.5 mt-1">
                       <div className="flex items-center gap-1.5 px-0.5 text-[11px] font-black text-purple-800 dark:text-[#F8DF7B] uppercase tracking-wider">
                         <BookOpen size={13} strokeWidth={2.5} />
-                        <span>Bài học đề xuất nên xem:</span>
+                        <span>Tài liệu & sách đề xuất nên đọc:</span>
                       </div>
 
                       <div className="flex flex-col gap-2">
@@ -835,7 +835,7 @@ export default function AiAssistantPage() {
 
                               {/* Nút hành động */}
                               <div className="shrink-0 flex items-center gap-1 text-[11px] sm:text-[11.5px] font-black text-amber-800 bg-amber-50 group-hover:bg-amber-600 group-hover:text-white dark:bg-[#2b1b10] dark:text-amber-300 dark:group-hover:bg-amber-400 dark:group-hover:text-slate-950 px-2.5 py-1.5 rounded-[8px] border border-amber-300/50 dark:border-amber-700/40 transition-colors whitespace-nowrap shadow-2xs">
-                                <span>Học ngay</span>
+                                <span>Đọc ngay</span>
                                 <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
                               </div>
                             </Link>
@@ -875,7 +875,7 @@ export default function AiAssistantPage() {
             {isLoading && (
               <div className="flex items-center gap-2 max-w-[85%] p-2 px-3 rounded-[12px] bg-white dark:bg-[#22150c] border border-primary/20 dark:border-[#3d2617] shadow-2xs text-[12px] text-muted animate-in fade-in duration-200">
                 <Loader2 size={13} className="animate-spin text-primary shrink-0" />
-                <span className="truncate">Trợ lý Sức Khỏe đang tra cứu bài học...</span>
+                <span className="truncate">Trợ lý đang tra cứu tài liệu y khoa...</span>
               </div>
             )}
 

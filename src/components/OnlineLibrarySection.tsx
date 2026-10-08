@@ -513,8 +513,8 @@ export default function OnlineLibrarySection({
               key={book.id}
               className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/40 shadow-xs flex items-center gap-2.5 transition-all"
             >
-              {/* Ảnh bìa + Nút sửa bìa nhỏ ở góc */}
-              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs group">
+              {/* Ảnh bìa sách tinh gọn, chuẩn thẩm mỹ xuất bản */}
+              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs">
                 <BookCoverArt
                   coverUrl={displayCover}
                   title={book.title}
@@ -523,20 +523,6 @@ export default function OnlineLibrarySection({
                   medium={book.medium}
                   className="w-full h-full"
                 />
-
-                {/* Nút chỉnh bìa nhỏ tinh gọn */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playTapSound();
-                    setEditingCoverBook(book);
-                  }}
-                  className="absolute bottom-0.5 right-0.5 z-20 w-5 h-5 rounded bg-black/75 hover:bg-amber-500 text-white hover:text-slate-950 flex items-center justify-center cursor-pointer transition-colors shadow-xs"
-                  title="Tùy biến ảnh bìa sách"
-                >
-                  <ImageIcon size={10} />
-                </button>
               </div>
 
               {/* Thông tin sách: Tối ưu chặt chẽ từng dòng */}

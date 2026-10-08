@@ -664,32 +664,37 @@ export default function SavedBooksPage() {
   return (
     <main className="flex-1 flex flex-col px-3 sm:px-4 pt-3 pb-24 gap-4 max-w-[640px] w-full mx-auto select-none">
       {/* 1. HEADER CHÍNH: ĐÃ LƯU */}
-      <section className="flex flex-col gap-1 pt-1">
-        <h1 className="text-2xl sm:text-3xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight">
-          Đã lưu
-        </h1>
-        <p className="text-xs text-[#6E4223] dark:text-amber-100/70 font-medium truncate whitespace-nowrap">
-          Tủ sách cá nhân, dấu trang và sổ tay ghi chú
+      <section className="flex items-center justify-between gap-2 pt-1 border-b border-amber-900/10 dark:border-white/10 pb-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-lg sm:text-xl font-black text-[#2A160A] dark:text-amber-200 tracking-tight whitespace-nowrap">
+            Đã lưu
+          </h1>
+          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 font-bold text-[10.5px] shrink-0 whitespace-nowrap">
+            {combinedBooks.length} sách
+          </span>
+        </div>
+        <p className="text-[11px] text-[#6E4223] dark:text-amber-100/70 font-medium truncate whitespace-nowrap text-right">
+          Tủ sách cá nhân & dấu trang
         </p>
       </section>
 
       {/* 2. THỐNG KÊ THÓI QUEN ĐỌC SÁCH TINH GỌN (STREAK & INSIGHTS) */}
-      <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-        <div className="px-3 py-1.5 rounded-2xl bg-amber-500/10 dark:bg-[#22150c] border border-amber-500/25 dark:border-amber-500/30 flex items-center gap-1.5 shrink-0 shadow-2xs">
-          <Flame size={14} className="text-amber-500 fill-amber-500 animate-pulse" />
-          <span className="text-[11px] font-extrabold text-[#78350F] dark:text-amber-300">
+      <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 px-0.5">
+        <div className="px-2.5 py-1 rounded-xl bg-amber-500/10 dark:bg-[#22150c] border border-amber-500/25 dark:border-amber-500/30 flex items-center gap-1.5 shrink-0 shadow-2xs whitespace-nowrap">
+          <Flame size={13} className="text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+          <span className="text-[10.5px] font-extrabold text-[#78350F] dark:text-amber-300">
             {readingStats.streakDays} ngày liên tiếp
           </span>
         </div>
-        <div className="px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs">
-          <BookOpen size={13} className="text-emerald-600 dark:text-emerald-400" />
-          <span className="text-[11px] font-bold text-[#2A160A] dark:text-amber-100">
+        <div className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs whitespace-nowrap">
+          <BookOpen size={12} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span className="text-[10.5px] font-bold text-[#2A160A] dark:text-amber-100">
             {readingStats.pagesToday} trang hôm nay
           </span>
         </div>
-        <div className="px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs">
-          <Clock size={13} className="text-blue-600 dark:text-blue-400" />
-          <span className="text-[11px] font-bold text-[#2A160A] dark:text-amber-100">
+        <div className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] flex items-center gap-1.5 shrink-0 shadow-2xs whitespace-nowrap">
+          <Clock size={12} className="text-blue-600 dark:text-blue-400 shrink-0" />
+          <span className="text-[10.5px] font-bold text-[#2A160A] dark:text-amber-100">
             {readingStats.minutesToday} phút đọc
           </span>
         </div>

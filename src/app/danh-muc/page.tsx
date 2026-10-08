@@ -491,13 +491,13 @@ export default function CategoriesPage() {
       {/* 4. GIAO DIỆN KHI CHỌN "TẤT CẢ" -> HIỂN THỊ CÁC THẺ DANH MỤC ĐỂ NGƯỜI DÙNG BẤM CHỌN */}
       {selectedCategoryId === 'all' && (
         <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide">
-              <Layers size={15} />
-              <span>CÁC DANH MỤC SÁCH HIỆN CÓ</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide whitespace-nowrap shrink-0">
+              <Layers size={14} />
+              <span>CHỦ ĐỀ SÁCH</span>
             </div>
-            <span className="text-[11px] text-[#6E4223] dark:text-amber-200/60 font-semibold">
-              Bấm vào danh mục để xem sách
+            <span className="text-[10.5px] text-[#6E4223] dark:text-amber-200/60 font-semibold truncate text-right">
+              Chạm vào mục để xem sách
             </span>
           </div>
 
@@ -562,25 +562,25 @@ export default function CategoriesPage() {
 
       {/* 5. GIAO DIỆN KHI MỞ 1 DANH MỤC CỤ THỂ HOẶC XEM TẤT CẢ SÁCH */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {activeCategory && (
               <button
                 type="button"
                 onClick={() => setSelectedCategoryId('all')}
-                className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer shrink-0"
+                className="text-[11.5px] font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer shrink-0"
               >
-                <span>← Tất cả danh mục</span>
-                <span className="mx-1 text-slate-400">/</span>
+                <span>← Tất cả</span>
+                <span className="mx-0.5 text-slate-400">/</span>
               </button>
             )}
             <h2 className="text-xs font-black text-[#8B4513] dark:text-amber-400 uppercase tracking-wide truncate">
-              {activeCategory ? activeCategory.title : 'DANH SÁCH TẤT CẢ ĐẦU SÁCH'}
+              {activeCategory ? activeCategory.title : 'TẤT CẢ ĐẦU SÁCH'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[10.5px] font-bold text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full bg-amber-500/15 whitespace-nowrap">
               {displayedBooks.length} cuốn
             </span>
 
@@ -588,11 +588,11 @@ export default function CategoriesPage() {
               <button
                 type="button"
                 onClick={() => handleOpenEditCategoryModal(activeCategory)}
-                className="px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-2 py-0.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 font-bold text-[10.5px] flex items-center gap-1 cursor-pointer transition-colors whitespace-nowrap"
                 title="Thêm/Bớt sách trong danh mục này"
               >
                 <Edit2 size={11} />
-                <span>Sửa mục này</span>
+                <span>Sửa</span>
               </button>
             )}
           </div>
@@ -639,12 +639,12 @@ export default function CategoriesPage() {
 
                 {/* Nội dung sách */}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="text-[9.5px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate whitespace-nowrap shrink-0 max-w-[120px]">
                       {book.category || 'TỦ SÁCH Y KHOA'}
                     </span>
                     {book.badge_tag && (
-                      <span className="text-[8.5px] font-extrabold px-1.5 py-0.2 rounded bg-amber-600/15 text-amber-800 dark:text-amber-300">
+                      <span className="text-[8.5px] font-extrabold px-1.5 py-0.2 rounded bg-amber-600/15 text-amber-800 dark:text-amber-300 whitespace-nowrap shrink-0">
                         {book.badge_tag}
                       </span>
                     )}

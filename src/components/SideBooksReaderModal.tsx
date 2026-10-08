@@ -852,7 +852,7 @@ export default function SideBooksReaderModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Đang đọc sách ${title}`}
-      className={`fixed inset-0 z-50 flex flex-col select-none overflow-hidden animate-in fade-in duration-200 ${
+      className={`fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in duration-200 ${
         readingTheme === 'ivory'
           ? 'bg-[#ede5d8] text-[#2c180c]'
           : readingTheme === 'sepia'
@@ -860,9 +860,9 @@ export default function SideBooksReaderModal({
           : 'bg-[#0a0705] text-slate-100'
       }`}
     >
-      {/* ================= 1. THANH ĐIỀU HƯỚNG ĐỈNH (STICKY HUD TRÊN CÙNG) ================= */}
+      {/* ================= 1. THANH ĐIỀU HƯỚNG ĐỈNH (FIXED HUD TRÊN CÙNG - KHÔNG ĐỂ LẠI KHOẢNG TRỐNG KHI ẨN) ================= */}
       <header
-        className={`sticky top-0 z-40 backdrop-blur-md flex flex-col transition-all duration-300 transform ${
+        className={`fixed top-0 inset-x-0 z-40 backdrop-blur-md flex flex-col transition-all duration-300 transform select-none ${
           showHud ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         } ${
           readingTheme === 'ivory'
@@ -1330,6 +1330,24 @@ export default function SideBooksReaderModal({
               </button>
             )}
 
+            {/* 6b. NÚT TRỢ LÝ AI ĐỒNG HÀNH (ĐẶT TRỰC TIẾP TRÊN ĐỈNH HEADER THEO YÊU CẦU) */}
+            <button
+              type="button"
+              onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
+              className={`h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                isAiCopilotOpen
+                  ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50 border-amber-400'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
+                  : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/35'
+              }`}
+              title={isAiCopilotOpen ? 'Đóng Trợ lý AI' : 'Hỏi Trợ lý AI về trang sách (Copilot)'}
+              aria-label="Trợ lý AI"
+            >
+              <Sparkles size={14} className={isAiCopilotOpen ? 'text-slate-950' : 'text-amber-400 animate-pulse'} />
+              <span className="text-[11.5px] font-black">AI</span>
+            </button>
+
             {/* 7. NÚT TIỆN ÍCH [⋮] (XỔ RA CÁC CÀI ĐẶT & TÍNH NĂNG PHỤ: TÌM KIẾM, HỎI AI, SỔ TAY, BOOKMARK, ÂM THANH, OFFLINE, TOÀN MÀN HÌNH) */}
             <div className="relative">
               <button
@@ -1555,7 +1573,7 @@ export default function SideBooksReaderModal({
             }
           }
         }}
-        className={`flex-1 flex flex-col items-center justify-center relative w-full h-[calc(100vh-84px)] overflow-hidden cursor-pointer transition-colors duration-200 ${
+        className={`flex-1 flex flex-col items-center justify-center relative w-full h-full overflow-hidden cursor-pointer transition-colors duration-200 ${
           readingTheme === 'ivory'
             ? 'bg-[#ede5d8]'
             : readingTheme === 'sepia'
@@ -1665,10 +1683,10 @@ export default function SideBooksReaderModal({
         )}
       </main>
 
-      {/* ================= 3. THANH ĐIỀU HƯỚNG ĐÁY (CHỈ HIỆN KHI BẬT HUD HOẶC LÀ DẠNG LẬT TRANG) ================= */}
+      {/* ================= 3. THANH ĐIỀU HƯỚNG ĐÁY (FIXED BOTTOM HUD) ================= */}
       {!isEpub && (
         <footer
-          className={`sticky bottom-0 z-40 backdrop-blur-md px-3 py-2 flex flex-col items-center gap-1.5 transition-all duration-300 transform ${
+          className={`fixed bottom-0 inset-x-0 z-40 backdrop-blur-md px-3 py-2 flex flex-col items-center gap-1.5 transition-all duration-300 transform select-none ${
             showHud ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
           } ${
             readingTheme === 'ivory'
