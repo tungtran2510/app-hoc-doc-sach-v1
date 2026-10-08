@@ -62,6 +62,7 @@ interface WoodenBookshelfProps {
   onEditSingleBook?: (book: RecommendedBook) => void;
   onToggleBookVisibility?: (index: number) => void;
   onMoveBook?: (index: number, direction: 'up' | 'down') => void;
+  onReorderBooks?: (newBooks: RecommendedBook[]) => void;
   onDeleteBook?: (index: number) => void;
   title?: string;
   badgeText?: string;
@@ -104,6 +105,7 @@ export default function WoodenBookshelf({
   onEditSingleBook,
   onToggleBookVisibility,
   onMoveBook,
+  onReorderBooks,
   onDeleteBook,
   title = 'GIAN TRƯNG BÀY SÁCH Y KHOA',
   appName = 'Qbiz-ebook',
@@ -170,9 +172,121 @@ export default function WoodenBookshelf({
   const [editingCustomBook, setEditingCustomBook] = useState<RecommendedBook | null>(null);
   const [overrideVersion, setOverrideVersion] = useState<number>(0);
   const [isReorderMode, setIsReorderMode] = useState<boolean>(false);
+
+  // Quản lý thứ tự danh sách sách nội bộ để phản hồi displacement tức thì (Drag & Drop Displacement)
+  const [internalBooks, setInternalBooks] = useState<RecommendedBook[]>(books);
+
+  useEffect(() => {
+    setInternalBooks(books);
+  }, [books]);
+
+  // Trạng thái Kéo thả di chuyển sách chuẩn màn hình điện thoại (iOS / Android Home Screen)
+  const [draggedBookId, setDraggedBookId] = useState<string | null>(null);
+  const [dragGhostData, setDragGhostData] = useState<{
+    book: RecommendedBook;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [pointerPos, setPointerPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [pointerOffset, setPointerOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressTriggeredRef = useRef<boolean>(false);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastSwapTimeRef = useRef<number>(0);
   const isExitingRef = useRef<boolean>(false);
+
+  // Lắng nghe Pointer Move và Pointer Up toàn màn hình khi đang kéo sách (Drag & Drop Reorder)
+  useEffect(() => {
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      // 1. Nếu đang chờ Long-press (chưa bắt đầu kéo): Kiểm tra di chuyển ngón tay
+      if (touchStartPosRef.current && !isDragging) {
+        const dx = e.clientX - touchStartPosRef.current.x;
+        const dy = e.clientY - touchStartPosRef.current.y;
+        if (Math.hypot(dx, dy) > 8) {
+          // Ngón tay dịch chuyển quá 8px -> Coi là vuốt trang, hủy timer long-press
+          if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+          }
+        }
+      }
+
+      // 2. Nếu đang kéo sách (isDragging = true)
+      if (isDragging && draggedBookId) {
+        setPointerPos({ x: e.clientX, y: e.clientY });
+
+        // HIT-TESTING ĐẨY SÁCH (DISPLACEMENT NHƯ MÀN HÌNH ĐIỆN THOẠI)
+        const underEl = document.elementFromPoint(e.clientX, e.clientY);
+        const targetCard = underEl?.closest('[data-book-item-id]');
+        const targetBookId = targetCard?.getAttribute('data-book-item-id');
+
+        if (targetBookId && targetBookId !== draggedBookId) {
+          const now = Date.now();
+          if (now - lastSwapTimeRef.current > 140) {
+            setInternalBooks((prevBooks) => {
+              const fromIdx = prevBooks.findIndex((b) => b.id === draggedBookId);
+              const toIdx = prevBooks.findIndex((b) => b.id === targetBookId);
+              if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+                const next = [...prevBooks];
+                const [moved] = next.splice(fromIdx, 1);
+                next.splice(toIdx, 0, moved);
+                lastSwapTimeRef.current = now;
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try { navigator.vibrate(25); } catch {}
+                }
+                return next;
+              }
+              return prevBooks;
+            });
+          }
+        }
+      }
+    };
+
+    const handleWindowPointerUp = () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      touchStartPosRef.current = null;
+
+      if (isDragging) {
+        setIsDragging(false);
+        setDraggedBookId(null);
+        setDragGhostData(null);
+
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate([40, 25, 40]); } catch {}
+        }
+
+        // Lưu thứ tự mới bền vững
+        if (onReorderBooks) {
+          onReorderBooks(internalBooks);
+        }
+        try {
+          localStorage.setItem('qbiz_bookshelf_custom_books', JSON.stringify(internalBooks));
+        } catch {}
+
+        showToast('✓ Đã xếp sách vào vị trí mới');
+
+        setTimeout(() => {
+          isLongPressTriggeredRef.current = false;
+        }, 350);
+      }
+    };
+
+    window.addEventListener('pointermove', handleWindowPointerMove, { passive: true });
+    window.addEventListener('pointerup', handleWindowPointerUp);
+    window.addEventListener('pointercancel', handleWindowPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+      window.removeEventListener('pointercancel', handleWindowPointerUp);
+    };
+  }, [isDragging, draggedBookId, internalBooks, onReorderBooks]);
 
   // Lắng nghe sự kiện cập nhật thông tin sách để cập nhật tức thì
   useEffect(() => {
@@ -595,18 +709,18 @@ export default function WoodenBookshelf({
   // Lọc sách theo chuyên đề nếu người dùng bấm chọn trên thanh thẻ
   const categories = React.useMemo(() => {
     const set = new Set<string>();
-    books.forEach((b) => {
+    internalBooks.forEach((b) => {
       const cat = b.category || b.tag;
       if (cat && cat.trim()) set.add(cat.trim());
     });
     return Array.from(set);
-  }, [books]);
+  }, [internalBooks]);
 
   const activeBooks = React.useMemo(() => {
     let list = (
       selectedCategory === 'all'
-        ? [...books]
-        : books.filter((b) => (b.category || b.tag) === selectedCategory)
+        ? [...internalBooks]
+        : internalBooks.filter((b) => (b.category || b.tag) === selectedCategory)
     ).map((b) => applyBookOverride(b));
 
     if (sortBy === 'recent') {
@@ -623,7 +737,7 @@ export default function WoodenBookshelf({
       );
     }
     return list;
-  }, [books, selectedCategory, sortBy, bookProgressMap, lastReadBookTitle, overrideVersion]);
+  }, [internalBooks, selectedCategory, sortBy, bookProgressMap, lastReadBookTitle, overrideVersion]);
 
   const visibleBooks = activeBooks.filter((b) => isAdmin || b.is_visible !== false);
 
@@ -1005,16 +1119,16 @@ export default function WoodenBookshelf({
               if (sortBy !== 'default') setSortBy('default');
               const next = !isReorderMode;
               setIsReorderMode(next);
-              showToast(next ? '🔀 Đã bật chế độ di chuyển sách: Chạm ◀ ▶ trên từng cuốn để đổi chỗ' : '✓ Đã xong sắp xếp kệ sách');
+              showToast(next ? '🔀 Đã bật chế độ di chuyển: Giữ và kéo sách để đẩy sang vị trí mới' : '✓ Đã xong sắp xếp kệ sách');
             }}
             className={`h-7 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
               isReorderMode
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse'
+                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse shadow-md'
                 : 'bg-white/80 dark:bg-[#1a0f08]/90 hover:bg-white dark:hover:bg-black border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-300'
             }`}
             title="Di chuyển, đổi vị trí các cuốn sách trên kệ"
           >
-            <ArrowLeftRight size={11} strokeWidth={2.4} />
+            {isReorderMode ? <Check size={12} strokeWidth={3} /> : <ArrowLeftRight size={11} strokeWidth={2.4} />}
             <span>{isReorderMode ? 'Xong' : 'Di chuyển'}</span>
           </button>
 
@@ -1074,10 +1188,10 @@ export default function WoodenBookshelf({
 
       {/* BANNER THÔNG BÁO CHẾ ĐỘ SẮP XẾP / DI CHUYỂN */}
       {isReorderMode && (
-        <div className="relative z-20 mb-3 px-3 py-2 rounded-xl bg-amber-500/20 dark:bg-amber-950/60 border border-amber-500/40 flex items-center justify-between gap-2 text-[#4a250e] dark:text-amber-200 animate-in fade-in">
+        <div className="relative z-20 mb-3 px-3 py-2 rounded-xl bg-amber-500/20 dark:bg-amber-950/60 border border-amber-500/40 flex items-center justify-between gap-2 text-[#4a250e] dark:text-amber-200 animate-in fade-in select-none">
           <div className="flex items-center gap-1.5 text-[11px] font-bold min-w-0">
             <span className="text-sm">🔀</span>
-            <span className="truncate">Chạm nút ◀ hoặc ▶ trên từng sách để đổi vị trí</span>
+            <span className="truncate">Giữ & kéo sách để đẩy vị trí · Chạm ra ngoài để lưu</span>
           </div>
           <button
             type="button"
@@ -1085,9 +1199,10 @@ export default function WoodenBookshelf({
               setIsReorderMode(false);
               showToast('✓ Đã lưu vị trí kệ sách');
             }}
-            className="h-6 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shrink-0 active:scale-95 cursor-pointer shadow-xs"
+            className="h-6 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shrink-0 active:scale-95 cursor-pointer shadow-xs flex items-center gap-1"
           >
-            Xong
+            <Check size={11} strokeWidth={3} />
+            <span>Xong</span>
           </button>
         </div>
       )}
@@ -1117,60 +1232,65 @@ export default function WoodenBookshelf({
                 } relative z-10`}
               >
                 {tierBooks.map((book) => {
-                  const originalIndex = books.findIndex((b) => b.id === book.id);
+                  const originalIndex = internalBooks.findIndex((b) => b.id === book.id);
                   const isHidden = book.is_visible === false;
                   if (isHidden && !isAdmin) return null;
                   const prog = bookProgressMap[book.title];
+                  const isThisBookBeingDragged = isDragging && draggedBookId === book.id;
 
                   return (
                     <div
                       key={book.id || originalIndex}
+                      data-book-item-id={book.id}
                       className={`${
                         isPartialTier ? cardMaxWidthClass + ' w-full' : 'flex-1 ' + cardMaxWidthClass
-                      } flex flex-col items-center group relative cursor-pointer ${
+                      } flex flex-col items-center group relative select-none ${
                         isHidden ? 'opacity-65' : ''
-                      } ${isReorderMode ? 'animate-pulse' : ''}`}
-                      onTouchStart={() => {
+                      } ${
+                        isReorderMode && !isThisBookBeingDragged
+                          ? originalIndex % 2 === 0
+                            ? 'animate-ios-jiggle'
+                            : 'animate-ios-jiggle-alt'
+                          : ''
+                      }`}
+                      style={{
+                        touchAction: isReorderMode ? 'none' : 'auto',
+                      }}
+                      onPointerDown={(e) => {
+                        // Bỏ qua nếu bấm vào nút con (xóa, xem tóm tắt, điều hướng)
+                        if ((e.target as HTMLElement).closest('button, a')) return;
+                        touchStartPosRef.current = { x: e.clientX, y: e.clientY };
                         isLongPressTriggeredRef.current = false;
+
+                        const targetElement = e.currentTarget;
+                        const cardCover = (targetElement.querySelector('.book-cover-container') as HTMLElement) || targetElement;
+                        const rect = cardCover.getBoundingClientRect();
+
+                        if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
                         longPressTimerRef.current = setTimeout(() => {
                           isLongPressTriggeredRef.current = true;
                           if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                            try { navigator.vibrate(50); } catch {}
+                            try { navigator.vibrate([40, 25, 40]); } catch {}
                           }
                           if (sortBy !== 'default') setSortBy('default');
                           setIsReorderMode(true);
-                          showToast('🔀 Đã mở chế độ di chuyển sách: Chạm ◀ ▶ để đổi chỗ');
-                        }, 450);
-                      }}
-                      onTouchEnd={() => {
-                        if (longPressTimerRef.current) {
-                          clearTimeout(longPressTimerRef.current);
-                          longPressTimerRef.current = null;
-                        }
-                      }}
-                      onTouchMove={() => {
-                        if (longPressTimerRef.current) {
-                          clearTimeout(longPressTimerRef.current);
-                          longPressTimerRef.current = null;
-                        }
-                      }}
-                      onMouseDown={() => {
-                        isLongPressTriggeredRef.current = false;
-                        longPressTimerRef.current = setTimeout(() => {
-                          isLongPressTriggeredRef.current = true;
-                          if (sortBy !== 'default') setSortBy('default');
-                          setIsReorderMode(true);
-                          showToast('🔀 Đã mở chế độ di chuyển sách: Chạm ◀ ▶ để đổi chỗ');
-                        }, 500);
-                      }}
-                      onMouseUp={() => {
-                        if (longPressTimerRef.current) {
-                          clearTimeout(longPressTimerRef.current);
-                          longPressTimerRef.current = null;
-                        }
+                          setIsDragging(true);
+                          setDraggedBookId(book.id);
+                          setDragGhostData({
+                            book,
+                            width: rect.width,
+                            height: rect.height,
+                          });
+                          setPointerOffset({
+                            x: e.clientX - rect.left,
+                            y: e.clientY - rect.top,
+                          });
+                          setPointerPos({ x: e.clientX, y: e.clientY });
+                          showToast(`🔀 Đã nhấc "${book.title}": Di chuyển đè lên sách khác để đổi vị trí`);
+                        }, 340);
                       }}
                       onClick={() => {
-                        if (isLongPressTriggeredRef.current) {
+                        if (isLongPressTriggeredRef.current || isDragging) {
                           isLongPressTriggeredRef.current = false;
                           return;
                         }
@@ -1179,234 +1299,250 @@ export default function WoodenBookshelf({
                         }
                         onReadBook3D(book);
                       }}
-                      title={isReorderMode ? 'Bấm nút ◀ hoặc ▶ để di chuyển sách' : book.title}
+                      title={isReorderMode ? `Giữ và kéo để đổi vị trí "${book.title}"` : book.title}
                     >
-                      {/* HUY HIỆU ĐÃ ĐỌC XONG - CHỈ DẤU TÍCH V VÀNG TINH TẾ (KHÔNG DÙNG THẺ TAB THÔ MÀU XANH) */}
-                      {showProgress && prog && prog.percent === 100 && (
-                        <div
-                          className="absolute top-1.5 right-1.5 z-20 w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-md border border-amber-200 pointer-events-none"
-                          title="Đã đọc xong"
-                        >
-                          <Check size={11} strokeWidth={3} />
-                        </div>
-                      )}
-
-                      {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
-                      <div className="w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
-                        {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setQuickPeekBook(book);
-                          }}
-                          className="absolute top-1.5 left-1.5 z-30 w-5.5 h-5.5 rounded-full bg-black/75 hover:bg-black/95 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-90"
-                          title="Xem tóm tắt sách"
-                          aria-label={`Xem tóm tắt sách ${book.title}`}
-                        >
-                          <Info size={11} strokeWidth={2.4} />
-                        </button>
-                        {/* BADGE ĐỊNH DẠNG SÁCH (PDF, EPUB, CBZ, 3D, TXT) */}
-                        {(() => {
-                          const fmt = getBookFormatBadge(book);
-                          return (
-                            <span
-                              className={`absolute bottom-2 right-1.5 z-20 px-1.5 py-0.5 rounded text-[8px] font-mono font-black uppercase tracking-wider shadow-md border pointer-events-none backdrop-blur-xs ${fmt.color}`}
-                            >
-                              {fmt.label}
-                            </span>
-                          );
-                        })()}
-                        {/* VẠCH TIẾN ĐỘ ĐỌC Ở CHÂN BÌA */}
-                        {showProgress && prog && prog.percent > 0 && (
-                          <div className="absolute bottom-0 inset-x-0 h-1 bg-black/75 z-15 pointer-events-none">
-                            <div
-                              className={`h-full ${
-                                prog.percent === 100
-                                  ? 'bg-gradient-to-r from-emerald-400 to-green-500'
-                                  : 'bg-gradient-to-r from-amber-500 to-amber-300'
-                              }`}
-                              style={{ width: `${prog.percent}%` }}
-                            />
+                      {/* NẾU ĐANG LÀ SÁCH ĐƯỢC NHẤC LÊN: HIỂN THỊ Ô TRỐNG PLACEHOLDER CHUẨN BỊ THẢ VÀO */}
+                      {isThisBookBeingDragged ? (
+                        <div className="w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md border-2 border-dashed border-amber-400/90 bg-amber-500/20 backdrop-blur-xs flex flex-col items-center justify-center p-2 text-center animate-pulse shadow-inner pointer-events-none select-none">
+                          <div className="w-7 h-7 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-md mb-1 text-xs">
+                            📥
                           </div>
-                        )}
-                        {/* Ảnh bìa sách nghệ thuật chuẩn xuất bản */}
-                        <BookCoverArt
-                          coverUrl={book.cover_url}
-                          title={book.title}
-                          author={book.author}
-                          format="epub"
-                          className="w-full h-full"
-                        />
-
-                        {/* Lớp bóng uốn cong gáy sách 3D và phản chiếu kính */}
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            background:
-                              'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.25) 3.5%, rgba(0,0,0,0.15) 7%, transparent 14%, transparent 85%, rgba(255,255,255,0.1) 96%, rgba(0,0,0,0.3) 100%)',
-                          }}
-                        />
-
-                        {/* Cảnh báo ẩn tạm cho Admin */}
-                        {isHidden && isAdmin && (
-                          <span className="absolute top-1.5 left-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-xs bg-black/80 text-amber-400 border border-amber-500/50">
-                            Ẩn
+                          <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider">
+                            Vị trí mới
                           </span>
-                        )}
+                          <span className="text-[8.5px] text-amber-200/90 font-bold truncate max-w-full px-1 mt-0.5">
+                            {book.title}
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          {/* NÚT GỠ BỎ SÁCH NHANH TRÊN GÓC (CHẾ ĐỘ SẮP XẾP CHUẨN IOS) */}
+                          {isReorderMode && onDeleteBook && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteBook(originalIndex);
+                              }}
+                              className="absolute -top-1.5 -right-1.5 z-40 w-5.5 h-5.5 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-lg border border-white/80 active:scale-90 cursor-pointer transition-transform"
+                              title="Gỡ cuốn sách này khỏi kệ"
+                            >
+                              <X size={11} strokeWidth={3} />
+                            </button>
+                          )}
 
-                        {/* OVERLAY ĐIỀU KHIỂN DI CHUYỂN KHI BẬT CHẾ ĐỘ SẮP XẾP (CẢ MOBILE & DESKTOP) */}
-                        {isReorderMode && (
-                          <div
-                            className="absolute inset-0 z-40 bg-black/80 backdrop-blur-[2px] rounded-l-xs rounded-r-md flex flex-col items-center justify-between p-1.5 animate-in fade-in select-none"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="w-full flex items-center justify-between">
-                              <span className="text-[9px] font-black uppercase tracking-wider text-amber-300 bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/40 shadow-xs">
-                                #{originalIndex + 1}
+                          {/* HUY HIỆU ĐÃ ĐỌC XONG - CHỈ DẤU TÍCH V VÀNG TINH TẾ */}
+                          {!isReorderMode && showProgress && prog && prog.percent === 100 && (
+                            <div
+                              className="absolute top-1.5 right-1.5 z-20 w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-md border border-amber-200 pointer-events-none"
+                              title="Đã đọc xong"
+                            >
+                              <Check size={11} strokeWidth={3} />
+                            </div>
+                          )}
+
+                          {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
+                          <div className="book-cover-container w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                            {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) - ẨN KHI Ở CHẾ ĐỘ SẮP XẾP */}
+                            {!isReorderMode && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setQuickPeekBook(book);
+                                }}
+                                className="absolute top-1.5 left-1.5 z-30 w-5.5 h-5.5 rounded-full bg-black/75 hover:bg-black/95 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-90"
+                                title="Xem tóm tắt sách"
+                                aria-label={`Xem tóm tắt sách ${book.title}`}
+                              >
+                                <Info size={11} strokeWidth={2.4} />
+                              </button>
+                            )}
+
+                            {/* BADGE ĐỊNH DẠNG SÁCH (PDF, EPUB, CBZ, 3D, TXT) */}
+                            {!isReorderMode && (() => {
+                              const fmt = getBookFormatBadge(book);
+                              return (
+                                <span
+                                  className={`absolute bottom-2 right-1.5 z-20 px-1.5 py-0.5 rounded text-[8px] font-mono font-black uppercase tracking-wider shadow-md border pointer-events-none backdrop-blur-xs ${fmt.color}`}
+                                >
+                                  {fmt.label}
+                                </span>
+                              );
+                            })()}
+
+                            {/* VẠCH TIẾN ĐỘ ĐỌC Ở CHÂN BÌA */}
+                            {!isReorderMode && showProgress && prog && prog.percent > 0 && (
+                              <div className="absolute bottom-0 inset-x-0 h-1 bg-black/75 z-15 pointer-events-none">
+                                <div
+                                  className={`h-full ${
+                                    prog.percent === 100
+                                      ? 'bg-gradient-to-r from-emerald-400 to-green-500'
+                                      : 'bg-gradient-to-r from-amber-500 to-amber-300'
+                                  }`}
+                                  style={{ width: `${prog.percent}%` }}
+                                />
+                              </div>
+                            )}
+
+                            {/* Ảnh bìa sách nghệ thuật chuẩn xuất bản */}
+                            <BookCoverArt
+                              coverUrl={book.cover_url}
+                              title={book.title}
+                              author={book.author}
+                              format="epub"
+                              className="w-full h-full"
+                            />
+
+                            {/* Lớp bóng uốn cong gáy sách 3D và phản chiếu kính */}
+                            <div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background:
+                                  'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.25) 3.5%, rgba(0,0,0,0.15) 7%, transparent 14%, transparent 85%, rgba(255,255,255,0.1) 96%, rgba(0,0,0,0.3) 100%)',
+                              }}
+                            />
+
+                            {/* Cảnh báo ẩn tạm cho Admin */}
+                            {isHidden && isAdmin && (
+                              <span className="absolute top-1.5 left-1.5 text-[8px] font-black px-1.5 py-0.5 rounded-xs bg-black/80 text-amber-400 border border-amber-500/50">
+                                Ẩn
                               </span>
-                              {onDeleteBook && (
+                            )}
+
+                            {/* HUY HIỆU VỊ TRÍ VÀ ĐIỀU HƯỚNG NHẸ KHI BẬT CHẾ ĐỘ SẮP XẾP */}
+                            {isReorderMode && (
+                              <div
+                                className="absolute inset-x-0 bottom-0 z-30 p-1 bg-gradient-to-t from-black/90 via-black/60 to-transparent flex items-center justify-between select-none"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  disabled={originalIndex <= 0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMoveBook?.(originalIndex, 'up');
+                                  }}
+                                  className="w-5.5 h-5.5 rounded-md bg-amber-500/90 hover:bg-amber-400 active:scale-90 text-slate-950 font-black text-[10px] flex items-center justify-center shadow-md disabled:opacity-20 disabled:pointer-events-none cursor-pointer transition-all border border-amber-300"
+                                  title="Di chuyển sang trái"
+                                >
+                                  ◀
+                                </button>
+                                <span className="text-[9px] font-black uppercase text-amber-300 bg-amber-950/80 px-1 py-0.5 rounded border border-amber-500/40 shadow-xs">
+                                  #{originalIndex + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={originalIndex >= internalBooks.length - 1}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMoveBook?.(originalIndex, 'down');
+                                  }}
+                                  className="w-5.5 h-5.5 rounded-md bg-amber-500/90 hover:bg-amber-400 active:scale-90 text-slate-950 font-black text-[10px] flex items-center justify-center shadow-md disabled:opacity-20 disabled:pointer-events-none cursor-pointer transition-all border border-amber-300"
+                                  title="Di chuyển sang phải"
+                                >
+                                  ▶
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Nút hành động nổi lên khi hover chuột trên Desktop (ẨN KHI Ở REORDER MODE) */}
+                            {!isReorderMode && (
+                              <div
+                                className="hidden md:flex absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 flex-col items-center justify-center gap-1.5 p-2"
+                              >
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onDeleteBook(originalIndex);
+                                    onReadBook3D(book);
                                   }}
-                                  className="w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer active:scale-90 shadow-md transition-all border border-red-400/50"
-                                  title="Xóa cuốn sách này khỏi kệ"
+                                  className="pointer-events-auto w-full py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] shadow-lg flex items-center justify-center gap-1 transition-transform active:scale-95 cursor-pointer"
                                 >
-                                  <Trash2 size={11} />
+                                  <BookOpen className="w-3.5 h-3.5 text-slate-950" />
+                                  <span>Đọc sách</span>
                                 </button>
-                              )}
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectBook(book);
+                                  }}
+                                  className="pointer-events-auto w-full py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] flex items-center justify-center gap-0.5 transition-transform active:scale-95 cursor-pointer"
+                                >
+                                  <Info className="w-3 h-3" />
+                                  <span>Chi tiết</span>
+                                </button>
 
-                            {/* 2 NÚT MŨI TÊN DI CHUYỂN ◀ VÀ ▶ */}
-                            <div className="flex items-center justify-center gap-1.5 w-full my-auto">
-                              <button
-                                type="button"
-                                disabled={originalIndex <= 0}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMoveBook?.(originalIndex, 'up');
-                                }}
-                                className="h-8 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-90 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg disabled:opacity-20 disabled:pointer-events-none cursor-pointer transition-all border border-amber-300"
-                                title="Di chuyển sang trái / lên trước"
-                              >
-                                ◀
-                              </button>
-                              <button
-                                type="button"
-                                disabled={originalIndex >= books.length - 1}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onMoveBook?.(originalIndex, 'down');
-                                }}
-                                className="h-8 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-90 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg disabled:opacity-20 disabled:pointer-events-none cursor-pointer transition-all border border-amber-300"
-                                title="Di chuyển sang phải / xuống sau"
-                              >
-                                ▶
-                              </button>
-                            </div>
-
-                            <div className="text-[9px] text-amber-200/90 font-bold truncate w-full text-center px-1">
-                              {book.title}
-                            </div>
+                                {/* Bộ điều khiển Admin ẩn bên trong hover overlay để không làm vỡ kệ sách */}
+                                {isAdmin && (
+                                  <div
+                                    className="mt-1 flex items-center justify-center gap-1 bg-black/80 p-0.5 rounded-md border border-white/10"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {onMoveBook && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          disabled={originalIndex === 0}
+                                          onClick={() => onMoveBook(originalIndex, 'up')}
+                                          className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white disabled:opacity-20 cursor-pointer"
+                                          title="Chuyển lên trước"
+                                        >
+                                          <ArrowUp className="w-2.5 h-2.5" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={originalIndex === internalBooks.length - 1}
+                                          onClick={() => onMoveBook(originalIndex, 'down')}
+                                          className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white disabled:opacity-20 cursor-pointer"
+                                          title="Chuyển xuống sau"
+                                        >
+                                          <ArrowDown className="w-2.5 h-2.5" />
+                                        </button>
+                                      </>
+                                    )}
+                                    {onToggleBookVisibility && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onToggleBookVisibility(originalIndex)}
+                                        className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white cursor-pointer"
+                                        title={book.is_visible === false ? 'Hiện sách' : 'Ẩn sách'}
+                                      >
+                                        {book.is_visible === false ? (
+                                          <EyeOff className="w-2.5 h-2.5 text-amber-400" />
+                                        ) : (
+                                          <Eye className="w-2.5 h-2.5" />
+                                        )}
+                                      </button>
+                                    )}
+                                    {onEditSingleBook && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onEditSingleBook(book)}
+                                        className="w-4.5 h-4.5 rounded flex items-center justify-center text-amber-300 hover:text-amber-200 cursor-pointer"
+                                        title="Sửa sách"
+                                      >
+                                        <Edit2 className="w-2.5 h-2.5" />
+                                      </button>
+                                    )}
+                                    {onDeleteBook && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onDeleteBook(originalIndex)}
+                                        className="w-4.5 h-4.5 rounded flex items-center justify-center text-red-400 hover:text-red-300 cursor-pointer"
+                                        title="Xóa sách"
+                                      >
+                                        <Trash2 className="w-2.5 h-2.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                        )}
-
-                        {/* Nút hành động nổi lên khi hover chuột trên Desktop: Đọc 3D & Chi tiết (ẨN TRÊN DI ĐỘNG ĐỂ TRÁNH DÍNH MÀN HÌNH CẢM ỨNG) */}
-                        <div
-                          className="hidden md:flex absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 flex-col items-center justify-center gap-1.5 p-2"
-                        >
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onReadBook3D(book);
-                            }}
-                            className="pointer-events-auto w-full py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] shadow-lg flex items-center justify-center gap-1 transition-transform active:scale-95 cursor-pointer"
-                          >
-                            <BookOpen className="w-3.5 h-3.5 text-slate-950" />
-                            <span>Đọc sách</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectBook(book);
-                            }}
-                            className="pointer-events-auto w-full py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] flex items-center justify-center gap-0.5 transition-transform active:scale-95 cursor-pointer"
-                          >
-                            <Info className="w-3 h-3" />
-                            <span>Chi tiết</span>
-                          </button>
-
-                          {/* Bộ điều khiển Admin ẩn bên trong hover overlay để không làm vỡ kệ sách */}
-                          {isAdmin && (
-                            <div
-                              className="mt-1 flex items-center justify-center gap-1 bg-black/80 p-0.5 rounded-md border border-white/10"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {onMoveBook && (
-                                <>
-                                  <button
-                                    type="button"
-                                    disabled={originalIndex === 0}
-                                    onClick={() => onMoveBook(originalIndex, 'up')}
-                                    className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white disabled:opacity-20 cursor-pointer"
-                                    title="Chuyển lên trước"
-                                  >
-                                    <ArrowUp className="w-2.5 h-2.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={originalIndex === books.length - 1}
-                                    onClick={() => onMoveBook(originalIndex, 'down')}
-                                    className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white disabled:opacity-20 cursor-pointer"
-                                    title="Chuyển xuống sau"
-                                  >
-                                    <ArrowDown className="w-2.5 h-2.5" />
-                                  </button>
-                                </>
-                              )}
-                              {onToggleBookVisibility && (
-                                <button
-                                  type="button"
-                                  onClick={() => onToggleBookVisibility(originalIndex)}
-                                  className="w-4.5 h-4.5 rounded flex items-center justify-center text-slate-300 hover:text-white cursor-pointer"
-                                  title={book.is_visible === false ? 'Hiện sách' : 'Ẩn sách'}
-                                >
-                                  {book.is_visible === false ? (
-                                    <EyeOff className="w-2.5 h-2.5 text-amber-400" />
-                                  ) : (
-                                    <Eye className="w-2.5 h-2.5" />
-                                  )}
-                                </button>
-                              )}
-                              {onEditSingleBook && (
-                                <button
-                                  type="button"
-                                  onClick={() => onEditSingleBook(book)}
-                                  className="w-4.5 h-4.5 rounded flex items-center justify-center text-amber-300 hover:text-amber-200 cursor-pointer"
-                                  title="Sửa sách"
-                                >
-                                  <Edit2 className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                              {onDeleteBook && (
-                                <button
-                                  type="button"
-                                  onClick={() => onDeleteBook(originalIndex)}
-                                  className="w-4.5 h-4.5 rounded flex items-center justify-center text-red-400 hover:text-red-300 cursor-pointer"
-                                  title="Xóa sách"
-                                >
-                                  <Trash2 className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                        </>
+                      )}
 
                       {/* Vệt bóng đổ tiếp xúc giữa chân bìa sách và mặt gỗ (Book-Shelf Contact Shadow) */}
                       <div className="w-[88%] h-[5px] -mt-[2px] bg-black/85 rounded-full blur-[1.5px] pointer-events-none" />
@@ -2305,6 +2441,35 @@ export default function WoodenBookshelf({
             >
               Đóng cửa sổ này
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING GHOST CARD BAY THEO NGÓN TAY KHI ĐANG KÉO (CHUẨN IOS/ANDROID DRAG & DROP) */}
+      {isDragging && dragGhostData && (
+        <div
+          className="fixed z-[999999] pointer-events-none select-none transition-transform duration-75"
+          style={{
+            left: `${pointerPos.x - pointerOffset.x}px`,
+            top: `${pointerPos.y - pointerOffset.y}px`,
+            width: `${dragGhostData.width}px`,
+            height: `${dragGhostData.height}px`,
+            transform: 'scale(1.08) rotate(3deg)',
+            filter: 'drop-shadow(0 20px 30px rgba(0,0,0,0.85)) drop-shadow(0 0 15px rgba(245,158,11,0.6))',
+          }}
+        >
+          <div className="w-full h-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-2 border-amber-400 ring-4 ring-amber-400/40 shadow-2xl">
+            <BookCoverArt
+              coverUrl={dragGhostData.book.cover_url}
+              title={dragGhostData.book.title}
+              author={dragGhostData.book.author}
+              format="epub"
+              className="w-full h-full"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-white/20 pointer-events-none" />
+            <div className="absolute bottom-1 inset-x-1 px-1 py-0.5 rounded bg-black/85 text-amber-300 text-[9px] font-black text-center truncate border border-amber-400/40">
+              {dragGhostData.book.title}
+            </div>
           </div>
         </div>
       )}

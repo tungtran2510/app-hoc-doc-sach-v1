@@ -352,6 +352,19 @@ export default function RecommendedBooksSection({
     }
   };
 
+  const handleReorderBooks = async (newBooks: RecommendedBook[]) => {
+    setBooks(newBooks);
+    if (isAdmin) {
+      await saveSettingsApi({
+        recommended_books: newBooks,
+      });
+    } else {
+      try {
+        localStorage.setItem('qbiz_bookshelf_custom_books', JSON.stringify(newBooks));
+      } catch {}
+    }
+  };
+
   const handleDeleteBook = async (index: number) => {
     const target = books[index];
     if (!confirm(`Bạn có chắc chắn muốn gỡ cuốn sách "${target?.title || 'này'}" khỏi kệ sách?`)) return;
@@ -554,6 +567,7 @@ export default function RecommendedBooksSection({
           onEditSingleBook={(book) => setEditingSingleBook(book)}
           onToggleBookVisibility={handleToggleBookVisibility}
           onMoveBook={handleMoveBook}
+          onReorderBooks={handleReorderBooks}
           onDeleteBook={handleDeleteBook}
         />
       ) : layoutMode === 'lookbook' ? (
