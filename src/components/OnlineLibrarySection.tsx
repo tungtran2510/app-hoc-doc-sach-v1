@@ -279,7 +279,11 @@ export default function OnlineLibrarySection({
 
     if (book.medium === 'audio' || book.format === 'audio') {
       const cached = await offlineStorage.getBookFromOffline(book.id);
-      const audioUrl = cached?.blobUrl || book.downloadUrl;
+      const isOutdatedCache = Boolean(cached && cached.fileUrl && cached.fileUrl !== book.downloadUrl);
+      if (isOutdatedCache) {
+        offlineStorage.removeBookFromOffline(book.id).catch(() => {});
+      }
+      const audioUrl = isOutdatedCache ? book.downloadUrl : (cached?.blobUrl || book.downloadUrl);
       const audioPayload = {
         id: book.id,
         title: book.title,
@@ -302,7 +306,11 @@ export default function OnlineLibrarySection({
     }
 
     const cached = await offlineStorage.getBookFromOffline(book.id);
-    const fileUrl = cached?.blobUrl || book.downloadUrl;
+    const isOutdatedCache = Boolean(cached && cached.fileUrl && cached.fileUrl !== book.downloadUrl);
+    if (isOutdatedCache) {
+      offlineStorage.removeBookFromOffline(book.id).catch(() => {});
+    }
+    const fileUrl = isOutdatedCache ? book.downloadUrl : (cached?.blobUrl || book.downloadUrl);
     const cleanExt = book.format;
     const fileName =
       cached?.fileName ||
@@ -819,21 +827,10 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
                         <button
                           type="button"
                           onClick={() => handleOpenDownloaded(book)}
-                          className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                          className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
                         >
                           <Play size={10} className="fill-current" />
                           <span>Nghe ngay</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(book);
-                          }}
-                          className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                          title="Tải nghe ngoại tuyến"
-                        >
-                          <Download size={11} strokeWidth={2.4} />
                         </button>
                       </div>
                     ) : (
@@ -841,21 +838,10 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
                         <button
                           type="button"
                           onClick={() => handleOpenDownloaded(book)}
-                          className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                          className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
                         >
                           <BookOpen size={10} />
                           <span>Đọc ngay</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(book);
-                          }}
-                          className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                          title="Tải đọc ngoại tuyến"
-                        >
-                          <Download size={11} strokeWidth={2.4} />
                         </button>
                       </div>
                     )}
