@@ -87,6 +87,7 @@ export default function OnlineLibrarySection({
     author: string;
     coverUrl?: string;
     audioUrl: string;
+    fallbackUrl?: string;
     audioNarrator?: string;
     durationFormatted?: string;
   } | null>(null);
@@ -197,6 +198,7 @@ export default function OnlineLibrarySection({
         author: book.author,
         coverUrl: activeCover,
         audioUrl,
+        fallbackUrl: book.downloadUrl,
         audioNarrator: book.audioNarrator,
         durationFormatted: book.durationFormatted,
       };
@@ -374,7 +376,7 @@ export default function OnlineLibrarySection({
     if (isFromExternalSearch) return { book: b, matched: true, score: 95 };
 
     const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
-    const res = matchSmartKeywords(fullText, searchQuery);
+    const res = matchSmartKeywords(fullText, searchQuery, { title: b.title, author: b.author });
     return { book: b, matched: res.matched, score: res.score };
   });
 

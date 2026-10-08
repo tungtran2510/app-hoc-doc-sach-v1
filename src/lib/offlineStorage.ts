@@ -167,6 +167,11 @@ class OfflineStorageEngine {
       onProgress?.(70);
     }
 
+    // Đảm bảo tệp âm thanh ngoại tuyến luôn có MIME type chuẩn audio/mpeg
+    if (format === 'audio' && (!fileBlob.type || !fileBlob.type.startsWith('audio/'))) {
+      fileBlob = new Blob([fileBlob], { type: 'audio/mpeg' });
+    }
+
     // 2. Tải thêm ảnh bìa về máy (nếu có) để xem offline
     let coverBlob: Blob | null = book.coverBlob || null;
     if (!coverBlob && book.coverUrl && !book.coverUrl.startsWith('data:')) {
@@ -242,10 +247,14 @@ class OfflineStorageEngine {
               return;
             }
 
-            // Tạo Object URL cho tệp sách
+            // Tạo Object URL cho tệp sách (đảm bảo MIME type audio/mpeg cho sách nói)
             let blobUrl = this.activeBlobUrls.get(rec.id);
             if (!blobUrl) {
-              blobUrl = URL.createObjectURL(rec.fileBlob);
+              let blobToUse = rec.fileBlob;
+              if (rec.format === 'audio' && (!blobToUse.type || !blobToUse.type.startsWith('audio/'))) {
+                blobToUse = new Blob([blobToUse], { type: 'audio/mpeg' });
+              }
+              blobUrl = URL.createObjectURL(blobToUse);
               this.activeBlobUrls.set(rec.id, blobUrl);
             }
 

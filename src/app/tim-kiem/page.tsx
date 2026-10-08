@@ -496,7 +496,7 @@ export default function SearchPage() {
   const scoredBooks = books.map((b) => {
     if (!debouncedQuery.trim()) return { book: b, matched: true, score: 1 };
     const fullText = `${b.title} ${b.author} ${b.description} ${b.badge_tag}`;
-    const res = matchSmartKeywords(fullText, debouncedQuery);
+    const res = matchSmartKeywords(fullText, debouncedQuery, { title: b.title, author: b.author });
     return { book: b, matched: res.matched, score: res.score };
   });
 

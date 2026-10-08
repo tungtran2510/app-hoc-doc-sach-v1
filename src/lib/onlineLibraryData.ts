@@ -283,6 +283,23 @@ export const CURATED_ONLINE_BOOKS: OnlineBookItem[] = [
     source: 'Project Gutenberg',
   },
   {
+    id: 'online-read-dac-nhan-tam',
+    title: 'Đắc Nhân Tâm (Bản Chuẩn Tiếng Việt)',
+    author: 'Dale Carnegie · Dịch giả Nguyễn Hiến Lê',
+    medium: 'read',
+    category: 'ky-nang',
+    categoryName: 'Kỹ năng & Tư duy',
+    format: 'epub',
+    fileSizeFormatted: '9.2 KB',
+    coverUrl: 'style:burgundy',
+    downloadUrl: '/documents/vietnam_dac_nhan_tam.epub',
+    description: 'Nghệ thuật thu phục lòng người và nghệ thuật ứng xử kinh điển nhất mọi thời đại của Dale Carnegie, kim chỉ nam vàng xây dựng mối quan hệ và thành công bền vững.',
+    badgeTag: 'KINH ĐIỂN TƯ DUY ⭐',
+    language: 'vi',
+    year: '1936',
+    source: 'Tủ sách Kỹ năng & Tư duy',
+  },
+  {
     id: 'online-read-gutenberg-132',
     title: 'Binh Pháp Tôn Tử - The Art of War',
     author: 'Tôn Tử (Sun Tzu) · Lionel Giles',
@@ -386,6 +403,26 @@ export const CURATED_ONLINE_BOOKS: OnlineBookItem[] = [
   },
 
   // ================= 4. SÁCH NÓI (AUDIOBOOKS - TIẾNG VIỆT & THẾ GIỚI MP3 CHUẨN) =================
+  {
+    id: 'online-audio-dac-nhan-tam',
+    title: 'Sách Nói: Đắc Nhân Tâm (Dale Carnegie)',
+    author: 'Dale Carnegie · Nghệ sĩ diễn đọc',
+    medium: 'audio',
+    category: 'ky-nang',
+    categoryName: 'Sách nói Kỹ năng',
+    format: 'audio',
+    fileSizeFormatted: '470 KB',
+    durationFormatted: '30 giây',
+    coverUrl: 'style:burgundy',
+    downloadUrl: '/documents/audio_sample_dac_nhan_tam.mp3',
+    description: 'Giọng đọc truyền cảm những nguyên tắc vàng giao tiếp ứng xử, bí quyết lắng nghe và thấu hiểu nhân tâm lay động hàng triệu trái tim của Dale Carnegie.',
+    badgeTag: 'AUDIO KỸ NĂNG 🎧',
+    language: 'vi',
+    year: '2023',
+    source: 'Sách nói Kỹ năng',
+    audioNarrator: 'Nghệ sĩ Giọng Vàng',
+    audioSampleText: 'Nguyên tắc 1: Không chỉ trích, oán trách hay than phiền. Nguyên tắc 2: Thành thật khen ngợi và biết ơn người khác. Nguyên tắc 3: Gợi cho người khác một ham muốn mãnh liệt...',
+  },
   {
     id: 'online-audio-vn-truyen-kieu',
     title: 'Sách Nói: Truyện Kiều - Khúc Đoạn Trường',
@@ -565,11 +602,16 @@ export async function downloadAndSaveOnlineBook(
     }
 
     onProgress?.(65);
-    const blob = await res.blob();
+    const rawBlob = await res.blob();
+    const cleanExt = book.format === 'audio' ? 'mp3' : book.format;
+    // Đảm bảo đối với sách nói, Blob luôn mang chuẩn audio/mpeg để audio engine trình duyệt di động giải mã mượt mà
+    const blob =
+      book.format === 'audio' || book.medium === 'audio' || cleanExt === 'mp3'
+        ? new Blob([rawBlob], { type: 'audio/mpeg' })
+        : rawBlob;
     onProgress?.(85);
 
     const activeCover = book.customCoverUrl || book.coverUrl;
-    const cleanExt = book.format === 'audio' ? 'mp3' : book.format;
     const filename =
       book.fileName ||
       `${book.title.replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]/g, '_')}.${cleanExt}`;
@@ -811,20 +853,45 @@ const STOP_WORDS = new Set([
 
 /**
  * Thuật toán so khớp thông minh NLP cho tiếng Việt tự nhiên
- * Khớp cả câu dài như: "Tôi thích một cuốn sách nói về dinh dưỡng và các chế độ ăn phù hợp với người Việt Nam"
+ * Hỗ trợ khớp chính xác tiêu đề, tác giả, cụm từ bigram, và loại trừ kết quả rác do chỉ trùng 1 từ đơn lẻ
  */
 export function matchSmartKeywords(
   targetText: string,
-  searchQuery: string
+  searchQuery: string,
+  options?: { title?: string; author?: string }
 ): { matched: boolean; score: number } {
   if (!searchQuery || !searchQuery.trim()) return { matched: true, score: 1 };
 
-  const normTarget = removeVietnameseTones(targetText);
-  const normQuery = removeVietnameseTones(searchQuery);
+  const normTarget = removeVietnameseTones(targetText).toLowerCase();
+  const normQuery = removeVietnameseTones(searchQuery).toLowerCase().trim();
 
-  // 1. Khớp chính xác cả chuỗi (điểm tuyệt đối)
+  // 1. Kiểm tra ưu tiên cao nhất: Khớp tiêu đề sách
+  if (options?.title) {
+    const normTitle = removeVietnameseTones(options.title).toLowerCase();
+    if (normTitle.includes(normQuery)) {
+      return { matched: true, score: 300 };
+    }
+    const qTokens = normQuery.split(/\s+/).filter(Boolean);
+    if (qTokens.length > 1 && qTokens.every((t) => normTitle.includes(t))) {
+      return { matched: true, score: 250 };
+    }
+  }
+
+  // 2. Kiểm tra ưu tiên cao nhì: Khớp tên tác giả
+  if (options?.author) {
+    const normAuthor = removeVietnameseTones(options.author).toLowerCase();
+    if (normAuthor.includes(normQuery)) {
+      return { matched: true, score: 200 };
+    }
+    const qTokens = normQuery.split(/\s+/).filter(Boolean);
+    if (qTokens.length > 1 && qTokens.every((t) => normAuthor.includes(t))) {
+      return { matched: true, score: 180 };
+    }
+  }
+
+  // 3. Khớp chính xác cả chuỗi trong toàn bộ nội dung
   if (normTarget.includes(normQuery)) {
-    return { matched: true, score: 100 };
+    return { matched: true, score: 120 };
   }
 
   const rawTokens = normQuery.split(/\s+/).filter(Boolean);
@@ -836,20 +903,22 @@ export function matchSmartKeywords(
   }
 
   let score = 0;
+  let hasBigramMatch = false;
 
-  // 2. So khớp các cụm 2 từ (bigrams) quan trọng
+  // 4. So khớp các cụm 2 từ (bigrams) quan trọng
   for (let i = 0; i < rawTokens.length - 1; i++) {
     const w1 = rawTokens[i];
     const w2 = rawTokens[i + 1];
     if (!STOP_WORDS.has(w1) || !STOP_WORDS.has(w2)) {
       const bigram = `${w1} ${w2}`;
       if (normTarget.includes(bigram)) {
+        hasBigramMatch = true;
         score += 35;
       }
     }
   }
 
-  // 3. So khớp từng từ khóa đơn có ý nghĩa
+  // 5. So khớp từng từ khóa đơn có ý nghĩa
   let matchedCount = 0;
   for (const token of meaningfulTokens) {
     if (normTarget.includes(token)) {
@@ -858,6 +927,20 @@ export function matchSmartKeywords(
     }
   }
 
-  const matched = score > 0 || matchedCount >= Math.min(2, meaningfulTokens.length);
-  return { matched, score };
+  // Tiêu chí MATCHED nghiêm ngặt:
+  let matched = false;
+  if (meaningfulTokens.length === 1) {
+    // Với từ khóa 1 từ (vd: "truyện", "holmes", "kiều"): cần khớp từ đó
+    matched = matchedCount >= 1;
+  } else if (meaningfulTokens.length === 2) {
+    // Với từ khóa 2 từ (vd: "chí phèo", "tôn tử", "nam cao"): cần khớp cụm 2 từ hoặc cả 2 từ cùng xuất hiện
+    matched = hasBigramMatch || matchedCount >= 2;
+  } else {
+    // Với từ khóa từ 3 từ trở lên (vd: "đắc nhân tâm", "binh pháp tôn tử"):
+    // Phải có cụm từ nối tiếp (bigram) HOẶC tối thiểu 70% số từ khóa khớp
+    const requiredMatches = Math.ceil(meaningfulTokens.length * 0.7);
+    matched = (hasBigramMatch && matchedCount >= 2) || matchedCount >= requiredMatches;
+  }
+
+  return { matched, score: matched ? score : 0 };
 }

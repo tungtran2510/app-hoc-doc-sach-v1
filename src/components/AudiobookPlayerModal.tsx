@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 import { backgroundAudioManager } from '../lib/backgroundAudioManager';
+import BookCoverArt from './BookCoverArt';
 
 interface AudiobookPlayerModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ interface AudiobookPlayerModalProps {
     author: string;
     coverUrl?: string;
     audioUrl: string;
+    fallbackUrl?: string;
     audioNarrator?: string;
     durationFormatted?: string;
   } | null;
@@ -132,6 +134,7 @@ export default function AudiobookPlayerModal({
       setIsPlaying(false);
       backgroundAudioManager.updatePlaybackState('paused');
     } else {
+      setLoadError(null);
       audio
         .play()
         .then(() => {
@@ -139,6 +142,21 @@ export default function AudiobookPlayerModal({
           backgroundAudioManager.updatePlaybackState('playing');
         })
         .catch((e) => {
+          // Thử fallback trực tiếp nếu blob ngoại tuyến gặp sự cố
+          if (book.fallbackUrl && audio.src !== book.fallbackUrl) {
+            audio.src = book.fallbackUrl;
+            audio.load();
+            audio
+              .play()
+              .then(() => {
+                setIsPlaying(true);
+                backgroundAudioManager.updatePlaybackState('playing');
+              })
+              .catch(() => {
+                setLoadError('Không thể phát âm thanh. Vui lòng thử lại.');
+              });
+            return;
+          }
           // Thử proxy nếu lỗi CORS
           if (
             book.audioUrl.startsWith('http://') ||
@@ -266,7 +284,19 @@ export default function AudiobookPlayerModal({
         }}
         onError={() => {
           setIsLoading(false);
-          // Fallback proxy
+          // 1. Fallback nếu blob ngoại tuyến thất bại -> phát trực tiếp từ downloadUrl gốc
+          if (
+            audioRef.current &&
+            book.fallbackUrl &&
+            audioRef.current.src !== book.fallbackUrl
+          ) {
+            console.warn('Offline blob playback failed, trying fallback:', book.fallbackUrl);
+            audioRef.current.src = book.fallbackUrl;
+            audioRef.current.load();
+            audioRef.current.play().catch(() => {});
+            return;
+          }
+          // 2. Fallback proxy
           if (
             audioRef.current &&
             !audioRef.current.src.includes('/api/download-proxy') &&
@@ -278,7 +308,7 @@ export default function AudiobookPlayerModal({
               setLoadError('Không thể nạp tệp âm thanh trực tuyến.');
             });
           } else {
-            setLoadError('Không thể phát tệp âm thanh trực tuyến.');
+            setLoadError('Không thể phát tệp âm thanh. Vui lòng thử lại.');
           }
         }}
       />
@@ -324,13 +354,26 @@ export default function AudiobookPlayerModal({
         {/* ẢNH BÌA ĐĨA NHẠC / SÁCH NÓI NGHỆ THUẬT (CĂN GIỮA HOÀN HẢO) */}
         <div className="flex flex-col items-center justify-center my-0.5">
           <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.85)] border border-amber-500/35 group">
-            <img
-              src={displayCover}
-              alt={book.title}
-              className={`w-full h-full object-cover transition-transform duration-700 ${
-                isPlaying ? 'scale-105' : 'scale-100'
-              }`}
-            />
+            {displayCover && !displayCover.startsWith('style:') ? (
+              <img
+                src={displayCover}
+                alt={book.title}
+                className={`w-full h-full object-cover transition-transform duration-700 ${
+                  isPlaying ? 'scale-105' : 'scale-100'
+                }`}
+              />
+            ) : (
+              <BookCoverArt
+                coverUrl={book.coverUrl}
+                title={book.title}
+                author={book.author}
+                medium="audio"
+                format="mp3"
+                aspectRatio="aspect-square"
+                showBadge={false}
+                className="w-full h-full rounded-none"
+              />
+            )}
             {/* Hiệu ứng sóng âm Equalizer nổi trên bìa */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent flex items-end justify-center pb-2.5">
               <div className="flex items-end gap-1 h-5 px-2">
