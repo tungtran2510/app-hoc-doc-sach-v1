@@ -432,8 +432,20 @@ export interface PdfPageProvider {
  */
 export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProvider> {
   const pdfjs = await ensurePdfJsLoaded();
+  
+  let safePdfUrl = pdfUrl;
+  if (
+    typeof window !== 'undefined' &&
+    (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) &&
+    !pdfUrl.includes(window.location.host) &&
+    !pdfUrl.includes('/api/download-proxy') &&
+    !pdfUrl.includes('/api/proxy-ebook')
+  ) {
+    safePdfUrl = `/api/download-proxy?url=${encodeURIComponent(pdfUrl)}`;
+  }
+
   const pdf = await pdfjs.getDocument({
-    url: pdfUrl,
+    url: safePdfUrl,
     cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
     cMapPacked: true,
   }).promise;

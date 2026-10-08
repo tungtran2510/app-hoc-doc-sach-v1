@@ -387,6 +387,39 @@ export default function OnlineLibrarySection({
     }
   };
 
+  // Tìm kiếm thời gian thực đa nguồn qua API Backend /api/search-online-live (Google Books, Internet Archive, Thư viện mở)
+  const searchLiveOnlineBooks = async (query: string): Promise<OnlineBookItem[]> => {
+    const q = query.trim();
+    if (!q || q.length < 2) return [];
+
+    try {
+      const res = await fetch(`/api/search-online-live?q=${encodeURIComponent(q)}`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!Array.isArray(data.results)) return [];
+
+      return data.results.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        author: r.author,
+        medium: (r.format === 'audio' ? 'audio' : 'read') as BookMedium,
+        category: 'y-hoc' as const,
+        categoryName: r.publisher || r.source || 'Sách trực tuyến',
+        format: (r.format === 'google-books' ? 'pdf' : r.format) as any,
+        fileSizeFormatted: r.fileSizeFormatted || (r.pagesCount ? `${r.pagesCount} trang` : 'Sách xuất bản'),
+        coverUrl: r.coverUrl,
+        downloadUrl: r.downloadUrl || r.previewUrl,
+        description: r.description,
+        badgeTag: r.badgeTag,
+        language: 'vi' as const,
+        source: r.source,
+        year: r.year,
+      }));
+    } catch {
+      return [];
+    }
+  };
+
   // Tự động tìm kiếm sách mở rộng trên Internet khi người dùng gõ từ khóa (debounce 450ms)
   useEffect(() => {
     const q = searchQuery.trim();
@@ -400,13 +433,13 @@ export default function OnlineLibrarySection({
     const timer = setTimeout(async () => {
       setIsSearchingExternal(true);
       try {
-        const [gutenberg, openLib, librivox] = await Promise.all([
+        const [liveBooks, gutenberg, librivox] = await Promise.all([
+          searchLiveOnlineBooks(q),
           searchOnlineGutenbergBooks(q),
-          searchOpenLibraryBooks(q),
           searchOnlineLibriVoxAudiobooks(q),
         ]);
         if (isCancelled) return;
-        const combined = [...gutenberg, ...openLib, ...librivox];
+        const combined = [...liveBooks, ...gutenberg, ...librivox];
         const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
         const newItems = combined.filter((b) => !existingIds.has(b.id));
         setExternalBooks(newItems);
@@ -423,19 +456,19 @@ export default function OnlineLibrarySection({
     };
   }, [searchQuery]);
 
-  // Tìm kiếm sách mở rộng trên Internet (Open Library, Gutenberg & LibriVox)
+  // Tìm kiếm sách mở rộng trên Internet (Đa nguồn: Google Books, Internet Archive, Gutenberg & LibriVox)
   const handleSearchOnlineSources = async () => {
     const q = searchQuery.trim();
     if (!q || isSearchingExternal) return;
     playTapSound();
     setIsSearchingExternal(true);
     try {
-      const [gutenberg, openLib, librivox] = await Promise.all([
+      const [liveBooks, gutenberg, librivox] = await Promise.all([
+        searchLiveOnlineBooks(q),
         searchOnlineGutenbergBooks(q),
-        searchOpenLibraryBooks(q),
         searchOnlineLibriVoxAudiobooks(q),
       ]);
-      const combined = [...gutenberg, ...openLib, ...librivox];
+      const combined = [...liveBooks, ...gutenberg, ...librivox];
       const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
       const newItems = combined.filter((b) => !existingIds.has(b.id));
       setExternalBooks(newItems);
@@ -597,13 +630,13 @@ export default function OnlineLibrarySection({
 
       {/* 2.5 TRẠNG THÁI TÌM KIẾM TRỰC QUAN (LOADING KHI ĐANG TÌM HOẶC BÁO KẾT QUẢ) */}
       {isSearchingExternal ? (
-        <div className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-bold animate-pulse shadow-2xs">
+        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-bold animate-pulse shadow-2xs">
           <Loader2 size={14} className="animate-spin text-amber-500 shrink-0" />
-          <span>Đang tìm kiếm sách trong thư viện, vui lòng chờ...</span>
+          <span>Đang tìm kiếm sách trực tuyến từ các nguồn Internet thời gian thực...</span>
         </div>
       ) : searchQuery.trim().length > 0 ? (
         <div className="flex items-center justify-between px-1 text-[11px] text-[#7A4B27] dark:text-amber-300 font-bold">
-          <span>Tìm thấy {filteredBooks.length} cuốn sách phù hợp với &ldquo;{searchQuery.trim()}&rdquo;</span>
+          <span>Tìm thấy {filteredBooks.length} cuốn sách trực tuyến phù hợp với &ldquo;{searchQuery.trim()}&rdquo;</span>
         </div>
       ) : null}
 
@@ -621,10 +654,12 @@ export default function OnlineLibrarySection({
           return (
             <div
               key={book.id}
-              className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/40 shadow-xs flex items-center gap-2.5 transition-all"
+              onClick={() => handleOpenDownloaded(book)}
+              className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/50 shadow-xs flex items-center gap-2.5 transition-all cursor-pointer group hover:bg-[#fffcf7] dark:hover:bg-[#25170e]"
+              title={`Bấm để ${book.medium === 'audio' ? 'nghe' : 'đọc'} ngay: ${book.title}`}
             >
               {/* Ảnh bìa sách tinh gọn, chuẩn thẩm mỹ xuất bản */}
-              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs">
+              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                 <BookCoverArt
                   coverUrl={displayCover}
                   title={book.title}
@@ -654,7 +689,7 @@ export default function OnlineLibrarySection({
                 </div>
 
                 {/* Hàng 2: Tựa sách (1 dòng truncate chống phình) */}
-                <h4 className="text-xs font-black text-[#2A160A] dark:text-[#fdf7ee] truncate">
+                <h4 className="text-xs font-black text-[#2A160A] dark:text-[#fdf7ee] truncate group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
                   {book.title}
                 </h4>
 
@@ -665,12 +700,15 @@ export default function OnlineLibrarySection({
                     {book.source} • {book.durationFormatted || book.fileSizeFormatted}
                   </span>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     {/* NÚT THÊM VÀO KỆ SÁCH (1 DÒNG TINH GỌN, CHUẨN MOBILE) */}
                     {shelfBookIds.has(book.id) ? (
                       <button
                         type="button"
-                        onClick={() => handleToggleShelf(book)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleShelf(book);
+                        }}
                         className="h-6 px-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
                         title="Sách đã có trên Kệ sách gỗ. Bấm để bỏ"
                       >
@@ -680,7 +718,10 @@ export default function OnlineLibrarySection({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleToggleShelf(book)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleShelf(book);
+                        }}
                         className="h-6 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
                         title="Thêm vào Kệ sách gỗ trên trang chủ"
                       >
@@ -701,7 +742,10 @@ export default function OnlineLibrarySection({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteCached(book)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCached(book);
+                          }}
                           className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
                           title="Xóa bản tải ngoại tuyến khỏi máy"
                         >
@@ -725,7 +769,10 @@ export default function OnlineLibrarySection({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDownload(book)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(book);
+                          }}
                           className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
                           title="Tải nghe ngoại tuyến"
                         >
@@ -744,7 +791,10 @@ export default function OnlineLibrarySection({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDownload(book)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(book);
+                          }}
                           className="h-6 w-6 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
                           title="Tải đọc ngoại tuyến"
                         >
@@ -777,7 +827,7 @@ export default function OnlineLibrarySection({
                 ) : (
                   <Globe size={13} />
                 )}
-                <span>Tìm trên Kho Mở Quốc Tế (Gutenberg, LibriVox & Open Library)</span>
+                <span>Tìm kiếm trên Internet (Google Books, Internet Archive & Thư viện Mở)</span>
               </button>
             )}
           </div>

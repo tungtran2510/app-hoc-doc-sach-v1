@@ -155,7 +155,6 @@ export default function RecommendedBooksSection({
     checkIsAdminClient().then(setIsAdmin);
     if (initialTitle) setTitle(initialTitle);
     if (initialSubtitle) setSubtitle(initialSubtitle);
-    if (initialBooks && initialBooks.length > 0) setBooks(initialBooks);
     if (initialLayout) {
       setLayoutMode(
         initialLayout === 'lookbook'
@@ -165,52 +164,66 @@ export default function RecommendedBooksSection({
           : 'bookshelf'
       );
     }
+    loadDownloadedBooks();
   }, [initialTitle, initialSubtitle, initialBooks, initialLayout]);
 
-  // Tự động tải và đồng bộ các cuốn sách đã tải về từ IndexedDB vào Gian trưng bày kệ sách
+  // Tự động tải và đồng bộ các cuốn sách từ Kệ sách cá nhân và IndexedDB vào Gian trưng bày kệ sách
   const loadDownloadedBooks = async () => {
     try {
-      const cached = await offlineStorage.getAllCachedBooks();
-      if (!cached || cached.length === 0) return;
+      const cached = (await offlineStorage.getAllCachedBooks()) || [];
+      const userShelf = userShelfStorage.getAll() || [];
 
       setBooks((prevBooks) => {
+        const baseList = initialBooks && initialBooks.length > 0 ? initialBooks : prevBooks;
         const cachedMap = new Map(cached.map((c) => [c.id, c]));
-        // Cập nhật thông tin các cuốn sách offline đã có trong kệ
-        let updatedList = prevBooks.map((b) => {
-          const c = cachedMap.get(b.id);
-          if (c) {
-            const storedCustomCover =
-              typeof window !== 'undefined'
-                ? localStorage.getItem(`custom_cover_${c.id}`)
-                : null;
-            const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || b.cover_url || '';
-            return {
-              ...b,
-              title: c.title || b.title,
-              author: c.author || b.author,
-              cover_url: bookCover,
-            };
-          }
-          return b;
-        });
 
-        // Bổ sung các cuốn sách offline mới
-        const existingIds = new Set(updatedList.map((b) => b.id));
-        const newDownloadedBooks: RecommendedBook[] = [];
+        const seenIds = new Set<string>();
+        const resultBooks: RecommendedBook[] = [];
+
+        // 1. ƯU TIÊN SỐ 1: Các cuốn sách trên Kệ sách cá nhân (do người dùng bấm "+ Kệ" khi tìm kiếm)
+        for (const s of userShelf) {
+          if (!seenIds.has(s.id)) {
+            const orig = baseList.find((b) => b.id === s.id);
+            const format = (s.format || (s.fileUrl?.endsWith('.pdf') ? 'pdf' : 'epub')).toUpperCase();
+            const fileName = s.fileUrl ? s.fileUrl.split('/').pop() : s.title;
+
+            resultBooks.push({
+              id: s.id,
+              title: s.title,
+              author: s.author || orig?.author || 'Tác giả',
+              category: orig?.category || 'Kệ của bạn',
+              badge_tag: s.badgeTag || orig?.badge_tag || format,
+              cover_url: s.coverUrl || orig?.cover_url || '',
+              description: s.description || orig?.description || 'Đã thêm vào Kệ sách cá nhân',
+              pages: orig?.pages || [],
+              flipbook_pages: orig?.flipbook_pages || [],
+              gallery_images: orig?.gallery_images || [],
+              file_url: s.fileUrl || orig?.file_url || '',
+              pdf_url: s.fileUrl || orig?.pdf_url || '',
+              file_name: fileName || orig?.file_name || s.title,
+              youtube_url: orig?.youtube_url || null,
+              is_visible: true,
+            });
+            seenIds.add(s.id);
+          }
+        }
+
+        // 2. ƯU TIÊN SỐ 2: Các cuốn sách đã tải về ngoại tuyến (IndexedDB)
         for (const c of cached) {
-          if (!existingIds.has(c.id)) {
+          if (!seenIds.has(c.id)) {
             const storedCustomCover =
               typeof window !== 'undefined'
                 ? localStorage.getItem(`custom_cover_${c.id}`)
                 : null;
             const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || '';
+            const format = c.format ? c.format.toUpperCase() : 'TẢI VỀ';
 
-            newDownloadedBooks.push({
+            resultBooks.push({
               id: c.id,
               title: c.title,
               author: c.author || 'Tác giả',
               category: 'Đã tải về',
-              badge_tag: c.format ? c.format.toUpperCase() : 'TẢI VỀ',
+              badge_tag: format,
               cover_url: bookCover,
               description: `Sách ngoại tuyến (${formatBytes(c.fileSize)}) • Sẵn sàng đọc ngay`,
               pages: [],
@@ -219,38 +232,34 @@ export default function RecommendedBooksSection({
               file_name: c.fileName || c.title,
               is_visible: true,
             });
-            existingIds.add(c.id);
+            seenIds.add(c.id);
           }
         }
 
-        // Bổ sung các cuốn sách từ Kệ sách cá nhân (do người dùng bấm Thêm vào kệ khi tìm kiếm)
-        try {
-          const userShelf = userShelfStorage.getAll();
-          for (const s of userShelf) {
-            if (!existingIds.has(s.id)) {
-              newDownloadedBooks.push({
-                id: s.id,
-                title: s.title,
-                author: s.author,
-                category: 'Kệ của bạn',
-                badge_tag: s.badgeTag || 'KỆ CỦA BẠN',
-                cover_url: s.coverUrl || '',
-                description: s.description || 'Đã thêm vào Kệ sách cá nhân',
-                pages: [],
-                file_url: s.fileUrl || '',
-                pdf_url: s.fileUrl || '',
-                file_name: s.title,
-                is_visible: true,
+        // 3. DANH SÁCH SÁCH GỐC (initialBooks)
+        for (const b of baseList) {
+          if (!seenIds.has(b.id)) {
+            const c = cachedMap.get(b.id);
+            if (c) {
+              const storedCustomCover =
+                typeof window !== 'undefined'
+                  ? localStorage.getItem(`custom_cover_${c.id}`)
+                  : null;
+              const bookCover = storedCustomCover || c.customCoverUrl || c.coverUrl || b.cover_url || '';
+              resultBooks.push({
+                ...b,
+                title: c.title || b.title,
+                author: c.author || b.author,
+                cover_url: bookCover,
               });
-              existingIds.add(s.id);
+            } else {
+              resultBooks.push(b);
             }
+            seenIds.add(b.id);
           }
-        } catch {}
-
-        if (newDownloadedBooks.length > 0) {
-          return [...newDownloadedBooks, ...updatedList];
         }
-        return updatedList;
+
+        return resultBooks;
       });
     } catch (err) {
       console.error('Lỗi nạp sách ngoại tuyến vào kệ sách:', err);

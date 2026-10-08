@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { BookOpen, Headphones, Sparkles, Feather } from 'lucide-react';
+import { removeVietnameseTones } from '../lib/onlineLibraryData';
 
 export type BookCoverStyle =
   | 'white' // Bìa Trắng Tối Giản Hiện Đại (Nhã Nam / NXB Trẻ Style)
@@ -141,7 +142,11 @@ export default function BookCoverArt({
           {/* Đầu trang: Dòng định vị tác phẩm + Tên tác giả */}
           <div className="relative z-10 w-full pt-0.5 flex flex-col items-center">
             <span className="text-[6.5px] font-mono font-bold uppercase tracking-wider text-stone-500 line-clamp-1">
-              {isVietnameseBook ? 'Văn Học Việt Nam' : 'Kinh Điển Thế Giới'}
+              {/(dinh duong|y khoa|cot song|khop|dia dem|suc khoe|co the|atlas|giai phau|than kinh)/i.test(removeVietnameseTones(`${title} ${author}`))
+                ? 'Tủ Sách Y Khoa'
+                : isVietnameseBook
+                ? 'Văn Học Việt Nam'
+                : 'Kinh Điển Thế Giới'}
             </span>
             <div className="w-3 h-px bg-stone-300 my-0.5" />
             <p className="text-[7.5px] font-semibold uppercase tracking-widest text-stone-600 truncate max-w-[95%]">

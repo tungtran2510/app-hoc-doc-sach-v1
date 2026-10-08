@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search as SearchIcon,
@@ -556,6 +556,16 @@ export default function SearchPage() {
     .sort((a, b) => b.score - a.score)
     .map((s) => s.book);
 
+  // 1.5. Đếm số lượng sách trực tuyến khớp từ khóa để hiển thị số lượng trên Tab
+  const onlineMatchedCount = useMemo(() => {
+    if (!debouncedQuery.trim()) return CURATED_ONLINE_BOOKS.length;
+    return CURATED_ONLINE_BOOKS.filter((b) => {
+      const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
+      const res = matchSmartKeywords(fullText, debouncedQuery, { title: b.title, author: b.author });
+      return res.matched;
+    }).length;
+  }, [debouncedQuery]);
+
   // 2. Tìm kiếm sâu trong các trang sách (Deep In-Book Snippet Search)
   const scoredSnippets = BOOK_PAGE_SNIPPETS.map((snip) => {
     if (!debouncedQuery.trim()) return { snip, matched: false, score: 0 };
@@ -722,7 +732,7 @@ export default function SearchPage() {
           }`}
         >
           <BookOpen size={14} className={`shrink-0 ${activeTab === 'local' ? 'text-amber-500' : ''}`} />
-          <span className="truncate">Sách của bạn</span>
+          <span className="truncate">Sách của bạn ({matchedBooks.length})</span>
         </button>
 
         <button
@@ -738,7 +748,13 @@ export default function SearchPage() {
           }`}
         >
           <Globe size={14} className={`shrink-0 ${activeTab === 'online' ? 'text-amber-500' : ''}`} />
-          <span className="truncate">Sách trực tuyến</span>
+          <span className="truncate">
+            {debouncedQuery.trim()
+              ? onlineMatchedCount > 0
+                ? `Sách trực tuyến (${onlineMatchedCount})`
+                : 'Sách trực tuyến (Internet)'
+              : `Sách trực tuyến (${onlineMatchedCount})`}
+          </span>
         </button>
       </section>
 
