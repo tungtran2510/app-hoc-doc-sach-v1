@@ -44,22 +44,8 @@ export function parseAdminToken(token?: string | null): { isValid: boolean; user
   if (!token || typeof token !== 'string') return { isValid: false };
   const parts = token.split('.');
   if (parts.length === 2) {
-    const [exp, sig] = parts;
-    if (!/^\d{9,12}$/.test(exp)) return { isValid: false };
-    if (Number(exp) < Math.floor(Date.now() / 1000)) return { isValid: false };
-    try {
-      const expectedSig = sign(exp);
-      const a = Buffer.from(sig);
-      const b = Buffer.from(expectedSig);
-      if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
-        return {
-          isValid: true,
-          user: { phone: '0974248716', name: 'Tùng Dinh Dưỡng', role: 'super_admin' },
-        };
-      }
-    } catch {
-      return { isValid: false };
-    }
+    // Token cũ (2 phần) không còn được chấp nhận vì lý do an toàn, yêu cầu đăng nhập lại
+    return { isValid: false };
   } else if (parts.length === 3) {
     const [exp, payloadB64, sig] = parts;
     if (!/^\d{9,12}$/.test(exp)) return { isValid: false };
@@ -111,7 +97,7 @@ export function checkIsAdminRequest(request?: NextRequest): boolean {
 export function checkIsSuperAdminRequest(request?: NextRequest): boolean {
   const user = getAdminUserFromRequest(request);
   if (!user) return false;
-  return user.role === 'super_admin' || user.phone === '0974248716';
+  return user.role === 'super_admin';
 }
 
 

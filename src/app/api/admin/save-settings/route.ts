@@ -30,9 +30,15 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const existingBlockStyles = existing?.block_styles || {};
+    const incomingBlockStyles = { ...(settings.block_styles || {}) };
+    // Ngăn chặn leo thang đặc quyền: không cho phép ghi đè tài khoản quản trị hay mật khẩu qua save-settings
+    delete incomingBlockStyles.admin_accounts;
+    delete incomingBlockStyles.admin_password;
+
     const updatedBlockStyles = {
       ...existingBlockStyles,
-      ...(settings.block_styles || {}),
+      ...incomingBlockStyles,
+      admin_accounts: existingBlockStyles.admin_accounts || [],
       app_subtitle: settings.app_subtitle !== undefined ? settings.app_subtitle : (existingBlockStyles.app_subtitle !== undefined ? existingBlockStyles.app_subtitle : null),
       brand_tagline: settings.brand_tagline !== undefined ? settings.brand_tagline : (existingBlockStyles.brand_tagline !== undefined ? existingBlockStyles.brand_tagline : null),
       home_greeting: settings.home_greeting !== undefined ? settings.home_greeting : (existingBlockStyles.home_greeting ?? 'Xin chào!'),

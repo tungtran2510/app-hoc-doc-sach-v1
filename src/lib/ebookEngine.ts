@@ -2,6 +2,7 @@
 
 import JSZip from 'jszip';
 import { ensurePdfJsLoaded } from './documentExtractor';
+import { sanitizeEpubHtml } from './htmlSanitizer';
 
 export type EbookFormat =
   | 'pdf'
@@ -386,7 +387,7 @@ export async function parseEpub(arrayBuffer: ArrayBuffer): Promise<ParsedEpubBoo
     chapters.push({
       id: idref,
       title: chapterTitle,
-      htmlContent: bodyContent,
+      htmlContent: sanitizeEpubHtml(bodyContent),
       href: fullHref,
     });
     chapterIndex++;

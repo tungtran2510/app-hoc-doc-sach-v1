@@ -1,42 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '../../../lib/authServer';
+import { safeFetchWithRedirects, validateSafeUrl } from '../../../lib/ssrfProtection';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Proxy an toàn cho các tệp sách trực tuyến từ các kho mở quốc tế (Gutenberg, Internet Archive)
- * Giúp tránh triệt để lỗi CORS "Failed to fetch" trên trình duyệt điện thoại và máy tính
+ * - Giúp tránh triệt để lỗi CORS "Failed to fetch" trên trình duyệt điện thoại và máy tính
+ * - Bảo mật: Chặn SSRF toàn diện (private IPs, loopback, cloud metadata 169.254, internal hostnames)
+ * - Kiểm tra an toàn cho mọi bước chuyển hướng (Redirect manual validation, tối đa 3 hops)
+ * - Giới hạn tần suất: 30 lượt / 10 phút
  */
-function isPrivateIp(hostname: string): boolean {
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1' ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('172.16.') ||
-    hostname.startsWith('172.17.') ||
-    hostname.startsWith('172.18.') ||
-    hostname.startsWith('172.19.') ||
-    hostname.startsWith('172.20.') ||
-    hostname.startsWith('172.21.') ||
-    hostname.startsWith('172.22.') ||
-    hostname.startsWith('172.23.') ||
-    hostname.startsWith('172.24.') ||
-    hostname.startsWith('172.25.') ||
-    hostname.startsWith('172.26.') ||
-    hostname.startsWith('172.27.') ||
-    hostname.startsWith('172.28.') ||
-    hostname.startsWith('172.29.') ||
-    hostname.startsWith('172.30.') ||
-    hostname.startsWith('172.31.') ||
-    hostname.endsWith('.local')
-  ) {
-    return true;
-  }
-  return false;
-}
 
 export async function GET(request: NextRequest) {
+  // 1. Giới hạn tần suất gọi API theo địa chỉ IP
+  const clientIp = getClientIp(request);
+  if (!rateLimit(`proxy-ebook:${clientIp}`, 30, 10 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Bạn gửi quá nhiều yêu cầu tải sách. Vui lòng thử lại sau 10 phút.' },
+      { status: 429 }
+    );
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const targetUrl = searchParams.get('url');
 
@@ -47,35 +32,51 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // 2. Kiểm tra tính hợp lệ và chặn SSRF tại điểm đầu
+  const validation = validateSafeUrl(targetUrl);
+  if (!validation.ok) {
+    const isPrivate = validation.error?.includes('nội bộ');
+    return NextResponse.json(
+      { error: validation.error },
+      { status: isPrivate ? 403 : 400 }
+    );
+  }
+
   try {
-    const parsed = new URL(targetUrl);
-    // Chỉ cho phép các giao thức http/https hợp lệ
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return NextResponse.json(
-        { error: 'Giao thức URL không hợp lệ.' },
-        { status: 400 }
-      );
-    }
-
-    if (isPrivateIp(parsed.hostname)) {
-      return NextResponse.json(
-        { error: 'Truy cập dải mạng nội bộ bị từ chối vì lý do an toàn.' },
-        { status: 403 }
-      );
-    }
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-    const upstreamRes = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 QbizBooks/1.0',
-        Accept: '*/*',
-      },
-    });
+    let fetchResult;
+    try {
+      fetchResult = await safeFetchWithRedirects(targetUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 QbizBooks/1.0',
+          Accept: '*/*',
+        },
+      });
+    } catch (fetchErr: any) {
+      if (fetchErr?.message?.includes('SSRF_BLOCKED')) {
+        clearTimeout(timeout);
+        return NextResponse.json(
+          { error: 'Truy cập dải mạng nội bộ hoặc chuyển hướng không an toàn bị từ chối vì lý do bảo mật.' },
+          { status: 403 }
+        );
+      }
+      if (fetchErr?.message?.includes('TOO_MANY_REDIRECTS')) {
+        clearTimeout(timeout);
+        return NextResponse.json(
+          { error: 'Tệp nguồn chuyển hướng quá nhiều lần (tối đa 3 lần).' },
+          { status: 400 }
+        );
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(timeout);
+    }
 
-    clearTimeout(timeout);
+    const { response: upstreamRes } = fetchResult;
 
     if (!upstreamRes.ok) {
       return NextResponse.json(

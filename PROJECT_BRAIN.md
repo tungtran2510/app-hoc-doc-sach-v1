@@ -29,7 +29,7 @@
 ## 2. TÀI KHOẢN QUẢN TRỊ CỦA NGƯỜI DÙNG
 - **Trang đăng nhập:** `https://app-hoc-co-the.vercel.app/dang-nhap`
 - **Số điện thoại:** `0974248716`
-- **Mật khẩu:** `Tung@2510`
+- **Mật khẩu:** (lưu trong biến môi trường ADMIN_PASSWORD — không ghi vào repo)
 - **Tên người dùng:** Tùng Dinh Dưỡng
 - **Vai trò:** Admin toàn quyền (Chỉnh sửa nội dung trực tiếp tại chỗ trên trang học).
 

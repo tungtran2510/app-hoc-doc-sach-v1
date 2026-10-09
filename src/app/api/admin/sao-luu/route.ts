@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIsAdminRequest } from '../../../../lib/authServer';
+import { checkIsSuperAdminRequest } from '../../../../lib/authServer';
 import { getSupabaseServer } from '../../../../lib/supabaseServer';
 import { sampleSettings, sampleTopics, samplePages, sampleBlocks } from '../../../../data/sample';
 
 export async function GET(req: NextRequest) {
-  if (!checkIsAdminRequest(req)) {
-    return NextResponse.json({ error: 'Chưa đăng nhập quyền quản trị' }, { status: 401 });
+  if (!checkIsSuperAdminRequest(req)) {
+    return NextResponse.json(
+      { error: 'Chỉ Quản trị viên tối cao (Super Admin) mới có quyền sao lưu hệ thống' },
+      { status: 403 }
+    );
   }
 
   const supabase = getSupabaseServer();

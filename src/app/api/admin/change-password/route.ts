@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIsAdminRequest, hashPassword, verifyPassword, rateLimit, getClientIp } from '../../../../lib/authServer';
+import { checkIsSuperAdminRequest, hashPassword, verifyPassword, rateLimit, getClientIp } from '../../../../lib/authServer';
 import { getSupabaseServer } from '../../../../lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
-  if (!checkIsAdminRequest(req)) {
-    return NextResponse.json({ error: 'Chưa đăng nhập quyền quản trị' }, { status: 401 });
+  if (!checkIsSuperAdminRequest(req)) {
+    return NextResponse.json(
+      { error: 'Chỉ Quản trị viên tối cao (Super Admin) mới có quyền đổi mật khẩu hệ thống' },
+      { status: 403 }
+    );
   }
 
   if (!rateLimit(`chpw:${getClientIp(req)}`, 8, 10 * 60 * 1000)) {
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
       .eq('workspace_id', 'default')
       .single();
 
-    if (currentSettings?.admin_password) {
+    if (!process.env.ADMIN_PASSWORD && currentSettings?.admin_password) {
       expectedPassword = currentSettings.admin_password;
     }
 

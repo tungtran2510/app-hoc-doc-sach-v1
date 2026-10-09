@@ -152,7 +152,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nhập mật khẩu (ví dụ: Tung@2510)"
+                placeholder="Nhập mật khẩu quản trị"
                 className="w-full h-[58px] min-h-[48px] px-4 rounded-[18px] bg-white border-[1.5px] border-line text-[18px] text-ink placeholder:text-muted focus:outline-hidden focus:border-primary transition-colors shadow-2xs"
                 required
               />

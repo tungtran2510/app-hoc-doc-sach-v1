@@ -1,44 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, getClientIp } from '../../../lib/authServer';
+import { safeFetchWithRedirects, validateSafeUrl } from '../../../lib/ssrfProtection';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * API Proxy Tải Sách Trực Tuyến Vượt Rào CORS (CORS-Bypass Download Proxy)
- * - Cho phép tải mượt mà mọi tệp sách (.epub, .pdf, .cbz) từ các nguồn trực tuyến (Gutenberg, Standard Ebooks, Internet Archive, Drive, GitHub...)
- * - Bảo mật: Chặn SSRF (ngăn chặn truy cập vào dải IP nội bộ/localhost)
- * - Hạn chế dung lượng tệp hợp lý (tối đa 120MB)
+ * - Cho phép tải mượt mà mọi tệp sách (.epub, .pdf, .cbz) từ các nguồn trực tuyến (Gutenberg, Standard Ebooks, Internet Archive...)
+ * - Bảo mật: Chặn SSRF toàn diện (IPv4/IPv6 private ranges, cloud metadata 169.254, loopback, internal domains)
+ * - Kiểm tra an toàn cho mọi bước chuyển hướng (Redirect manual validation, tối đa 3 hops)
+ * - Giới hạn tần suất: 30 lượt / 10 phút
+ * - Giới hạn dung lượng tệp: tối đa 500MB
  */
-
-function isPrivateIp(hostname: string): boolean {
-  if (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1' ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('172.16.') ||
-    hostname.startsWith('172.17.') ||
-    hostname.startsWith('172.18.') ||
-    hostname.startsWith('172.19.') ||
-    hostname.startsWith('172.20.') ||
-    hostname.startsWith('172.21.') ||
-    hostname.startsWith('172.22.') ||
-    hostname.startsWith('172.23.') ||
-    hostname.startsWith('172.24.') ||
-    hostname.startsWith('172.25.') ||
-    hostname.startsWith('172.26.') ||
-    hostname.startsWith('172.27.') ||
-    hostname.startsWith('172.28.') ||
-    hostname.startsWith('172.29.') ||
-    hostname.startsWith('172.30.') ||
-    hostname.startsWith('172.31.') ||
-    hostname.endsWith('.local')
-  ) {
-    return true;
-  }
-  return false;
-}
 
 export async function GET(req: NextRequest) {
   try {
+    // 1. Giới hạn tần suất gọi API
+    const clientIp = getClientIp(req);
+    if (!rateLimit(`download-proxy:${clientIp}`, 30, 10 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: 'Bạn gửi quá nhiều yêu cầu tải sách. Vui lòng thử lại sau 10 phút.' },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const targetUrl = searchParams.get('url');
 
@@ -49,38 +34,45 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    let parsedUrl: URL;
+    // 2. Kiểm tra tính hợp lệ và chặn SSRF tại điểm đầu
+    const validation = validateSafeUrl(targetUrl);
+    if (!validation.ok) {
+      const isPrivate = validation.error?.includes('nội bộ');
+      return NextResponse.json(
+        { error: validation.error },
+        { status: isPrivate ? 403 : 400 }
+      );
+    }
+
+    const parsedUrl = validation.parsedUrl!;
+
+    // 3. Tải tệp an toàn qua safeFetchWithRedirects (chặn SSRF nếu bị chuyển hướng 3xx)
+    let fetchResult;
     try {
-      parsedUrl = new URL(targetUrl);
-    } catch {
-      return NextResponse.json(
-        { error: 'Đường dẫn tệp không hợp lệ' },
-        { status: 400 }
-      );
+      fetchResult = await safeFetchWithRedirects(targetUrl, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 QbizEbook/2.0',
+          Accept: '*/*',
+        },
+      });
+    } catch (err: any) {
+      if (err?.message?.includes('SSRF_BLOCKED')) {
+        return NextResponse.json(
+          { error: 'Truy cập dải mạng nội bộ hoặc chuyển hướng không an toàn bị từ chối' },
+          { status: 403 }
+        );
+      }
+      if (err?.message?.includes('TOO_MANY_REDIRECTS')) {
+        return NextResponse.json(
+          { error: 'Tệp nguồn chuyển hướng quá nhiều lần (tối đa 3 lần)' },
+          { status: 400 }
+        );
+      }
+      throw err;
     }
 
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return NextResponse.json(
-        { error: 'Giao thức không được hỗ trợ (chỉ chấp nhận HTTP/HTTPS)' },
-        { status: 400 }
-      );
-    }
-
-    if (isPrivateIp(parsedUrl.hostname)) {
-      return NextResponse.json(
-        { error: 'Truy cập dải mạng nội bộ bị từ chối vì lý do an toàn' },
-        { status: 403 }
-      );
-    }
-
-    // Tải tệp từ nguồn ngoại vi
-    const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 QbizEbook/2.0',
-        Accept: '*/*',
-      },
-    });
+    const { response, finalUrl } = fetchResult;
 
     if (!response.ok) {
       return NextResponse.json(
@@ -107,7 +99,8 @@ export async function GET(req: NextRequest) {
 
     // Xác định tên tệp
     let filename = 'downloaded_ebook';
-    const pathParts = parsedUrl.pathname.split('/');
+    const finalParsed = new URL(finalUrl);
+    const pathParts = finalParsed.pathname.split('/');
     const lastPart = pathParts[pathParts.length - 1];
     if (lastPart && lastPart.includes('.')) {
       filename = lastPart;

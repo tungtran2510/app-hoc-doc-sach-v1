@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkIsAdminRequest, checkIsSuperAdminRequest } from '../../../../lib/authServer';
+import { checkIsSuperAdminRequest, hashPassword } from '../../../../lib/authServer';
 import { getSupabaseServer } from '../../../../lib/supabaseServer';
 import { InstructorAccount } from '../../../../lib/types';
 
 export async function GET(req: NextRequest) {
-  if (!checkIsAdminRequest(req)) {
+  if (!checkIsSuperAdminRequest(req)) {
     return NextResponse.json(
-      { error: 'Cần đăng nhập quản trị viên để truy cập danh sách tài khoản' },
+      { error: 'Chỉ Quản trị viên tối cao (Super Admin) mới có quyền truy cập danh sách tài khoản' },
       { status: 403 }
     );
   }
@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     const accounts: InstructorAccount[] = data?.block_styles?.admin_accounts || [];
+    const safeAccounts = accounts.map(({ password, ...acc }) => acc);
 
     const { data: topicsData } = await supabase
       .from('topics')
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      accounts,
+      accounts: safeAccounts,
       topics: (topicsData || []).map((t) => ({ id: t.id, title: t.title, slug: t.slug })),
     });
   } catch (err: any) {
@@ -45,9 +46,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!checkIsAdminRequest(req)) {
+  if (!checkIsSuperAdminRequest(req)) {
     return NextResponse.json(
-      { error: 'Cần đăng nhập quản trị viên để quản lý tài khoản' },
+      { error: 'Chỉ Quản trị viên tối cao (Super Admin) mới có quyền quản lý tài khoản' },
       { status: 403 }
     );
   }
@@ -84,9 +85,6 @@ export async function POST(req: NextRequest) {
       if (!cleanPhone || cleanPhone.length < 8) {
         return NextResponse.json({ error: 'Số điện thoại không hợp lệ' }, { status: 400 });
       }
-      if (cleanPhone === '0974248716') {
-        return NextResponse.json({ error: 'Số điện thoại này là tài khoản Chủ sở hữu' }, { status: 400 });
-      }
       if (accounts.some((a) => a.phone === cleanPhone)) {
         return NextResponse.json({ error: 'Số điện thoại này đã được tạo tài khoản' }, { status: 400 });
       }
@@ -98,7 +96,7 @@ export async function POST(req: NextRequest) {
         id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         name: name.trim(),
         phone: cleanPhone,
-        password: password.trim(),
+        password: hashPassword(password.trim()),
         role: 'instructor',
         allowed_topic_ids: Array.isArray(allowed_topic_ids) ? allowed_topic_ids : [],
         is_active: true,
@@ -128,7 +126,7 @@ export async function POST(req: NextRequest) {
         ...existingAcc,
         name: account.name?.trim() || existingAcc.name,
         phone: updatedPhone,
-        password: account.password?.trim() ? account.password.trim() : existingAcc.password,
+        password: account.password?.trim() ? hashPassword(account.password.trim()) : existingAcc.password,
         allowed_topic_ids: Array.isArray(account.allowed_topic_ids)
           ? account.allowed_topic_ids
           : existingAcc.allowed_topic_ids,
@@ -167,7 +165,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, accounts });
+    const safeAccounts = accounts.map(({ password, ...acc }) => acc);
+    return NextResponse.json({ success: true, accounts: safeAccounts });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Lỗi xử lý tài khoản' }, { status: 500 });
   }

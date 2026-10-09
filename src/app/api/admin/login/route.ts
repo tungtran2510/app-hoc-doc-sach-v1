@@ -22,15 +22,11 @@ export async function POST(req: NextRequest) {
     const { password, phone } = await req.json();
     let serverPassword = process.env.ADMIN_PASSWORD;
 
-    // 1. Kiểm tra tài khoản Chủ sở hữu tối cao (SĐT: 0974248716, Mật khẩu: Tung@2510)
     const cleanPhone = typeof phone === 'string' ? phone.trim().replace(/\s+/g, '') : '';
-    const isSpecialTungAccount =
-      (cleanPhone === '0974248716' && password === 'Tung@2510') ||
-      password === 'Tung@2510';
-
     let matchedInstructorAccount: any = null;
 
     // Lấy cấu hình và danh sách tài khoản từ Supabase
+    let dbAdminPassword = '';
     const supabase = getSupabaseServer();
     if (supabase) {
       try {
@@ -41,7 +37,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (data?.admin_password) {
-          serverPassword = data.admin_password;
+          dbAdminPassword = data.admin_password;
         }
 
         // Kiểm tra danh sách tài khoản giảng viên con
@@ -66,10 +62,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let isAuthorized = isSpecialTungAccount || !!matchedInstructorAccount;
+    let isAuthorized = !!matchedInstructorAccount;
 
     if (!isAuthorized) {
-      if (serverPassword && typeof password === 'string' && verifyPassword(password, serverPassword)) {
+      // Ưu tiên mật khẩu trong biến môi trường ADMIN_PASSWORD; nếu không có mới dùng DB settings.admin_password
+      const masterPassword = process.env.ADMIN_PASSWORD || dbAdminPassword;
+      if (masterPassword && typeof password === 'string' && verifyPassword(password, masterPassword)) {
         isAuthorized = true;
       }
     }
@@ -91,13 +89,6 @@ export async function POST(req: NextRequest) {
         allowed_topic_ids: Array.isArray(matchedInstructorAccount.allowed_topic_ids)
           ? matchedInstructorAccount.allowed_topic_ids
           : [],
-      };
-    } else if (cleanPhone === '0974248716' || password === 'Tung@2510') {
-      userInfo = {
-        phone: '0974248716',
-        name: 'Tùng Dinh Dưỡng',
-        role: 'super_admin',
-        allowed_topic_ids: ['*'],
       };
     } else {
       userInfo = {
