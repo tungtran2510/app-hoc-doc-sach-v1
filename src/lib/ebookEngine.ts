@@ -183,7 +183,12 @@ export async function extractCoverFromEbookFile(file: File): Promise<string | nu
     try {
       const pdfjs = await ensurePdfJsLoaded();
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjs.getDocument({
+        data: arrayBuffer,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+      }).promise;
       if (pdf.numPages < 1) return null;
 
       const page = await pdf.getPage(1);
@@ -453,8 +458,9 @@ export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProv
 
   const pdf = await pdfjs.getDocument({
     url: safePdfUrl,
-    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
     cMapPacked: true,
+    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
   }).promise;
 
   const cache = new Map<number, string>();
@@ -467,15 +473,25 @@ export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProv
     const renderPromise = (async () => {
       try {
         const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.8 });
+        // Tối ưu độ phân giải cao 2.2x để chữ tiếng Việt có dấu sắc nét, chống nhòe kerning
+        const viewport = page.getViewport({ scale: 2.2 });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false });
         if (!ctx) throw new Error('Không khởi tạo được bộ vẽ Canvas 2D');
 
+        // Bật làm mịn chất lượng cao chống vỡ font
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
         await page.render({ canvasContext: ctx, viewport }).promise;
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        let dataUrl: string;
+        try {
+          dataUrl = canvas.toDataURL('image/webp', 0.94);
+        } catch {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        }
 
         // Giới hạn bộ nhớ cache tối đa 40 trang gần nhất
         if (cache.size > 40) {

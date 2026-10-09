@@ -931,82 +931,47 @@ export default function SearchPage() {
       ) : (
         <>
 
-      {/* 3. LỊCH SỬ TÌM KIẾM GẦN ĐÂY (KHI CHƯA GÕ TỪ KHÓA) */}
+      {/* 3. LỊCH SỬ TÌM KIẾM GẦN ĐÂY (TINH GỌN 1 HÀNG DUY NHẤT, KHÔNG HỘP THÔ, ĐÃ BỎ GỢI Ý RÁC) */}
       {!isSearching && recentSearches.length > 0 && (
-        <section className="p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] shadow-sm flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-wider text-[#8B4513] dark:text-amber-300 flex items-center gap-1.5">
-              <Clock size={13} />
-              <span>Tìm kiếm gần đây</span>
-            </span>
-            <button
-              type="button"
-              onClick={handleClearAllRecent}
-              className="text-[11px] font-semibold text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <Trash2 size={11} />
-              <span>Xóa tất cả</span>
-            </button>
+        <section className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap scroll-smooth px-0.5">
+          <div className="flex items-center gap-1 text-[11px] font-bold text-[#8B4513] dark:text-amber-400/80 shrink-0 mr-0.5">
+            <Clock size={12} className="text-amber-500" />
+            <span className="hidden xs:inline">Gần đây:</span>
           </div>
 
-          <div
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap scroll-smooth"
-          >
-            {recentSearches.map((term, idx) => (
-              <div
-                key={idx}
-                onClick={() => {
-                  playTapSound();
-                  setQuery(term);
-                  saveToRecentSearches(term);
-                }}
-                className="group pl-2.5 pr-1.5 py-1 rounded-full bg-[#f4ebe1] dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-100 text-[11.5px] font-semibold flex items-center gap-1.5 border border-[#e2d5c5] dark:border-white/10 hover:border-amber-500/40 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+          {recentSearches.map((term, idx) => (
+            <div
+              key={idx}
+              onClick={() => {
+                playTapSound();
+                setQuery(term);
+                saveToRecentSearches(term);
+              }}
+              className="group pl-2.5 pr-1.5 py-1 rounded-full bg-[#ede3d5] dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-100 text-[11.5px] font-semibold flex items-center gap-1.5 border border-[#dccebe] dark:border-white/10 hover:border-amber-500/40 transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
+            >
+              <span className="whitespace-nowrap max-w-[160px] truncate">{term}</span>
+              <button
+                type="button"
+                onClick={(e) => handleRemoveRecentItem(e, term)}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors shrink-0"
+                title="Xóa mục này"
               >
-                <span className="whitespace-nowrap">{term}</span>
-                <button
-                  type="button"
-                  onClick={(e) => handleRemoveRecentItem(e, term)}
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors shrink-0"
-                  title="Xóa mục này"
-                >
-                  <X size={11} />
-                </button>
-              </div>
-            ))}
-          </div>
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={handleClearAllRecent}
+            className="px-2 py-1 rounded-full text-[10.5px] font-semibold text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer shrink-0 flex items-center gap-1 ml-0.5"
+            title="Xóa toàn bộ lịch sử"
+          >
+            <Trash2 size={10} />
+            <span>Xóa hết</span>
+          </button>
         </section>
       )}
-
-      {/* 3. GỢI Ý TỪ KHÓA TÌM KIẾM PHỔ BIẾN (CHIPS) */}
-      <section
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-1"
-      >
-        <span className="text-[11px] font-bold text-[#8B4513] dark:text-amber-400/80 shrink-0 mr-1 flex items-center gap-1">
-          <Sparkles size={12} />
-          <span>Gợi ý:</span>
-        </span>
-        {POPULAR_SEARCHES.map((chip, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => {
-              playTapSound();
-              setQuery(chip);
-              saveToRecentSearches(chip);
-              inputRef.current?.focus();
-            }}
-            className={`px-3 py-1 rounded-full text-[11.5px] font-semibold whitespace-nowrap transition-all cursor-pointer border ${
-              query.toLowerCase() === chip.toLowerCase()
-                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-xs font-bold'
-                : 'bg-[#e8ded1] dark:bg-white/5 hover:bg-[#ded1c0] dark:hover:bg-white/10 text-[#4A2612] dark:text-amber-100/80 border-[#d5c3b1] dark:border-white/10'
-            }`}
-          >
-            {chip}
-          </button>
-        ))}
-      </section>
 
 
       {/* 6. KẾT QUẢ TÌM KIẾM NỘI DUNG SÂU (DEEP IN-BOOK SNIPPETS) */}

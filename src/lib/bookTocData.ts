@@ -93,6 +93,45 @@ export const CURATED_BOOK_TOCS: Record<string, BookTocItem[]> = {
     { title: 'Phần 3: Mười hai cách hướng người khác theo suy nghĩ của bạn', pageIndex: 2, pageNumber: 3, summary: 'Tôn trọng ý kiến đối phương, thừa nhận sai lầm và luôn khởi đầu bằng thái độ thân thiện.' },
     { title: 'Phần 4: Nghệ thuật lãnh đạo và chuyển hóa con người', pageIndex: 3, pageNumber: 4, summary: 'Khen ngợi trước khi góp ý, giữ thể diện cho người khác và khuyến khích họ phát triển.' },
   ],
+
+  // Việt Nam Sử Lược (Trần Trọng Kim)
+  'vietnamsuluoc': [
+    { title: 'Quyển 1: Thời kỳ Thượng cổ (Hồng Bàng, An Dương Vương & Bắc thuộc)', pageIndex: 0, pageNumber: 1, summary: 'Nguồn gốc dân tộc, họ Hồng Bàng, nước Âu Lạc và thời kỳ ngàn năm Bắc thuộc.' },
+    { title: 'Quyển 2: Thời kỳ Tự chủ (Ngô, Đinh, Tiền Lê, Lý, Trần & Hậu Lê)', pageIndex: 1, pageNumber: 2, summary: 'Chiến thắng Bạch Đằng, xây dựng nền độc lập tự chủ và các triều đại hưng thịnh.' },
+    { title: 'Quyển 3: Thời kỳ Nam Bắc phân tranh (Lê - Mạc, Trịnh - Nguyễn)', pageIndex: 2, pageNumber: 3, summary: 'Sự chia cắt non sông, cuộc chiến Đàng Trong - Đàng Ngoài và công cuộc mở cõi phương Nam.' },
+    { title: 'Quyển 4: Thời kỳ Cận kim (Tây Sơn hào kiệt & Vương triều Nguyễn)', pageIndex: 3, pageNumber: 4, summary: 'Người anh hùng áo vải Quang Trung đại phá quân Thanh và sự thống nhất của nhà Nguyễn.' },
+  ],
+
+  // Bí Mật Dinh Dưỡng Cho Sức Khỏe Toàn Diện (The China Study)
+  'thechinastudy': [
+    { title: 'Phần 1: Công trình nghiên cứu dinh dưỡng Trung Quốc (The China Study)', pageIndex: 0, pageNumber: 1, summary: 'Nghiên cứu dịch tễ học dinh dưỡng quy mô nhất lịch sử giữa Cornell, Oxford và Trung Quốc.' },
+    { title: 'Phần 2: Các căn bệnh của sự giàu có (Tim mạch, Béo phì & Tiểu đường)', pageIndex: 1, pageNumber: 2, summary: 'Mối liên hệ nhân quả giữa đạm động vật tinh chế và sự bùng nổ các bệnh mạn tính thoái hóa.' },
+    { title: 'Phần 3: Hướng dẫn chế độ ăn thực vật toàn phần (Whole Food Plant-Based)', pageIndex: 2, pageNumber: 3, summary: 'Nguyên tắc vàng ăn uống bảo vệ tế bào, đảo ngược xơ vữa động mạch và tăng cường tuổi thọ.' },
+    { title: 'Phần 4: Giải mã góc khuất ngành công nghiệp thực phẩm & dược phẩm', pageIndex: 3, pageNumber: 4, summary: 'Sự thật đằng sau các khuyến cáo dinh dưỡng thương mại và con đường sống khỏe độc lập.' },
+  ],
+
+  // Cơ Thể Tự Chữa Lành (Anthony William - Medical Medium)
+  'cothetuchualanh': [
+    { title: 'Phần 1: Cội nguồn của bệnh mạn tính & Bí mật lá gan thần kỳ', pageIndex: 0, pageNumber: 1, summary: 'Khám phá chức năng giải độc sâu của gan và nguồn gốc các bệnh tự miễn bí ẩn.' },
+    { title: 'Phần 2: Phương pháp phục hồi với Nước ép cần tây nguyên chất', pageIndex: 1, pageNumber: 2, summary: 'Cụm muối khoáng vi lượng sodium trong cần tây giúp tái tạo axit dạ dày và dập tắt viêm.' },
+    { title: 'Phần 3: Liệu trình thanh lọc 28 ngày dập tắt ngọn lửa viêm tế bào', pageIndex: 2, pageNumber: 3, summary: 'Thực đơn thải độc tế bào bằng trái cây tươi, rau củ quả sống và thảo dược thiên nhiên.' },
+    { title: 'Phần 4: Tái sinh hệ miễn dịch & Khơi dậy nguồn năng lượng nội tại', pageIndex: 3, pageNumber: 4, summary: 'Phương pháp giữ vững tinh thần an lạc, nuôi dưỡng giấc ngủ sâu và chữa lành tâm thức.' },
+  ],
+
+  // Gió Đầu Mùa (Thạch Lam)
+  'giodaumua': [
+    { title: 'Truyện 1: Gió Lạnh Đầu Mùa', pageIndex: 0, pageNumber: 1, summary: 'Cơn gió may đầu mùa đông và tấm áo bông ấm áp tình thương của Sơn dành cho cái Hiên.' },
+    { title: 'Truyện 2: Cô Hàng Xén', pageIndex: 1, pageNumber: 2, summary: 'Cuộc đời tảo tần, chịu thương chịu khó của cô Tâm trên con đường làng quanh co.' },
+    { title: 'Truyện 3: Dưới Bóng Hoàng Lan', pageIndex: 2, pageNumber: 3, summary: 'Khung cảnh làng quê thanh bình bên bà nội và mối tình êm đềm thoang thoảng hương hoa lan.' },
+    { title: 'Truyện 4: Nhà Mẹ Lê', pageIndex: 3, pageNumber: 4, summary: 'Bức tranh xót xa về tình mẫu tử thiêng liêng của người mẹ nghèo nuôi mười một đứa con nhỏ.' },
+  ],
+
+  // Hà Nội 36 Phố Phường (Thạch Lam)
+  'hanoi36phophuong': [
+    { title: 'Phần 1: Hương vị phố cổ & Nghệ thuật ẩm thực Thăng Long', pageIndex: 0, pageNumber: 1, summary: 'Nét duyên dáng, cổ kính của đất Tràng An và tâm hồn ẩm thực tinh tế của người Hà Nội.' },
+    { title: 'Phần 2: Các thức quà ngon Hà Nội (Phở, Cốm Vòng, Bún thang)', pageIndex: 1, pageNumber: 2, summary: 'Hương vị bát phở bò bốc khói, hạt cốm xanh gói trong lá sen thơm và đĩa bánh cuốn thanh nhã.' },
+    { title: 'Phần 3: Những biển hàng & Nếp sống văn hóa ngàn năm', pageIndex: 2, pageNumber: 3, summary: 'Nhịp sống của phố phường rêu phong và những nét văn hóa trường tồn cùng năm tháng.' },
+  ],
 };
 
 /**

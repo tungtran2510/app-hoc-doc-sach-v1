@@ -1244,3 +1244,41 @@ export function unifyBookMediaItems(books: OnlineBookItem[]): OnlineBookItem[] {
   return [...mergedList, ...otherList];
 }
 
+/**
+ * Tra cứu chính xác xem cuốn sách có bản thu âm Sách Nói thật (Audio MP3/M4A) hay không
+ * Nếu KHÔNG có sách nói thật, trả về null để TUYỆT ĐỐI KHÔNG HIỂN THỊ NÚT TAI NGHE trên giao diện đọc sách!
+ */
+export function findRealAudioForBook(title: string, _author?: string): OnlineBookItem | null {
+  if (!title) return null;
+  const normTitle = removeVietnameseTones(title).toLowerCase().trim();
+
+  // Danh sách các sách nói thật có link âm thanh thực tế
+  const realAudioBooks = CURATED_ONLINE_BOOKS.filter(
+    (b) =>
+      (b.medium === 'audio' || b.format === 'audio') &&
+      b.downloadUrl &&
+      (b.downloadUrl.endsWith('.mp3') ||
+        b.downloadUrl.endsWith('.m4a') ||
+        b.downloadUrl.includes('archive.org') ||
+        b.downloadUrl.startsWith('http'))
+  );
+
+  // 1. So khớp trực tiếp tiêu đề
+  for (const ab of realAudioBooks) {
+    const rawAbTitle = ab.title.replace(/^sách nói:\s*/i, '').trim();
+    const normAbTitle = removeVietnameseTones(rawAbTitle).toLowerCase().trim();
+
+    if (normTitle.includes(normAbTitle) || normAbTitle.includes(normTitle)) {
+      return ab;
+    }
+
+    // So khớp các từ khóa then chốt (ít nhất 2 từ)
+    const tokens = normAbTitle.split(/\s+/).filter((t: string) => t.length > 2);
+    if (tokens.length >= 2 && tokens.every((t: string) => normTitle.includes(t))) {
+      return ab;
+    }
+  }
+
+  return null;
+}
+

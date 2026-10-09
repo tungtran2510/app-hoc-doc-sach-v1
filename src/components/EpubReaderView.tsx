@@ -29,6 +29,9 @@ import {
 } from '../lib/typographyEngine';
 import BookAudioPlayerBar from './BookAudioPlayerBar';
 import ReaderTypographyModal from './ReaderTypographyModal';
+import AudiobookPlayerModal from './AudiobookPlayerModal';
+import { findRealAudioForBook } from '../lib/onlineLibraryData';
+import { playTapSound } from '../lib/audioFeedback';
 
 export interface EpubReaderViewProps {
   fileUrl: string;
@@ -106,8 +109,24 @@ export default function EpubReaderView({
   const [localTheme, setLocalTheme] = useState<'dark' | 'sepia' | 'ivory'>(readingTheme);
   const [isAudioOpen, setIsAudioOpen] = useState(false);
   const [activeParagraphIdx, setActiveParagraphIdx] = useState<number | null>(null);
-
   const activeTypography = typographySettings || localTypography;
+
+  // Phát hiện sách nói thật
+  const effectiveTitle = bookTitle || parsedBook?.title || '';
+  const realAudioBook = useMemo(() => {
+    return findRealAudioForBook(effectiveTitle, author || undefined);
+  }, [effectiveTitle, author]);
+
+  const [activeRealAudio, setActiveRealAudio] = useState<{
+    id: string;
+    title: string;
+    author: string;
+    coverUrl?: string;
+    audioUrl: string;
+    audioNarrator?: string;
+    durationFormatted?: string;
+  } | null>(null);
+  const [showRealAudioModal, setShowRealAudioModal] = useState<boolean>(false);
 
   // State bôi đen văn bản & Floating Tooltip Hỏi AI & Lưu đoạn trích
   const [selectedText, setSelectedText] = useState<string | null>(null);
@@ -589,19 +608,37 @@ export default function EpubReaderView({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={toggleAudioBook}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold ${
-                isAudioOpen
-                  ? 'bg-amber-500 text-slate-950 shadow-md'
-                  : 'bg-black/5 dark:bg-white/10 hover:bg-black/10'
-              }`}
-              title={isAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI'}
-            >
-              <Headphones size={13} className={isAudioOpen ? 'animate-bounce text-slate-950' : 'text-amber-500'} />
-              <span className="text-[11px]">Sách nói</span>
-            </button>
+            {/* NÚT SÁCH NÓI: CHỈ HIỂN THỊ KHI CÓ BẢN SÁCH NÓI THẬT (STUDIO AUDIOBOOK) */}
+            {realAudioBook && (
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setActiveRealAudio({
+                    id: realAudioBook.id,
+                    title: realAudioBook.title,
+                    author: realAudioBook.author,
+                    coverUrl: coverUrl || realAudioBook.coverUrl,
+                    audioUrl: realAudioBook.downloadUrl,
+                    audioNarrator: realAudioBook.audioNarrator || 'Diễn đọc MC Y Khoa Truyền Cảm',
+                    durationFormatted: realAudioBook.durationFormatted,
+                  });
+                  setShowRealAudioModal(true);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold ${
+                  showRealAudioModal
+                    ? 'bg-amber-500 text-slate-950 shadow-md'
+                    : 'bg-black/5 dark:bg-white/10 hover:bg-black/10'
+                }`}
+                title={`Nghe Sách Nói chất lượng cao: ${realAudioBook.title}`}
+              >
+                <Headphones
+                  size={13}
+                  className={showRealAudioModal ? 'animate-bounce text-slate-950' : 'text-amber-500'}
+                />
+                <span className="text-[11px]">Sách nói</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -909,6 +946,15 @@ export default function EpubReaderView({
             </button>
           )}
         </div>
+      )}
+
+      {/* MODAL PHÁT SÁCH NÓI THẬT CHẤT LƯỢNG CAO (STUDIO AUDIOBOOK) */}
+      {showRealAudioModal && activeRealAudio && (
+        <AudiobookPlayerModal
+          isOpen={showRealAudioModal}
+          onClose={() => setShowRealAudioModal(false)}
+          book={activeRealAudio}
+        />
       )}
 
       {/* TOAST THÔNG BÁO LƯU ĐOẠN TRÍCH THÀNH CÔNG */}

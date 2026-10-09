@@ -63,6 +63,8 @@ import {
   addReadingHistory,
 } from '../lib/userFavoritesHistory';
 import { BookTocItem, getBookToc } from '../lib/bookTocData';
+import { findRealAudioForBook, OnlineBookItem } from '../lib/onlineLibraryData';
+import { playTapSound } from '../lib/audioFeedback';
 
 export interface SideBooksReaderModalProps {
   isOpen: boolean;
@@ -102,6 +104,23 @@ export default function SideBooksReaderModal({
   const [isPdfAudioOpen, setIsPdfAudioOpen] = useState<boolean>(false);
   const [audioNotice, setAudioNotice] = useState<string | null>(null);
   const [showSoundModal, setShowSoundModal] = useState<boolean>(false);
+
+  // Phát hiện chính xác cuốn sách có SÁCH NÓI THẬT (Studio MP3/M4A) hay không
+  // TUYỆT ĐỐI KHÔNG HIỂN THỊ NÚT TAI NGHE NẾU SÁCH KHÔNG CÓ BẢN AUDIO THẬT
+  const realAudioBook = useMemo(() => {
+    return findRealAudioForBook(title, author || undefined);
+  }, [title, author]);
+
+  const [activeRealAudio, setActiveRealAudio] = useState<{
+    id: string;
+    title: string;
+    author: string;
+    coverUrl?: string;
+    audioUrl: string;
+    audioNarrator?: string;
+    durationFormatted?: string;
+  } | null>(null);
+  const [showRealAudioModal, setShowRealAudioModal] = useState<boolean>(false);
 
   // Quản lý menu xổ ra Dropdowns (TOC Mục Lục, Reading Mode Chế Độ Đọc, Theme Tông Màu, Tools Tiện Ích)
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'toc' | 'mode' | 'theme' | 'tools'>('none');
@@ -776,13 +795,29 @@ export default function SideBooksReaderModal({
     }
   };
 
+  const handleOpenRealAudio = () => {
+    if (!realAudioBook) return;
+    playTapSound();
+    setActiveRealAudio({
+      id: realAudioBook.id,
+      title: realAudioBook.title,
+      author: realAudioBook.author,
+      coverUrl: coverUrl || realAudioBook.coverUrl,
+      audioUrl: realAudioBook.downloadUrl,
+      audioNarrator: realAudioBook.audioNarrator || 'Diễn đọc MC Y Khoa Truyền Cảm',
+      durationFormatted: realAudioBook.durationFormatted,
+    });
+    setShowRealAudioModal(true);
+  };
+
   const togglePdfAudio = () => {
+    if (realAudioBook) {
+      handleOpenRealAudio();
+      return;
+    }
     if (isPdfAudioOpen) {
       bookAudioPlayer.stop();
       setIsPdfAudioOpen(false);
-    } else {
-      setIsPdfAudioOpen(true);
-      startPdfPageAudio(currentPage + 1);
     }
   };
 
@@ -982,7 +1017,9 @@ export default function SideBooksReaderModal({
                   <div className="px-2 py-1.5 border-b border-black/10 dark:border-white/10 flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5">
                       <List size={14} />
-                      {isEpub ? `Mục Lục Chương (${epubChapters.length})` : `Trang Sách (${totalPages} trang)`}
+                      {isEpub
+                        ? `Mục Lục Chương (${epubChapters.length})`
+                        : `Mục Lục & Trang Sách (${totalPages} trang)`}
                     </span>
                     <button
                       type="button"
@@ -1025,6 +1062,35 @@ export default function SideBooksReaderModal({
                             )}
                           </button>
                         ))
+                      ) : computedToc.length > 0 ? (
+                        computedToc.map((item, idx) => (
+                          <button
+                            key={item.id || idx}
+                            type="button"
+                            onClick={() => {
+                              setTargetEpubChapterIdx(item.pageIndex);
+                              setCurrentEpubChapterIdx(item.pageIndex);
+                              setActiveDropdown('none');
+                            }}
+                            className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer ${
+                              currentEpubChapterIdx === item.pageIndex
+                                ? readingTheme === 'ivory'
+                                  ? 'bg-[#dfcfbd] font-bold text-[#2c180c] ring-1 ring-[#bfae97]'
+                                  : 'bg-amber-500/20 text-amber-300 font-bold ring-1 ring-amber-500/40'
+                                : readingTheme === 'ivory'
+                                ? 'hover:bg-black/5 text-[#4a3220]'
+                                : 'hover:bg-white/10 text-slate-300'
+                            }`}
+                          >
+                            <span className="truncate flex-1">
+                              <span className="opacity-50 font-mono text-[10.5px] mr-1.5">#{idx + 1}</span>
+                              {item.title}
+                            </span>
+                            {currentEpubChapterIdx === item.pageIndex && (
+                              <Check size={14} className="text-amber-400 shrink-0" />
+                            )}
+                          </button>
+                        ))
                       ) : (
                         <div className="p-3 text-center text-xs opacity-60">
                           Đang tải mục lục chương...
@@ -1032,7 +1098,7 @@ export default function SideBooksReaderModal({
                       )}
                     </div>
                   ) : (
-                    /* Điều hướng trang cho PDF / CBZ */
+                    /* Điều hướng trang & Mục lục chương cho PDF / CBZ */
                     <div className="p-2 space-y-2.5 text-xs">
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
@@ -1078,6 +1144,61 @@ export default function SideBooksReaderModal({
                           className="w-full accent-amber-500 h-1.5 bg-black/20 dark:bg-white/20 rounded-lg cursor-pointer"
                         />
                       </div>
+
+                      {/* BẢNG MỤC LỤC CHƯƠNG CHI TIẾT THEO PHÂN ĐOẠN COMPUTED TOC */}
+                      {computedToc.length > 0 && (
+                        <div className="pt-2 border-t border-black/10 dark:border-white/10 space-y-1">
+                          <div className="flex items-center justify-between px-1 mb-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-500">
+                              Mục lục chương ({computedToc.length})
+                            </span>
+                            <span className="text-[9.5px] opacity-60 font-mono">Chạm để nhảy</span>
+                          </div>
+                          <div className="max-h-56 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
+                            {computedToc.map((item, idx) => {
+                              const nextItem = computedToc[idx + 1];
+                              const isActive =
+                                currentPage >= item.pageIndex &&
+                                (!nextItem || currentPage < nextItem.pageIndex);
+                              return (
+                                <button
+                                  key={item.id || idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentPage(item.pageIndex);
+                                    readerRef.current?.goToPage(item.pageIndex);
+                                    setActiveDropdown('none');
+                                  }}
+                                  className={`w-full text-left px-2 py-1.5 rounded-xl text-xs flex items-center justify-between gap-1.5 transition-all cursor-pointer ${
+                                    isActive
+                                      ? readingTheme === 'ivory'
+                                        ? 'bg-[#dfcfbd] font-bold text-[#2c180c] ring-1 ring-[#bfae97]'
+                                        : 'bg-amber-500/20 text-amber-300 font-bold ring-1 ring-amber-500/40'
+                                      : readingTheme === 'ivory'
+                                      ? 'hover:bg-black/5 text-[#4a3220]'
+                                      : 'hover:bg-white/10 text-slate-300'
+                                  }`}
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="opacity-70 font-mono text-[9px] font-bold px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 shrink-0">
+                                        Trang {item.pageNumber}
+                                      </span>
+                                      <span className="truncate font-semibold text-[11px]">{item.title}</span>
+                                    </div>
+                                    {item.summary && (
+                                      <p className="text-[9.5px] opacity-60 line-clamp-1 mt-0.5 ml-0.5">
+                                        {item.summary}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {isActive && <Check size={13} className="text-amber-400 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1356,22 +1477,31 @@ export default function SideBooksReaderModal({
               <span className="font-serif font-bold text-[12.5px]">Aa</span>
             </button>
 
-            {/* 6. NÚT SÁCH NÓI (NẾU LÀ PDF CÓ THỂ ĐỌC AUDIO) */}
-            {isPdf && (
+            {/* 6. NÚT SÁCH NÓI: CHỈ HIỂN THỊ KHI CÓ BẢN SÁCH NÓI THẬT (STUDIO AUDIOBOOK) */}
+            {realAudioBook && (
               <button
                 type="button"
-                onClick={togglePdfAudio}
+                onClick={handleOpenRealAudio}
                 className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
-                  isPdfAudioOpen
+                  showRealAudioModal
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
                     : readingTheme === 'ivory'
                     ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
                     : 'bg-white/10 hover:bg-white/20 text-amber-200 border border-white/10'
                 }`}
-                title={isPdfAudioOpen ? 'Tắt Sách Nói' : 'Bật Sách Nói AI'}
-                aria-label="Sách nói AI"
+                title={`Nghe Sách Nói chất lượng cao: ${realAudioBook.title}`}
+                aria-label="Sách nói thật"
               >
-                <Headphones size={15} className={isPdfAudioOpen ? 'animate-bounce text-slate-950' : readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
+                <Headphones
+                  size={15}
+                  className={
+                    showRealAudioModal
+                      ? 'animate-bounce text-slate-950'
+                      : readingTheme === 'ivory'
+                      ? 'text-[#2c180c]'
+                      : 'text-amber-400'
+                  }
+                />
               </button>
             )}
 
@@ -1870,22 +2000,12 @@ export default function SideBooksReaderModal({
         </div>
       )}
 
-      {/* THANH PHÁT SÁCH NÓI AI NỔI CHO TÀI LIỆU PDF */}
-      {isPdfAudioOpen && isPdf && (
-        <BookAudioPlayerBar
-          chapterTitle={`Trang ${currentPage + 1} / ${totalPages}`}
-          onClose={() => {
-            setIsPdfAudioOpen(false);
-            bookAudioPlayer.stop();
-          }}
-          onAutoNextChapter={() => {
-            if (currentPage < totalPages - 1) {
-              readerRef.current?.flipNext();
-            } else {
-              setIsPdfAudioOpen(false);
-              bookAudioPlayer.stop();
-            }
-          }}
+      {/* MODAL PHÁT SÁCH NÓI THẬT CHẤT LƯỢNG CAO (STUDIO AUDIOBOOK) */}
+      {showRealAudioModal && activeRealAudio && (
+        <AudiobookPlayerModal
+          isOpen={showRealAudioModal}
+          onClose={() => setShowRealAudioModal(false)}
+          book={activeRealAudio}
         />
       )}
 
