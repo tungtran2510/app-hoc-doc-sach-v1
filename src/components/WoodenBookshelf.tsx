@@ -40,8 +40,11 @@ import {
   Upload,
   UploadCloud,
   ShieldCheck,
+  Headphones,
+  Play,
 } from 'lucide-react';
 import { RecommendedBook } from '../lib/types';
+import { AudiobookHistoryItem } from '../lib/audiobookHistory';
 import ImportBookModal from './ImportBookModal';
 import QuickEditBookModal from './QuickEditBookModal';
 import { applyBookOverride } from '../lib/userBooksManager';
@@ -77,6 +80,8 @@ interface WoodenBookshelfProps {
   onOpenUserSync?: () => void;
   onOpenPwaInstall?: () => void;
   onLogout?: () => void;
+  audioResume?: AudiobookHistoryItem | null;
+  onOpenAudioResume?: () => void;
 }
 
 const getBookFormatBadge = (book: RecommendedBook) => {
@@ -110,6 +115,8 @@ export default function WoodenBookshelf({
   title = 'GIAN TRƯNG BÀY SÁCH Y KHOA',
   appName = 'Qbiz-ebook',
   logoUrl,
+  audioResume,
+  onOpenAudioResume,
   onOpenWelcome,
   onOpenAdminSettings,
   onOpenEditApp,
@@ -1036,107 +1043,240 @@ export default function WoodenBookshelf({
         )}
       </div>
 
-      {/* 1-TOUCH BANNER TIẾP TỤC ĐỌC DỞ (MOBILE-FIRST SEAMLESS RESUME) */}
-      {lastReadBook && !isResumeDismissed && (
-        <div className="relative z-10 mb-3 p-2 sm:p-2.5 rounded-2xl bg-white/90 dark:bg-[#1f130b]/90 border border-amber-500/35 backdrop-blur-md flex items-center justify-between gap-2 shadow-xs transition-all animate-in fade-in slide-in-from-top-2 duration-200">
-          <div
-            onClick={() => onReadBook3D(lastReadBook)}
-            className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
-          >
-            <div className="relative w-8 h-11 sm:w-9 sm:h-12 rounded-md overflow-hidden shrink-0 border border-amber-900/20 shadow-xs">
-              <BookCoverArt
-                coverUrl={lastReadBook.cover_url}
-                title={lastReadBook.title}
-                author={lastReadBook.author}
-                className="w-full h-full"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                  <Sparkles size={11} className="text-amber-500 animate-pulse" />
-                  Đang đọc dở
-                </span>
-                <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-900 dark:text-amber-200">
-                  Trang {lastReadPage}
-                </span>
+      {/* KHỐI TIẾP TỤC ĐỌC & NGHE THÔNG MINH (1 HÀNG CHIA ĐÔI HOẶC 1 DÒNG TINH GỌN) */}
+      {(() => {
+        const hasRead = Boolean(lastReadBook && !isResumeDismissed);
+        const hasAudio = Boolean(
+          audioResume &&
+          audioResume.percent < 98 &&
+          audioResume.currentTime > 5 &&
+          !isResumeDismissed
+        );
+
+        if (!hasRead && !hasAudio) return null;
+
+        // TRƯỜNG HỢP 1: CẢ 2 ĐỀU CÓ -> GỘP 1 KHUNG CHIA ĐÔI (GRID 2 CỘT CÂN XỨNG)
+        if (hasRead && hasAudio && lastReadBook && audioResume) {
+          return (
+            <div className="relative z-10 mb-3 p-1.5 sm:p-2 rounded-2xl bg-gradient-to-r from-[#2c180d]/95 via-[#382012]/95 to-[#24130a]/95 border border-amber-500/40 backdrop-blur-md shadow-md animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="grid grid-cols-2 divide-x divide-amber-500/25">
+                {/* NỬA TRÁI: ĐỌC TIẾP */}
+                <div
+                  onClick={() => onReadBook3D(lastReadBook)}
+                  className="pr-2 pl-1 flex items-center gap-2 min-w-0 cursor-pointer group select-none hover:opacity-95 transition-opacity"
+                  title={`Đọc tiếp: ${lastReadBook.title} (Trang ${lastReadPage})`}
+                >
+                  <div className="relative w-6 h-8 sm:w-7 sm:h-9 rounded overflow-hidden shrink-0 border border-amber-500/30 shadow-xs">
+                    <BookCoverArt
+                      coverUrl={lastReadBook.cover_url}
+                      title={lastReadBook.title}
+                      author={lastReadBook.author}
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="text-[9.5px] font-black uppercase text-amber-300 tracking-wider truncate">
+                        Đọc dở · Tr.{lastReadPage}
+                      </span>
+                    </div>
+                    <h4 className="text-[11px] font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                      {lastReadBook.title}
+                    </h4>
+                  </div>
+                </div>
+
+                {/* NỬA PHẢI: NGHE TIẾP */}
+                <div
+                  onClick={() => onOpenAudioResume?.()}
+                  className="pl-2 pr-5 flex items-center gap-2 min-w-0 cursor-pointer group select-none relative hover:opacity-95 transition-opacity"
+                  title={`Nghe tiếp: ${audioResume.title} (${audioResume.percent}%)`}
+                >
+                  <div className="w-6 h-8 sm:w-7 sm:h-9 rounded bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+                    <Headphones size={13} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                      <span className="text-[9.5px] font-black uppercase text-amber-300 tracking-wider truncate">
+                        Nghe dở · {audioResume.percent}%
+                      </span>
+                    </div>
+                    <h4 className="text-[11px] font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                      {audioResume.title}
+                    </h4>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xs font-bold text-[#2A160A] dark:text-amber-100 truncate group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                {lastReadBook.title}
-              </h3>
+
+              {/* Nút đóng/ẩn widget */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsResumeDismissed(true);
+                }}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full text-amber-400/60 hover:text-red-400 flex items-center justify-center cursor-pointer transition-colors"
+                title="Ẩn thông báo này"
+                aria-label="Ẩn khung tiếp tục học"
+              >
+                <X size={11} strokeWidth={2.4} />
+              </button>
             </div>
-          </div>
+          );
+        }
 
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              type="button"
-              onClick={() => onReadBook3D(lastReadBook)}
-              className="h-7 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs transition-all"
-              title={`Đọc tiếp cuốn ${lastReadBook.title} tại trang ${lastReadPage}`}
-            >
-              <BookOpen size={12} strokeWidth={2.4} />
-              <span>Đọc tiếp</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsResumeDismissed(true)}
-              className="w-6 h-6 rounded-lg text-[#6E4223] dark:text-amber-200/60 hover:text-red-500 dark:hover:text-red-400 flex items-center justify-center cursor-pointer transition-colors"
-              title="Ẩn thông báo này"
-              aria-label="Ẩn banner tiếp tục đọc"
-            >
-              <X size={13} strokeWidth={2.4} />
-            </button>
-          </div>
-        </div>
-      )}
+        // TRƯỜNG HỢP 2: CHỈ CÓ ĐỌC DỞ
+        if (hasRead && lastReadBook) {
+          return (
+            <div className="relative z-10 mb-3 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-[#2c180d]/95 via-[#382012]/95 to-[#24130a]/95 border border-amber-500/40 backdrop-blur-md flex items-center justify-between gap-2 shadow-md transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+              <div
+                onClick={() => onReadBook3D(lastReadBook)}
+                className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
+              >
+                <div className="relative w-7 h-9 sm:w-8 sm:h-10 rounded overflow-hidden shrink-0 border border-amber-500/30 shadow-xs">
+                  <BookCoverArt
+                    coverUrl={lastReadBook.cover_url}
+                    title={lastReadBook.title}
+                    author={lastReadBook.author}
+                    className="w-full h-full"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                      Đang đọc dở · Trang {lastReadPage}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                    {lastReadBook.title}
+                  </h3>
+                </div>
+              </div>
 
-      {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN KÍNH LÚP THU PHÓNG */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onReadBook3D(lastReadBook)}
+                  className="h-7 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs transition-all"
+                  title={`Đọc tiếp cuốn ${lastReadBook.title}`}
+                >
+                  <BookOpen size={12} strokeWidth={2.4} />
+                  <span>Đọc tiếp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsResumeDismissed(true)}
+                  className="w-6 h-6 rounded-lg text-amber-400/60 hover:text-red-400 flex items-center justify-center cursor-pointer transition-colors"
+                  title="Ẩn thông báo này"
+                  aria-label="Ẩn banner tiếp tục đọc"
+                >
+                  <X size={12} strokeWidth={2.4} />
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // TRƯỜNG HỢP 3: CHỈ CÓ NGHE DỞ
+        if (hasAudio && audioResume) {
+          return (
+            <div className="relative z-10 mb-3 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-[#2c180d]/95 via-[#382012]/95 to-[#24130a]/95 border border-amber-500/40 backdrop-blur-md flex items-center justify-between gap-2 shadow-md transition-all animate-in fade-in slide-in-from-top-2 duration-200">
+              <div
+                onClick={() => onOpenAudioResume?.()}
+                className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shrink-0">
+                  <Headphones size={15} className="text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                    <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider">
+                      Đang nghe dở · {audioResume.percent}%
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+                    {audioResume.title}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onOpenAudioResume?.()}
+                  className="h-7 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] flex items-center gap-1 shrink-0 cursor-pointer shadow-xs active:scale-95 transition-transform"
+                >
+                  <Play size={11} className="fill-current" />
+                  <span>Nghe tiếp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsResumeDismissed(true)}
+                  className="w-6 h-6 rounded-lg text-amber-400/60 hover:text-red-400 flex items-center justify-center cursor-pointer transition-colors"
+                  title="Ẩn thông báo này"
+                  aria-label="Ẩn banner tiếp tục nghe"
+                >
+                  <X size={12} strokeWidth={2.4} />
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
+
+      {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN DẠNG ICON TINH GỌN */}
       <div className="relative z-10 flex items-center justify-between mb-3 px-1 sm:px-2 gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <h2 className={`text-[13px] sm:text-[14px] font-black tracking-wide uppercase drop-shadow-xs truncate ${getShelfTitleHeaderColor()}`}>
+          <div className="w-1 h-3.5 rounded-full bg-amber-500 shrink-0" />
+          <h2 className={`text-[13px] sm:text-[14px] font-black tracking-wider uppercase drop-shadow-xs whitespace-nowrap ${getShelfTitleHeaderColor()}`}>
             GIAN TRƯNG BÀY
           </h2>
         </div>
 
-        {/* CỤM NÚT SẮP XẾP VÀ KÍNH LÚP THU NHỎ / PHÓNG TO SÁCH */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Nút Đưa sách từ máy vào kệ */}
+        {/* CỤM NÚT SẮP XẾP VÀ KÍNH LÚP THU NHỎ / PHÓNG TO SÁCH (DẠNG ICON TINH GỌN) */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Nút Đưa sách từ máy vào kệ (Icon Upload) */}
           <button
             type="button"
             onClick={() => setShowImportBookModal(true)}
-            className="h-7 px-2 sm:px-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90"
             title="Đưa sách từ máy (.epub, .pdf, .cbz) vào kệ sách"
+            aria-label="Đưa sách vào kệ"
           >
-            <Upload size={12} strokeWidth={2.4} />
-            <span className="hidden xs:inline">+ Đưa sách vào</span>
-            <span className="xs:hidden">+ Sách</span>
+            <Upload size={13} strokeWidth={2.4} />
           </button>
 
-          {/* Nút Bật/Tắt Chế độ Di chuyển Sắp xếp sách */}
+          {/* Nút Bật/Tắt Chế độ Di chuyển Sắp xếp sách (Icon Move/Check) */}
           <button
             type="button"
             onClick={() => {
               if (sortBy !== 'default') setSortBy('default');
               const next = !isReorderMode;
               setIsReorderMode(next);
-              showToast(next ? '🔀 Đã bật chế độ di chuyển: Giữ và kéo sách để đẩy sang vị trí mới' : '✓ Đã xong sắp xếp kệ sách');
+              showToast(next ? '🔀 Đã bật chế độ di chuyển: Giữ và kéo sách để đẩy vị trí' : '✓ Đã xong sắp xếp kệ sách');
             }}
-            className={`h-7 px-2 sm:px-2.5 rounded-xl border flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95 ${
+            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 ${
               isReorderMode
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse shadow-md'
-                : 'bg-white/80 dark:bg-[#1a0f08]/90 hover:bg-white dark:hover:bg-black border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-300'
+                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse shadow-md ring-2 ring-amber-400/50'
+                : 'bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200'
             }`}
-            title="Di chuyển, đổi vị trí các cuốn sách trên kệ"
+            title={isReorderMode ? 'Hoàn tất sắp xếp' : 'Di chuyển / Kéo đổi vị trí sách'}
+            aria-label="Di chuyển sách"
           >
-            {isReorderMode ? <Check size={12} strokeWidth={3} /> : <ArrowLeftRight size={11} strokeWidth={2.4} />}
-            <span>{isReorderMode ? 'Xong' : 'Di chuyển'}</span>
+            {isReorderMode ? <Check size={14} strokeWidth={3} /> : <ArrowLeftRight size={13} strokeWidth={2.4} />}
           </button>
 
-          {/* Nút Đổi Sắp Xếp Sách */}
+          {/* Nút Đổi Sắp Xếp Sách (Icon Sort + Label ngắn) */}
           <button
             type="button"
             onClick={cycleSortOrder}
-            className="h-7 px-2.5 rounded-xl bg-white/80 dark:bg-[#1a0f08]/90 hover:bg-white dark:hover:bg-black border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-300 flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            className="h-7 sm:h-7.5 px-2 rounded-xl bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200 flex items-center gap-1 text-[10px] font-bold transition-all cursor-pointer shadow-xs active:scale-90"
             title={`Sắp xếp: ${
               sortBy === 'default'
                 ? 'Mặc định'
@@ -1148,39 +1288,39 @@ export default function WoodenBookshelf({
             } (Bấm để đổi)`}
             aria-label="Đổi thứ tự sắp xếp sách"
           >
-            <ArrowUpDown size={11} strokeWidth={2.4} />
-            <span className="text-[10.5px]">
+            <ArrowUpDown size={11} strokeWidth={2.4} className="text-amber-500" />
+            <span className="text-[10px]">
               {sortBy === 'default'
                 ? 'Mặc định'
                 : sortBy === 'recent'
                 ? 'Gần đây'
                 : sortBy === 'az'
                 ? 'A-Z'
-                : 'Chuyên mục'}
+                : 'Mục'}
             </span>
           </button>
 
           {/* Cụm Kính lúp: Chỉ thu nhỏ (-) và phóng to (+) đầu sách */}
-          <div className="flex items-center gap-0.5 bg-white/80 dark:bg-[#1a0f08]/90 border border-[#d8c5aa] dark:border-amber-900/60 rounded-xl p-0.5 shadow-xs">
+          <div className="flex items-center gap-0.5 bg-white/80 dark:bg-[#25150c]/90 border border-[#d8c5aa] dark:border-amber-900/60 rounded-xl p-0.5 shadow-xs">
             <button
               type="button"
               onClick={zoomOutBooks}
               disabled={bookCols === 5}
-              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-              title="Thu nhỏ đầu sách (Mini)"
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              title="Thu nhỏ đầu sách"
               aria-label="Thu nhỏ sách"
             >
-              <ZoomOut size={13} strokeWidth={2.4} />
+              <ZoomOut size={12} strokeWidth={2.4} />
             </button>
             <button
               type="button"
               onClick={zoomInBooks}
               disabled={bookCols === 2}
-              className="w-6.5 h-6.5 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-300 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
-              title="Phóng to đầu sách (Lớn)"
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              title="Phóng to đầu sách"
               aria-label="Phóng to sách"
             >
-              <ZoomIn size={13} strokeWidth={2.4} />
+              <ZoomIn size={12} strokeWidth={2.4} />
             </button>
           </div>
         </div>

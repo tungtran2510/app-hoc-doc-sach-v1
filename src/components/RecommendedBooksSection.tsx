@@ -466,8 +466,8 @@ export default function RecommendedBooksSection({
         />
       )}
 
-      {/* KHỐI TIẾP TỤC NGHE DỞ SÁCH NÓI (CHUẨN 1 DÒNG TINH GỌN MOBILE) */}
-      {audioResume && audioResume.percent < 98 && audioResume.currentTime > 5 && (
+      {/* KHỐI TIẾP TỤC NGHE DỞ SÁCH NÓI (CHỈ KHI Ở DẠNG LƯỚI / LOOKBOOK ĐỂ TRÁNH LẶP KHI KỆ SÁCH ĐÃ GỘP) */}
+      {audioResume && audioResume.percent < 98 && audioResume.currentTime > 5 && layoutMode !== 'bookshelf' && (
         <div
           onClick={() => setShowResumePlayer(true)}
           className="mx-1 sm:mx-0 p-2 sm:p-2.5 rounded-2xl bg-gradient-to-r from-[#24150b] via-[#1a0e07] to-[#120904] border border-amber-500/40 shadow-md flex items-center justify-between gap-2.5 cursor-pointer hover:border-amber-400 transition-all select-none animate-in fade-in"
@@ -575,6 +575,8 @@ export default function RecommendedBooksSection({
           title={title}
           appName={appName}
           logoUrl={logoUrl}
+          audioResume={audioResume}
+          onOpenAudioResume={() => setShowResumePlayer(true)}
           onOpenWelcome={onOpenWelcome}
           onOpenAdminSettings={onOpenAdminSettings}
           onOpenEditApp={onOpenEditApp}
