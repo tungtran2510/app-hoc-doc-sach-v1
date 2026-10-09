@@ -504,15 +504,21 @@ export default function SavedBooksPage() {
 
     window.addEventListener('qbiz_book_downloaded', handleDownloadEvent);
     window.addEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+    window.addEventListener('qbiz_book_removed_offline', handleDownloadEvent);
     window.addEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
     window.addEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
     window.addEventListener('qbiz_audiobook_history_updated', handleAudiobookHistoryUpdated);
+    window.addEventListener('qbiz_book_added_to_shelf', handleFavoritesOrHistoryUpdated);
+    window.addEventListener('qbiz_book_removed_from_shelf', handleFavoritesOrHistoryUpdated);
     return () => {
       window.removeEventListener('qbiz_book_downloaded', handleDownloadEvent);
       window.removeEventListener('qbiz_book_metadata_updated', handleDownloadEvent);
+      window.removeEventListener('qbiz_book_removed_offline', handleDownloadEvent);
       window.removeEventListener('qbiz_favorite_updated', handleFavoritesOrHistoryUpdated);
       window.removeEventListener('qbiz_history_updated', handleFavoritesOrHistoryUpdated);
       window.removeEventListener('qbiz_audiobook_history_updated', handleAudiobookHistoryUpdated);
+      window.removeEventListener('qbiz_book_added_to_shelf', handleFavoritesOrHistoryUpdated);
+      window.removeEventListener('qbiz_book_removed_from_shelf', handleFavoritesOrHistoryUpdated);
     };
   }, []);
 

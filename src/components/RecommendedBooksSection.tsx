@@ -173,8 +173,21 @@ export default function RecommendedBooksSection({
       const cached = (await offlineStorage.getAllCachedBooks()) || [];
       const userShelf = userShelfStorage.getAll() || [];
 
+      let customSavedBooks: RecommendedBook[] | null = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const rawCustom = localStorage.getItem('qbiz_bookshelf_custom_books');
+          if (rawCustom) {
+            const parsed = JSON.parse(rawCustom);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              customSavedBooks = parsed;
+            }
+          }
+        } catch {}
+      }
+
       setBooks((prevBooks) => {
-        const baseList = initialBooks && initialBooks.length > 0 ? initialBooks : prevBooks;
+        const baseList = customSavedBooks || (initialBooks && initialBooks.length > 0 ? initialBooks : prevBooks);
         const cachedMap = new Map(cached.map((c) => [c.id, c]));
 
         const seenIds = new Set<string>();
@@ -257,6 +270,16 @@ export default function RecommendedBooksSection({
             }
             seenIds.add(b.id);
           }
+        }
+
+        // Nếu người dùng đã từng kéo thả sắp xếp kệ sách cá nhân, bảo toàn nguyên vẹn thứ tự đó
+        if (customSavedBooks && customSavedBooks.length > 0) {
+          const customOrderMap = new Map(customSavedBooks.map((b, idx) => [b.id, idx]));
+          resultBooks.sort((a, b) => {
+            const idxA = customOrderMap.has(a.id) ? customOrderMap.get(a.id)! : 9999;
+            const idxB = customOrderMap.has(b.id) ? customOrderMap.get(b.id)! : 9999;
+            return idxA - idxB;
+          });
         }
 
         return resultBooks;

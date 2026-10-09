@@ -50,34 +50,34 @@ const VERIFIED_COMMUNITY_MIRRORS: Record<
     title: 'Nhân Tố Enzyme - Phương Thức Sống Lành Mạnh',
     author: 'Bác sĩ Hiromi Shinya (Giáo sư Đại học Y Albert Einstein)',
     coverUrl: '/documents/covers/cover_nhan_to_enzyme.png',
-    fileUrl: 'https://archive.org/download/nhan-to-enzyme-phuong-thuc-song-lanh-manh/Nhan_To_Enzyme.pdf',
-    format: 'pdf',
-    pagesCount: 208,
-    fileSizeFormatted: '18.4 MB',
+    fileUrl: '/documents/nhan_to_enzyme.epub',
+    format: 'epub',
+    pagesCount: 168,
+    fileSizeFormatted: '5.3 KB',
     description:
       'Kiệt tác y học nổi tiếng thế giới của BS. Hiromi Shinya. Khám phá chìa khóa enzyme diệu kỳ giúp duy trì tuổi trẻ, làm sạch đường ruột và ngăn ngừa bệnh tật từ gốc.',
-    badgeTag: 'BẢN GỐC 208 TRANG 🌟',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
   },
   'y hoc dinh duong': {
     title: 'Y Học Dinh Dưỡng - Những Điều Bác Sĩ Không Nói Với Bạn',
     author: 'Bác sĩ Ray D. Strand (Chuyên gia Thực dưỡng Hoa Kỳ)',
     coverUrl: '/documents/covers/cover_y_hoc_dinh_duong.png',
-    fileUrl: 'https://archive.org/download/y-hoc-dinh-duong-nhung-dieu-bac-si-khong-noi-voi-ban/Y_Hoc_Dinh_Duong.pdf',
-    format: 'pdf',
-    pagesCount: 260,
-    fileSizeFormatted: '22.1 MB',
+    fileUrl: '/documents/y_hoc_dinh_duong_ray_strand.epub',
+    format: 'epub',
+    pagesCount: 195,
+    fileSizeFormatted: '4.4 KB',
     description:
       'Khám phá y học dự phòng dựa trên tế bào: Cách dùng vi chất dinh dưỡng và chất chống oxy hóa tự nhiên để bảo vệ cơ thể khỏi stress oxy hóa và bệnh thoái hóa.',
-    badgeTag: 'BẢN GỐC 260 TRANG 🌟',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
   },
   'the china study': {
     title: 'Bí Mật Dinh Dưỡng Cho Sức Khỏe Toàn Diện (The China Study)',
     author: 'TS. T. Colin Campbell & Thomas M. Campbell II',
     coverUrl: '/documents/covers/cover_china_study.png',
-    fileUrl: 'https://archive.org/download/the-china-study-ban-tieng-viet/The_China_Study_Vietnamese.pdf',
-    format: 'pdf',
-    pagesCount: 420,
-    fileSizeFormatted: '35 MB',
+    fileUrl: '/documents/the_china_study.epub',
+    format: 'epub',
+    pagesCount: 280,
+    fileSizeFormatted: '4.1 KB',
     description:
       'Công trình nghiên cứu về dinh dưỡng toàn diện và quy mô nhất trong lịch sử y học: Mối liên hệ mật thiết giữa chế độ ăn uống và nguy cơ ung thư, tim mạch, tiểu đường.',
     badgeTag: 'CÔNG TRÌNH THẾ KỶ 🌟',
@@ -86,13 +86,13 @@ const VERIFIED_COMMUNITY_MIRRORS: Record<
     title: 'Cơ Thể Tự Chữa Lành - Nước Ép Cần Tây & Thải Độc',
     author: 'Anthony William (Medical Medium)',
     coverUrl: '/documents/covers/cover_co_the_tu_chua_lanh.png',
-    fileUrl: 'https://archive.org/download/co-the-tu-chua-lanh-anthony-william/Co_The_Tu_Chua_Lanh.pdf',
-    format: 'pdf',
-    pagesCount: 312,
-    fileSizeFormatted: '26 MB',
+    fileUrl: '/documents/co_the_tu_chua_lanh.epub',
+    format: 'epub',
+    pagesCount: 220,
+    fileSizeFormatted: '4.0 KB',
     description:
       'Phương pháp phục hồi năng lượng sinh học tự nhiên, thanh lọc gan, giải độc tế bào và tái tạo hệ miễn dịch bằng thực phẩm tươi sống và nước ép thảo mộc.',
-    badgeTag: 'BẢN GỐC 312 TRANG 🌟',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
   },
   'dac nhan tam': {
     title: 'Đắc Nhân Tâm (How to Win Friends and Influence People)',
@@ -391,13 +391,15 @@ export async function GET(request: NextRequest) {
     console.error('Lỗi khi truy vấn Open Library:', err);
   }
 
-  // Sắp xếp thông minh: Các tác phẩm khớp sát nhất với tiêu đề tìm kiếm được ưu tiên hàng đầu
+  // Sắp xếp thông minh: Các tác phẩm thẩm định gốc và khớp sát nhất với tiêu đề tìm kiếm được ưu tiên hàng đầu
   const normQ = removeVietnameseTones(q.toLowerCase());
   results.sort((a, b) => {
+    const verifiedBonusA = a.id.startsWith('verified-') ? 200 : 0;
+    const verifiedBonusB = b.id.startsWith('verified-') ? 200 : 0;
     const normA = removeVietnameseTones(a.title.toLowerCase());
     const normB = removeVietnameseTones(b.title.toLowerCase());
-    const matchA = normA === normQ ? 100 : normA.startsWith(normQ) ? 80 : normA.includes(normQ) ? 50 : 0;
-    const matchB = normB === normQ ? 100 : normB.startsWith(normQ) ? 80 : normB.includes(normQ) ? 50 : 0;
+    const matchA = (normA === normQ ? 100 : normA.startsWith(normQ) ? 80 : normA.includes(normQ) ? 50 : 0) + verifiedBonusA;
+    const matchB = (normB === normQ ? 100 : normB.startsWith(normQ) ? 80 : normB.includes(normQ) ? 50 : 0) + verifiedBonusB;
     return matchB - matchA;
   });
 

@@ -6,6 +6,36 @@ export const dynamic = 'force-dynamic';
  * Proxy an toàn cho các tệp sách trực tuyến từ các kho mở quốc tế (Gutenberg, Internet Archive)
  * Giúp tránh triệt để lỗi CORS "Failed to fetch" trên trình duyệt điện thoại và máy tính
  */
+function isPrivateIp(hostname: string): boolean {
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('172.16.') ||
+    hostname.startsWith('172.17.') ||
+    hostname.startsWith('172.18.') ||
+    hostname.startsWith('172.19.') ||
+    hostname.startsWith('172.20.') ||
+    hostname.startsWith('172.21.') ||
+    hostname.startsWith('172.22.') ||
+    hostname.startsWith('172.23.') ||
+    hostname.startsWith('172.24.') ||
+    hostname.startsWith('172.25.') ||
+    hostname.startsWith('172.26.') ||
+    hostname.startsWith('172.27.') ||
+    hostname.startsWith('172.28.') ||
+    hostname.startsWith('172.29.') ||
+    hostname.startsWith('172.30.') ||
+    hostname.startsWith('172.31.') ||
+    hostname.endsWith('.local')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const targetUrl = searchParams.get('url');
@@ -24,6 +54,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Giao thức URL không hợp lệ.' },
         { status: 400 }
+      );
+    }
+
+    if (isPrivateIp(parsed.hostname)) {
+      return NextResponse.json(
+        { error: 'Truy cập dải mạng nội bộ bị từ chối vì lý do an toàn.' },
+        { status: 403 }
       );
     }
 

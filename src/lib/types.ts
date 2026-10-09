@@ -291,6 +291,9 @@ export interface UserProgressSyncData {
   last_read_progress?: Record<string, { page: number; total_pages?: number }>;
   last_read_book_title?: string | null;
   reading_notes?: any[];
+  user_shelf?: any[];
+  audiobook_history?: any[];
+  favorite_books?: any[];
   updated_at?: string;
 }
 

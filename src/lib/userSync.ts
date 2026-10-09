@@ -5,6 +5,9 @@ import {
   getSavedPages,
   getCompletedPages,
 } from './learningProgress';
+import { userShelfStorage } from './userShelfStorage';
+import { getAudiobookHistory } from './audiobookHistory';
+import { getFavoriteBooks } from './userFavoritesHistory';
 
 export const USER_PHONE_KEY = 'user_phone';
 export const LEARNING_PROGRESS_EVENT = 'learning_progress_updated';
@@ -59,6 +62,9 @@ export function getLocalLearningData(): {
   last_read_progress?: Record<string, { page: number; total_pages?: number }>;
   last_read_book_title?: string | null;
   reading_notes?: any[];
+  user_shelf?: any[];
+  audiobook_history?: any[];
+  favorite_books?: any[];
 } {
   const bookmarks: Record<string, number> = {};
   const lastReadProgress: Record<string, { page: number; total_pages?: number }> = {};
@@ -109,6 +115,9 @@ export function getLocalLearningData(): {
     last_read_progress: lastReadProgress,
     last_read_book_title: lastReadBookTitle,
     reading_notes: readingNotes,
+    user_shelf: userShelfStorage.getAll(),
+    audiobook_history: getAudiobookHistory(),
+    favorite_books: getFavoriteBooks(),
   };
 }
 
@@ -162,6 +171,45 @@ export function applyRemoteLearningData(data: UserProgressSyncData): void {
       for (const [bTitle, notes] of Object.entries(byBook)) {
         localStorage.setItem(`qbiz_reading_notes_${bTitle}`, JSON.stringify(notes));
       }
+    }
+
+    if (Array.isArray(data.user_shelf) && data.user_shelf.length > 0) {
+      const currentShelf = userShelfStorage.getAll();
+      const shelfMap = new Map(currentShelf.map((s) => [s.id, s]));
+      for (const s of data.user_shelf) {
+        if (s && s.id && !shelfMap.has(s.id)) {
+          shelfMap.set(s.id, s);
+        }
+      }
+      localStorage.setItem('qbiz_user_bookshelf_v1', JSON.stringify(Array.from(shelfMap.values())));
+      window.dispatchEvent(new CustomEvent('qbiz_book_added_to_shelf'));
+    }
+
+    if (Array.isArray(data.audiobook_history) && data.audiobook_history.length > 0) {
+      const currentAudio = getAudiobookHistory();
+      const audioMap = new Map(currentAudio.map((a) => [a.id, a]));
+      for (const a of data.audiobook_history) {
+        if (a && a.id) {
+          const exist = audioMap.get(a.id);
+          if (!exist || (a.lastListenedAt || 0) > (exist.lastListenedAt || 0)) {
+            audioMap.set(a.id, a);
+          }
+        }
+      }
+      localStorage.setItem('qbiz_audiobook_history_v1', JSON.stringify(Array.from(audioMap.values())));
+      window.dispatchEvent(new CustomEvent('qbiz_audiobook_history_updated'));
+    }
+
+    if (Array.isArray(data.favorite_books) && data.favorite_books.length > 0) {
+      const currentFavs = getFavoriteBooks();
+      const favMap = new Map(currentFavs.map((f) => [f.id, f]));
+      for (const f of data.favorite_books) {
+        if (f && f.id && !favMap.has(f.id)) {
+          favMap.set(f.id, f);
+        }
+      }
+      localStorage.setItem('qbiz_favorite_books_v1', JSON.stringify(Array.from(favMap.values())));
+      window.dispatchEvent(new CustomEvent('qbiz_favorite_updated'));
     }
 
     // Bắn sự kiện để các trang/thành phần đang mở cập nhật tức thì

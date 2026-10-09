@@ -213,8 +213,16 @@ export default function CategoriesPage() {
 
     loadOfflineBooks();
     window.addEventListener('qbiz_books_updated', loadOfflineBooks);
+    window.addEventListener('qbiz_book_downloaded', loadOfflineBooks);
+    window.addEventListener('qbiz_book_removed_offline', loadOfflineBooks);
+    window.addEventListener('qbiz_book_added_to_shelf', loadOfflineBooks);
+    window.addEventListener('qbiz_book_removed_from_shelf', loadOfflineBooks);
     return () => {
       window.removeEventListener('qbiz_books_updated', loadOfflineBooks);
+      window.removeEventListener('qbiz_book_downloaded', loadOfflineBooks);
+      window.removeEventListener('qbiz_book_removed_offline', loadOfflineBooks);
+      window.removeEventListener('qbiz_book_added_to_shelf', loadOfflineBooks);
+      window.removeEventListener('qbiz_book_removed_from_shelf', loadOfflineBooks);
     };
   }, []);
 

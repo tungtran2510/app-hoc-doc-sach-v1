@@ -165,6 +165,51 @@ export async function POST(req: NextRequest) {
     }
     const mergedReadingNotes = Array.from(notesMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
+    // Merge Kệ sách cá nhân (user_shelf)
+    const cloudShelf = Array.isArray(cloudData?.user_shelf) ? cloudData!.user_shelf : [];
+    const localShelf = Array.isArray(localData?.user_shelf) ? localData.user_shelf : [];
+    const shelfMap = new Map<string, any>();
+    for (const item of [...cloudShelf, ...localShelf]) {
+      if (!item || !item.id) continue;
+      const existing = shelfMap.get(item.id);
+      if (!existing || (item.addedAt || 0) >= (existing.addedAt || 0)) {
+        shelfMap.set(item.id, item);
+      }
+    }
+    const mergedUserShelf = Array.from(shelfMap.values()).sort(
+      (a, b) => (b.addedAt || 0) - (a.addedAt || 0)
+    );
+
+    // Merge Lịch sử sách nói (audiobook_history)
+    const cloudAudio = Array.isArray(cloudData?.audiobook_history) ? cloudData!.audiobook_history : [];
+    const localAudio = Array.isArray(localData?.audiobook_history) ? localData.audiobook_history : [];
+    const audioMap = new Map<string, any>();
+    for (const item of [...cloudAudio, ...localAudio]) {
+      if (!item || !item.id) continue;
+      const existing = audioMap.get(item.id);
+      if (!existing || (item.lastListenedAt || 0) >= (existing.lastListenedAt || 0)) {
+        audioMap.set(item.id, item);
+      }
+    }
+    const mergedAudioHistory = Array.from(audioMap.values()).sort(
+      (a, b) => (b.lastListenedAt || 0) - (a.lastListenedAt || 0)
+    );
+
+    // Merge Sách yêu thích (favorite_books)
+    const cloudFavs = Array.isArray(cloudData?.favorite_books) ? cloudData!.favorite_books : [];
+    const localFavs = Array.isArray(localData?.favorite_books) ? localData.favorite_books : [];
+    const favMap = new Map<string, any>();
+    for (const item of [...cloudFavs, ...localFavs]) {
+      if (!item || !item.id) continue;
+      const existing = favMap.get(item.id);
+      if (!existing || (item.favoritedAt || 0) >= (existing.favoritedAt || 0)) {
+        favMap.set(item.id, item);
+      }
+    }
+    const mergedFavoriteBooks = Array.from(favMap.values()).sort(
+      (a, b) => (b.favoritedAt || 0) - (a.favoritedAt || 0)
+    );
+
     const mergedPayload: UserProgressSyncData = {
       phone: '',
       xem_tiep: mergedXemTiep,
@@ -176,6 +221,9 @@ export async function POST(req: NextRequest) {
       last_read_progress: mergedLastReadProgress,
       last_read_book_title: mergedLastReadBookTitle,
       reading_notes: mergedReadingNotes,
+      user_shelf: mergedUserShelf,
+      audiobook_history: mergedAudioHistory,
+      favorite_books: mergedFavoriteBooks,
       updated_at: new Date().toISOString(),
     };
 
