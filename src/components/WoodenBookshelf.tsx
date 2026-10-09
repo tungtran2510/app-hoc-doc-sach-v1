@@ -54,6 +54,8 @@ export type BookshelfCols = 2 | 3 | 4 | 5;
 
 import SyncBackupModal from './SyncBackupModal';
 import BookCoverArt from './BookCoverArt';
+import AudiobookPlayerModal from './AudiobookPlayerModal';
+import { CURATED_ONLINE_BOOKS } from '../lib/onlineLibraryData';
 import { logoutAdmin } from '../lib/adminAuth';
 import { clearUserPhone, getUserPhone } from '../lib/userSync';
 
@@ -87,19 +89,23 @@ interface WoodenBookshelfProps {
 const getBookFormatBadge = (book: RecommendedBook) => {
   const lowerTag = (book.badge_tag || book.tag || '').toLowerCase();
   const lowerName = (book.file_name || book.file_url || book.pdf_url || '').toLowerCase();
+  let label = '3D';
   if (lowerTag.includes('epub') || lowerName.endsWith('.epub')) {
-    return { label: 'EPUB', color: 'bg-emerald-600/90 text-white border-emerald-400/40' };
+    label = 'EPUB';
+  } else if (lowerTag.includes('cbz') || lowerName.endsWith('.cbz')) {
+    label = 'CBZ';
+  } else if (lowerTag.includes('txt') || lowerName.endsWith('.txt')) {
+    label = 'TXT';
+  } else if (lowerTag.includes('pdf') || lowerName.endsWith('.pdf')) {
+    label = 'PDF';
+  } else if (lowerTag.includes('audio') || lowerTag.includes('mp3') || lowerName.endsWith('.mp3')) {
+    label = 'AUDIO';
   }
-  if (lowerTag.includes('cbz') || lowerName.endsWith('.cbz')) {
-    return { label: 'CBZ', color: 'bg-purple-600/90 text-white border-purple-400/40' };
-  }
-  if (lowerTag.includes('txt') || lowerName.endsWith('.txt')) {
-    return { label: 'TXT', color: 'bg-stone-700/90 text-white border-stone-400/40' };
-  }
-  if (lowerTag.includes('pdf') || lowerName.endsWith('.pdf')) {
-    return { label: 'PDF', color: 'bg-rose-600/90 text-white border-rose-400/40' };
-  }
-  return { label: '3D', color: 'bg-amber-600/90 text-white border-amber-400/40' };
+  // Yêu cầu: "Đầu sách epub 3d... Đều không được cho màu. Chỉ ghi chữ mờ ẩn nhỏ ko nổi."
+  return {
+    label,
+    color: 'bg-black/40 text-white/50 border border-white/10 dark:bg-black/55 dark:text-white/40 dark:border-white/5',
+  };
 };
 
 export default function WoodenBookshelf({
@@ -162,6 +168,24 @@ export default function WoodenBookshelf({
   const [isBookshelfFullscreen, setIsBookshelfFullscreen] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isResumeDismissed, setIsResumeDismissed] = useState<boolean>(false);
+  const [showAudioModal, setShowAudioModal] = useState<boolean>(false);
+  const [activeAudioItem, setActiveAudioItem] = useState<{
+    id: string;
+    title: string;
+    author: string;
+    coverUrl?: string;
+    audioUrl: string;
+    fallbackUrl?: string;
+    audioNarrator?: string;
+    durationFormatted?: string;
+  } | null>(null);
+  const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
+
+  const curatedAudiobooksList = React.useMemo(() => {
+    return CURATED_ONLINE_BOOKS.filter(
+      (b) => b.medium === 'audio' || b.medium === 'both' || b.format === 'audio'
+    );
+  }, []);
   const touchStartDistRef = React.useRef<number | null>(null);
 
   const lastReadBook = React.useMemo(() => {
@@ -917,16 +941,8 @@ export default function WoodenBookshelf({
             />
           </div>
 
-          {/* Ở GIỮA: Tên thương hiệu + Lời chào với hiệu ứng Nổi Bong Bóng & Sống Động */}
+          {/* Ở GIỮA: Tên thương hiệu + Lời chào với hiệu ứng Sống Động */}
           <div className="flex flex-col flex-1 min-w-0 relative">
-            {/* Hạt bong bóng hổ phách nổi bồng bềnh nhẹ nhàng */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden -top-1 -bottom-1">
-              <span className="absolute bottom-0 left-2 w-2 h-2 rounded-full bg-amber-400/50 blur-[0.4px] animate-bubble-rise-1" />
-              <span className="absolute bottom-0 left-10 w-1.5 h-1.5 rounded-full bg-yellow-300/60 blur-[0.3px] animate-bubble-rise-2" />
-              <span className="absolute bottom-0 left-20 w-2.5 h-2.5 rounded-full bg-amber-300/40 blur-[0.5px] animate-bubble-rise-3" />
-              <span className="absolute bottom-0 right-6 w-1.5 h-1.5 rounded-full bg-amber-200/70 blur-[0.2px] animate-bubble-rise-4" />
-            </div>
-
             {/* Dòng chữ sống động bồng bềnh 3D */}
             <div className="flex items-center gap-1.5 animate-living-float relative z-10">
               <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-[#24150b] dark:text-[#fdf7ee] uppercase drop-shadow-xs">
@@ -1219,9 +1235,20 @@ export default function WoodenBookshelf({
           <h2 className={`text-[13px] sm:text-[14px] font-black tracking-wider uppercase drop-shadow-xs whitespace-nowrap ${getShelfTitleHeaderColor()}`}>
             GIAN TRƯNG BÀY
           </h2>
+          {/* Nút Audio / Sách nói tinh tế ngay cạnh Gian Trưng Bày theo yêu cầu người dùng */}
+          <button
+            type="button"
+            onClick={() => setShowAudioModal(true)}
+            className="ml-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 border border-amber-500/35 text-amber-800 dark:text-amber-200 text-[10.5px] font-bold flex items-center gap-1 cursor-pointer transition-all shadow-2xs whitespace-nowrap shrink-0"
+            title="Kho Sách Nói Audio"
+            aria-label="Kho sách nói Audio"
+          >
+            <Headphones size={11} className="text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="font-extrabold tracking-tight">Audio</span>
+          </button>
         </div>
 
-        {/* CỤM NÚT SẮP XẾP VÀ KÍNH LÚP THU NHỎ / PHÓNG TO SÁCH (DẠNG ICON TINH GỌN) */}
+        {/* CỤM NÚT SẮP XẾP VÀ KÍNH LÚP THU NHỎ / PHÓNG TO SÁCH (ĐÃ BỎ NÚT CHẾ ĐỘ DI CHUYỂN) */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Nút Đưa sách từ máy vào kệ (Icon Upload) */}
           <button
@@ -1234,27 +1261,7 @@ export default function WoodenBookshelf({
             <Upload size={13} strokeWidth={2.4} />
           </button>
 
-          {/* Nút Bật/Tắt Chế độ Di chuyển Sắp xếp sách (Icon Move/Check) */}
-          <button
-            type="button"
-            onClick={() => {
-              if (sortBy !== 'default') setSortBy('default');
-              const next = !isReorderMode;
-              setIsReorderMode(next);
-              showToast(next ? '🔀 Đã bật chế độ di chuyển: Giữ và kéo sách để đẩy vị trí' : '✓ Đã xong sắp xếp kệ sách');
-            }}
-            className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 ${
-              isReorderMode
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse shadow-md ring-2 ring-amber-400/50'
-                : 'bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200'
-            }`}
-            title={isReorderMode ? 'Hoàn tất sắp xếp' : 'Di chuyển / Kéo đổi vị trí sách'}
-            aria-label="Di chuyển sách"
-          >
-            {isReorderMode ? <Check size={14} strokeWidth={3} /> : <ArrowLeftRight size={13} strokeWidth={2.4} />}
-          </button>
-
-          {/* Nút Đổi Sắp Xếp Sách: DẠNG ICON THU GỌN - ẤN VÀO SỔ RA */}
+          {/* Nút Đổi Sắp Xếp Sách: DẠNG ICON THU GỌN - ĐÃ BỎ CHẤM ĐỎ */}
           <div className="relative">
             <button
               type="button"
@@ -1268,9 +1275,6 @@ export default function WoodenBookshelf({
               aria-label="Đổi thứ tự sắp xếp sách"
             >
               <ArrowUpDown size={13} strokeWidth={2.4} className={sortBy !== 'default' ? 'text-slate-950' : 'text-amber-500'} />
-              {sortBy !== 'default' && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-black" />
-              )}
             </button>
 
             {/* Menu Sổ Ra Chọn Kiểu Sắp Xếp */}
@@ -1552,12 +1556,12 @@ export default function WoodenBookshelf({
                               </button>
                             )}
 
-                            {/* BADGE ĐỊNH DẠNG SÁCH (PDF, EPUB, CBZ, 3D, TXT) */}
+                            {/* BADGE ĐỊNH DẠNG SÁCH (PDF, EPUB, CBZ, 3D, TXT) - CHỮ MỜ ẨN NHỎ KO NỔI */}
                             {!isReorderMode && (() => {
                               const fmt = getBookFormatBadge(book);
                               return (
                                 <span
-                                  className={`absolute bottom-2 right-1.5 z-20 px-1.5 py-0.5 rounded text-[8px] font-mono font-black uppercase tracking-wider shadow-md border pointer-events-none backdrop-blur-xs ${fmt.color}`}
+                                  className={`absolute bottom-2 right-1.5 z-20 px-1 py-0.2 rounded text-[7px] font-mono font-medium tracking-tight pointer-events-none backdrop-blur-2xs ${fmt.color}`}
                                 >
                                   {fmt.label}
                                 </span>
@@ -2687,6 +2691,159 @@ export default function WoodenBookshelf({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL KHO SÁCH NÓI & AUDIOBOOK (1 DÒNG TINH GỌN, CHỌN VÀ NGHE NGAY) */}
+      {showAudioModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
+          onClick={() => setShowAudioModal(false)}
+        >
+          <div
+            className="w-full max-w-sm max-h-[85vh] overflow-hidden rounded-2xl bg-[#FAF6EF] dark:bg-[#1f130b] border border-[#d8c5aa] dark:border-[#553622] text-[#2c180c] dark:text-[#fdf7ee] p-3.5 sm:p-4 shadow-2xl flex flex-col gap-2.5 animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal 1 dòng */}
+            <div className="flex items-center justify-between pb-2 border-b border-[#e2d5c3] dark:border-white/10 shrink-0">
+              <div className="flex items-center gap-2">
+                <Headphones size={18} className="text-purple-600 dark:text-purple-400" />
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-[#2c180c] dark:text-amber-200">
+                  Tủ Sách Nói & Audio
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAudioModal(false)}
+                className="w-7 h-7 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                title="Đóng"
+                aria-label="Đóng"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Banner nghe tiếp nếu có audioResume */}
+            {audioResume && (
+              <div
+                onClick={() => {
+                  setShowAudioModal(false);
+                  if (onOpenAudioResume) {
+                    onOpenAudioResume();
+                  } else {
+                    setActiveAudioItem({
+                      id: audioResume.id,
+                      title: audioResume.title,
+                      author: audioResume.author || 'Tủ Sách Y Khoa',
+                      coverUrl: audioResume.coverUrl,
+                      audioUrl: audioResume.audioUrl,
+                      durationFormatted: audioResume.durationFormatted,
+                    });
+                    setShowAudioPlayer(true);
+                  }
+                }}
+                className="p-2.5 rounded-xl bg-gradient-to-r from-purple-500/15 to-amber-500/15 border border-purple-500/30 hover:border-purple-500/50 cursor-pointer flex items-center gap-2.5 transition-all shadow-2xs active:scale-98 shrink-0"
+              >
+                <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Play size={13} className="fill-current ml-0.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 text-[10px] text-purple-700 dark:text-purple-300 font-bold">
+                    <span>ĐANG NGHE DỞ</span>
+                    <span>{audioResume.percent}%</span>
+                  </div>
+                  <p className="text-[11.5px] font-bold text-[#2A160A] dark:text-amber-100 truncate">
+                    {audioResume.title}
+                  </p>
+                </div>
+                <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 shrink-0">
+                  Nghe tiếp →
+                </span>
+              </div>
+            )}
+
+            {/* Danh sách các đầu sách nói chất lượng cao */}
+            <div className="flex-1 overflow-y-auto max-h-[50vh] flex flex-col gap-2 pr-0.5">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-amber-800/80 dark:text-amber-300/70 px-1 pt-1">
+                Danh mục sách nói tuyển chọn ({curatedAudiobooksList.length})
+              </div>
+              {curatedAudiobooksList.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setShowAudioModal(false);
+                    setActiveAudioItem({
+                      id: item.id,
+                      title: item.title,
+                      author: item.author,
+                      coverUrl: item.coverUrl,
+                      audioUrl: item.downloadUrl,
+                      audioNarrator: item.audioNarrator,
+                      durationFormatted: item.durationFormatted,
+                    });
+                    setShowAudioPlayer(true);
+                  }}
+                  className="p-2 rounded-xl bg-white dark:bg-black/35 border border-[#e8dccb] dark:border-white/5 hover:border-purple-500/50 flex items-center gap-2.5 cursor-pointer transition-all hover:bg-white/90 dark:hover:bg-white/5 active:scale-98"
+                >
+                  <div className="w-10 aspect-[1/1.42] rounded overflow-hidden shrink-0 shadow-2xs border border-white/10">
+                    <BookCoverArt
+                      coverUrl={item.coverUrl}
+                      title={item.title}
+                      author={item.author}
+                      format="audio"
+                      medium="audio"
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <h4 className="text-[11.5px] font-bold text-[#2A160A] dark:text-amber-100 line-clamp-1">
+                      {item.title}
+                    </h4>
+                    <p className="text-[10px] text-stone-500 dark:text-amber-300/70 truncate">
+                      {item.author}
+                    </p>
+                    <div className="flex items-center gap-2 text-[9.5px] text-purple-700 dark:text-purple-300 font-semibold">
+                      <span>🎧 {item.durationFormatted || 'Bản đầy đủ'}</span>
+                      {item.fileSizeFormatted && <span>• {item.fileSizeFormatted}</span>}
+                    </div>
+                  </div>
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                    <Play size={11} className="fill-current ml-0.5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Chân modal: Nút tra cứu thêm sách nói */}
+            <div className="pt-2 border-t border-[#e2d5c3] dark:border-white/10 flex items-center justify-between shrink-0">
+              <Link
+                href="/tim-kiem?filter=audio"
+                onClick={() => setShowAudioModal(false)}
+                className="text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:underline flex items-center gap-1"
+              >
+                <span>Tìm thêm sách nói trực tuyến</span>
+                <ChevronRight size={12} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowAudioModal(false)}
+                className="px-2.5 py-1 rounded-lg bg-amber-900/10 dark:bg-white/10 text-[11px] font-bold text-[#4a250e] dark:text-amber-100 hover:bg-amber-900/20 cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TRÌNH PHÁT SÁCH NÓI MP3 CHUYÊN NGHIỆP */}
+      {activeAudioItem && (
+        <AudiobookPlayerModal
+          isOpen={showAudioPlayer}
+          onClose={() => {
+            setShowAudioPlayer(false);
+          }}
+          book={activeAudioItem}
+        />
       )}
     </div>
   );
