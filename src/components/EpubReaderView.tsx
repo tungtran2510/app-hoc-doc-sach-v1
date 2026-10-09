@@ -54,8 +54,23 @@ function cleanChapterHtml(html: string, title?: string): string {
   if (!html) return '';
   let clean = html;
   if (title) {
-    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    clean = clean.replace(new RegExp(`<h1[^>]*>\\s*${escaped}\\s*<\\/h1>`, 'gi'), '');
+    const raw = title.trim();
+    const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedEntity = raw.replace(/&/g, '&amp;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Loại bỏ thẻ h1, h2, h3, h4 trùng tiêu đề chương
+    clean = clean.replace(new RegExp(`<(h[1-4])[^>]*>\\s*(?:${escaped}|${escapedEntity})\\s*<\\/\\1>`, 'gi'), '');
+
+    // Nếu tiêu đề có dạng "Chương X: Tên chương" hoặc ngược lại, loại bỏ cả phần sau dấu hai chấm nếu trùng
+    if (raw.includes(':')) {
+      const partAfter = raw.split(':')[1]?.trim();
+      if (partAfter && partAfter.length > 5) {
+        const escPart = partAfter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escPartEnt = partAfter.replace(/&/g, '&amp;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        clean = clean.replace(new RegExp(`<(h[1-4])[^>]*>\\s*(?:${escPart}|${escPartEnt})\\s*<\\/\\1>`, 'gi'), '');
+      }
+    }
+
     clean = clean.replace(/<div class="tag">[^<]*<\/div>/gi, '');
   }
   // Chuyển bất kỳ thẻ h1 nào còn lại trong nội dung thành h3 cỡ vừa vặn
@@ -475,7 +490,7 @@ export default function EpubReaderView({
 
   return (
     <div
-      className={`w-full h-full flex flex-col relative select-text transition-colors duration-200 ${themeStyles[localTheme]}`}
+      className={`w-full h-full flex flex-col relative select-text transition-colors duration-200 theme-${localTheme} ${themeStyles[localTheme]}`}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -487,15 +502,71 @@ export default function EpubReaderView({
         }
         .epub-rendered-content h1,
         .epub-rendered-content h2,
-        .epub-rendered-content h3 {
+        .epub-rendered-content h3,
+        .epub-rendered-content h4,
+        .epub-rendered-content h5,
+        .epub-rendered-content h6 {
           font-size: 1.1rem !important;
           line-height: 1.4 !important;
           font-weight: 700 !important;
           margin-top: 0.9rem !important;
           margin-bottom: 0.45rem !important;
         }
+        /* Đảm bảo toàn bộ tiêu đề trong trình đọc sách luôn có màu tương phản chuẩn nét */
+        .theme-sepia h1,
+        .theme-sepia h2,
+        .theme-sepia h3,
+        .theme-sepia h4,
+        .theme-sepia h5,
+        .theme-sepia h6 {
+          color: #5a3e1b !important;
+        }
+        .theme-ivory h1,
+        .theme-ivory h2,
+        .theme-ivory h3,
+        .theme-ivory h4,
+        .theme-ivory h5,
+        .theme-ivory h6 {
+          color: #1a1a1a !important;
+        }
+        .theme-dark h1,
+        .theme-dark h2,
+        .theme-dark h3,
+        .theme-dark h4,
+        .theme-dark h5,
+        .theme-dark h6 {
+          color: #f59e0b !important;
+        }
         .epub-rendered-content p {
           margin-bottom: 0.85rem !important;
+        }
+        /* Định dạng đoạn trích dẫn quote sắc nét theo từng theme */
+        .theme-sepia .epub-rendered-content .quote,
+        .theme-sepia .epub-rendered-content blockquote {
+          color: #4d3322 !important;
+          border-left: 3px solid #8B4513 !important;
+          background-color: rgba(139, 69, 19, 0.06) !important;
+          padding: 0.5rem 1rem !important;
+          margin: 0.85rem 0 !important;
+          font-style: italic !important;
+        }
+        .theme-ivory .epub-rendered-content .quote,
+        .theme-ivory .epub-rendered-content blockquote {
+          color: #374151 !important;
+          border-left: 3px solid #4b5563 !important;
+          background-color: rgba(0, 0, 0, 0.03) !important;
+          padding: 0.5rem 1rem !important;
+          margin: 0.85rem 0 !important;
+          font-style: italic !important;
+        }
+        .theme-dark .epub-rendered-content .quote,
+        .theme-dark .epub-rendered-content blockquote {
+          color: #fde68a !important;
+          border-left: 3px solid #d97706 !important;
+          background-color: rgba(217, 119, 6, 0.08) !important;
+          padding: 0.5rem 1rem !important;
+          margin: 0.85rem 0 !important;
+          font-style: italic !important;
         }
       `}</style>
       {/* THANH ĐIỀU KHIỂN NỘI BỘ (Chỉ hiển thị khi showInternalHeader = true) */}
@@ -616,7 +687,10 @@ export default function EpubReaderView({
 
                   {/* TIÊU ĐỀ CHƯƠNG KÍCH THƯỚC VỪA VẶN, ĐẸP MẮT (KHÔNG BỊ QUÁ TO) */}
                   <h2
-                    className={`text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10 ${headingColors[localTheme]}`}
+                    className="text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10"
+                    style={{
+                      color: localTheme === 'sepia' ? '#5a3e1b' : localTheme === 'ivory' ? '#1a1a1a' : '#f59e0b',
+                    }}
                   >
                     {chap.title}
                   </h2>
@@ -660,7 +734,10 @@ export default function EpubReaderView({
 
               {/* TIÊU ĐỀ CHƯƠNG VỪA VẶN ĐƠN DÒNG / 2 DÒNG TINH TẾ */}
               <h2
-                className={`text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10 ${headingColors[localTheme]}`}
+                className="text-base sm:text-lg font-bold mb-3 pb-1.5 border-b border-black/10 dark:border-white/10"
+                style={{
+                  color: localTheme === 'sepia' ? '#5a3e1b' : localTheme === 'ivory' ? '#1a1a1a' : '#f59e0b',
+                }}
               >
                 {currentChapter.title}
               </h2>

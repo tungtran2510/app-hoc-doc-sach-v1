@@ -243,10 +243,9 @@ html.dark .book-paper strong {
 }
 
 /* Tiêu đề thanh thoát, sắc nét */
-html h1, html h2, html h3, html h4, html h5, html h6 {
-  font-weight: 700 !important;
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
   letter-spacing: -0.01em;
-  color: #fdf7ee;
 }
 
 /* ============================================================================

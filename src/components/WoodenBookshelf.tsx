@@ -169,6 +169,8 @@ export default function WoodenBookshelf({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isResumeDismissed, setIsResumeDismissed] = useState<boolean>(false);
   const [showAudioModal, setShowAudioModal] = useState<boolean>(false);
+  const [showAudioSearch, setShowAudioSearch] = useState<boolean>(false);
+  const [audioSearchQuery, setAudioSearchQuery] = useState<string>('');
   const [activeAudioItem, setActiveAudioItem] = useState<{
     id: string;
     title: string;
@@ -182,10 +184,18 @@ export default function WoodenBookshelf({
   const [showAudioPlayer, setShowAudioPlayer] = useState<boolean>(false);
 
   const curatedAudiobooksList = React.useMemo(() => {
-    return CURATED_ONLINE_BOOKS.filter(
+    const list = CURATED_ONLINE_BOOKS.filter(
       (b) => b.medium === 'audio' || b.medium === 'both' || b.format === 'audio'
     );
-  }, []);
+    if (!audioSearchQuery.trim()) return list;
+    const q = audioSearchQuery.toLowerCase().trim();
+    return list.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        (b.author && b.author.toLowerCase().includes(q)) ||
+        (b.description && b.description.toLowerCase().includes(q))
+    );
+  }, [audioSearchQuery]);
   const touchStartDistRef = React.useRef<number | null>(null);
 
   const lastReadBook = React.useMemo(() => {
@@ -2711,16 +2721,59 @@ export default function WoodenBookshelf({
                   Tủ Sách Nói & Audio
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAudioModal(false)}
-                className="w-7 h-7 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
-                title="Đóng"
-                aria-label="Đóng"
-              >
-                <X size={15} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAudioSearch((prev) => !prev)}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                    showAudioSearch
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10'
+                  }`}
+                  title="Tìm kiếm sách nói"
+                  aria-label="Tìm kiếm sách nói"
+                >
+                  <Search size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAudioModal(false);
+                    setShowAudioSearch(false);
+                    setAudioSearchQuery('');
+                  }}
+                  className="w-7 h-7 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                  title="Đóng"
+                  aria-label="Đóng"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
+
+            {/* Thanh tìm kiếm nhanh sách nói (khi ấn icon kính lúp) */}
+            {showAudioSearch && (
+              <div className="relative shrink-0 animate-in fade-in slide-in-from-top-1 duration-150">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="text"
+                  value={audioSearchQuery}
+                  onChange={(e) => setAudioSearchQuery(e.target.value)}
+                  placeholder="Tìm tên sách nói, tác giả..."
+                  autoFocus
+                  className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-white dark:bg-black/40 border border-purple-500/40 text-xs text-[#2c180c] dark:text-amber-100 placeholder:text-stone-400 focus:outline-hidden focus:ring-1 focus:ring-purple-500"
+                />
+                {audioSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAudioSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Banner nghe tiếp nếu có audioResume */}
             {audioResume && (
@@ -2811,6 +2864,18 @@ export default function WoodenBookshelf({
                   </div>
                 </div>
               ))}
+              {curatedAudiobooksList.length === 0 && (
+                <div className="py-8 text-center text-xs text-stone-500 dark:text-stone-400 flex flex-col items-center gap-2">
+                  <p>Không tìm thấy sách nói nào khớp với &quot;{audioSearchQuery}&quot;.</p>
+                  <Link
+                    href={`/tim-kiem?q=${encodeURIComponent(audioSearchQuery)}&filter=audio`}
+                    onClick={() => setShowAudioModal(false)}
+                    className="text-purple-600 dark:text-purple-400 font-bold hover:underline"
+                  >
+                    Tìm thêm trên toàn thư viện trực tuyến →
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Chân modal: Nút tra cứu thêm sách nói */}
