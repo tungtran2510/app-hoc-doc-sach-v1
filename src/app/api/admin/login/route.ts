@@ -30,11 +30,21 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseServer();
     if (supabase) {
       try {
-        const { data } = await supabase
+        const workspaceId = process.env.APP_WORKSPACE_ID || 'book_platform';
+        let { data } = await supabase
           .from('settings')
           .select('admin_password, block_styles')
-          .eq('workspace_id', 'default')
-          .single();
+          .eq('workspace_id', workspaceId)
+          .maybeSingle();
+
+        if (!data && workspaceId !== 'default') {
+          const fallback = await supabase
+            .from('settings')
+            .select('admin_password, block_styles')
+            .eq('workspace_id', 'default')
+            .maybeSingle();
+          if (fallback.data) data = fallback.data;
+        }
 
         if (data?.admin_password) {
           dbAdminPassword = data.admin_password;

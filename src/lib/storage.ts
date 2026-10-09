@@ -87,7 +87,7 @@ export async function saveStoredAppSettings(settings: Partial<AppCustomSettings>
     expert_title: settings.expert_title,
     hotline: settings.hotline,
     zalo_url: settings.zalo_url,
-    workspace_id: 'default',
+    workspace_id: process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform',
   });
   return res.success;
 }

@@ -16,24 +16,44 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Chưa kết nối cơ sở dữ liệu' }, { status: 503 });
   }
 
+  const targetWorkspace = process.env.APP_WORKSPACE_ID || 'book_platform';
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('settings')
       .select('block_styles')
-      .eq('workspace_id', 'default')
-      .single();
+      .eq('workspace_id', targetWorkspace)
+      .maybeSingle();
 
-    if (error) {
+    if (!data && targetWorkspace !== 'default') {
+      const fb = await supabase
+        .from('settings')
+        .select('block_styles')
+        .eq('workspace_id', 'default')
+        .maybeSingle();
+      if (fb.data) data = fb.data;
+    }
+
+    if (error && !data) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     const accounts: InstructorAccount[] = data?.block_styles?.admin_accounts || [];
     const safeAccounts = accounts.map(({ password, ...acc }) => acc);
 
-    const { data: topicsData } = await supabase
+    let { data: topicsData } = await supabase
       .from('topics')
       .select('id, title, slug, sort_order')
+      .eq('workspace_id', targetWorkspace)
       .order('sort_order', { ascending: true });
+
+    if ((!topicsData || topicsData.length === 0) && targetWorkspace !== 'default') {
+      const fbTopics = await supabase
+        .from('topics')
+        .select('id, title, slug, sort_order')
+        .eq('workspace_id', 'default')
+        .order('sort_order', { ascending: true });
+      if (fbTopics.data) topicsData = fbTopics.data;
+    }
 
     return NextResponse.json({
       success: true,
@@ -61,11 +81,21 @@ export async function POST(req: NextRequest) {
   try {
     const { action, account, accountId } = await req.json();
 
-    const { data: existingData, error: fetchErr } = await supabase
+    const targetWorkspace = process.env.APP_WORKSPACE_ID || 'book_platform';
+    let { data: existingData, error: fetchErr } = await supabase
       .from('settings')
       .select('block_styles')
-      .eq('workspace_id', 'default')
-      .single();
+      .eq('workspace_id', targetWorkspace)
+      .maybeSingle();
+
+    if (!existingData && targetWorkspace !== 'default') {
+      const fb = await supabase
+        .from('settings')
+        .select('block_styles')
+        .eq('workspace_id', 'default')
+        .maybeSingle();
+      if (fb.data) existingData = fb.data;
+    }
 
     if (fetchErr) {
       return NextResponse.json({ error: fetchErr.message }, { status: 500 });
@@ -159,7 +189,7 @@ export async function POST(req: NextRequest) {
         block_styles: updatedBlockStyles,
         updated_at: new Date().toISOString(),
       })
-      .eq('workspace_id', 'default');
+      .eq('workspace_id', targetWorkspace);
 
     if (updateErr) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });

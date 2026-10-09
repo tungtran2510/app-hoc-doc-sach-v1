@@ -19,11 +19,12 @@ export async function GET(req: NextRequest) {
   let blocks = sampleBlocks;
 
   if (supabase) {
+    const targetWorkspace = process.env.APP_WORKSPACE_ID || 'book_platform';
     const [settingsRes, topicsRes, pagesRes, blocksRes] = await Promise.all([
-      supabase.from('settings').select('*').eq('workspace_id', 'default').single(),
-      supabase.from('topics').select('*').order('sort_order', { ascending: true }),
-      supabase.from('pages').select('*').order('sort_order', { ascending: true }),
-      supabase.from('blocks').select('*').order('sort_order', { ascending: true }),
+      supabase.from('settings').select('*').eq('workspace_id', targetWorkspace).maybeSingle(),
+      supabase.from('topics').select('*').eq('workspace_id', targetWorkspace).order('sort_order', { ascending: true }),
+      supabase.from('pages').select('*').eq('workspace_id', targetWorkspace).order('sort_order', { ascending: true }),
+      supabase.from('blocks').select('*').eq('workspace_id', targetWorkspace).order('sort_order', { ascending: true }),
     ]);
 
     if (settingsRes.data) settings = settingsRes.data;

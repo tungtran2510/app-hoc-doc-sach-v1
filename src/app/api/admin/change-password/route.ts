@@ -26,13 +26,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mật khẩu mới phải có tối thiểu 8 ký tự' }, { status: 400 });
     }
 
+    const targetWorkspace = process.env.APP_WORKSPACE_ID || 'book_platform';
+
     // 1. Kiểm tra mật khẩu hiện tại
     let expectedPassword = process.env.ADMIN_PASSWORD;
-    const { data: currentSettings } = await supabase
+    let { data: currentSettings } = await supabase
       .from('settings')
       .select('admin_password')
-      .eq('workspace_id', 'default')
-      .single();
+      .eq('workspace_id', targetWorkspace)
+      .maybeSingle();
+
+    if (!currentSettings && targetWorkspace !== 'default') {
+      const fb = await supabase
+        .from('settings')
+        .select('admin_password')
+        .eq('workspace_id', 'default')
+        .maybeSingle();
+      if (fb.data) currentSettings = fb.data;
+    }
 
     if (!process.env.ADMIN_PASSWORD && currentSettings?.admin_password) {
       expectedPassword = currentSettings.admin_password;
@@ -49,7 +60,7 @@ export async function POST(req: NextRequest) {
         admin_password: hashPassword(newPassword.trim()),
         updated_at: new Date().toISOString(),
       })
-      .eq('workspace_id', 'default');
+      .eq('workspace_id', targetWorkspace);
 
     if (error) {
       return NextResponse.json({ error: error.message || 'Lỗi khi cập nhật mật khẩu' }, { status: 500 });

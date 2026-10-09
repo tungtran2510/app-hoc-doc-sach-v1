@@ -196,11 +196,22 @@ export async function getSettings(): Promise<Settings> {
     if (supabase) {
       try {
         const workspaceId = process.env.APP_WORKSPACE_ID || process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform';
-        const { data } = await supabase
+        let { data } = await supabase
           .from('settings')
           .select('*')
           .eq('workspace_id', workspaceId)
-          .single();
+          .maybeSingle();
+
+        if (!data && workspaceId !== 'default') {
+          const fallbackRes = await supabase
+            .from('settings')
+            .select('*')
+            .eq('workspace_id', 'default')
+            .maybeSingle();
+          if (fallbackRes.data) {
+            data = fallbackRes.data;
+          }
+        }
         if (data) {
           const authProfile = normalizeAuthorProfile(data.author_profile);
           const finalHotline = data.hotline || authProfile.phone || DEFAULT_AUTHOR_PROFILE.phone;
@@ -252,11 +263,18 @@ export async function getTopics(includeHidden = false): Promise<Topic[]> {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        let query = supabase.from('topics').select('*').eq('workspace_id', 'default');
+        const workspaceId = process.env.APP_WORKSPACE_ID || process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform';
+        let query = supabase.from('topics').select('*').eq('workspace_id', workspaceId);
         if (!includeHidden) {
           query = query.eq('is_visible', true);
         }
-        const { data } = await query.order('sort_order', { ascending: true });
+        let { data } = await query.order('sort_order', { ascending: true });
+        if ((!data || data.length === 0) && workspaceId !== 'default') {
+          let fbQuery = supabase.from('topics').select('*').eq('workspace_id', 'default');
+          if (!includeHidden) fbQuery = fbQuery.eq('is_visible', true);
+          const fbRes = await fbQuery.order('sort_order', { ascending: true });
+          if (fbRes.data && fbRes.data.length > 0) data = fbRes.data;
+        }
         if (data && data.length > 0) return data as Topic[];
       } catch {
         // fallback
@@ -274,12 +292,24 @@ export async function getTopicBySlug(slug: string): Promise<Topic | null> {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { data } = await supabase
+        const workspaceId = process.env.APP_WORKSPACE_ID || process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform';
+        let { data } = await supabase
           .from('topics')
           .select('*')
-          .eq('workspace_id', 'default')
+          .eq('workspace_id', workspaceId)
           .eq('slug', slug)
-          .single();
+          .maybeSingle();
+
+        if (!data && workspaceId !== 'default') {
+          const fbRes = await supabase
+            .from('topics')
+            .select('*')
+            .eq('workspace_id', 'default')
+            .eq('slug', slug)
+            .maybeSingle();
+          if (fbRes.data) data = fbRes.data;
+        }
+
         if (data) return data as Topic;
       } catch {
         // fallback
@@ -455,10 +485,19 @@ export async function getAllPageSlugMap(): Promise<Record<string, { slug: string
     const map: Record<string, { slug: string; topicSlug: string; title: string; cover_url: string }> = {};
     if (supabase) {
       try {
-        const [{ data: topics }, { data: pages }] = await Promise.all([
-          supabase.from('topics').select('id, slug'),
-          supabase.from('pages').select('id, topic_id, slug, title, cover_url'),
+        const workspaceId = process.env.APP_WORKSPACE_ID || process.env.NEXT_PUBLIC_APP_WORKSPACE_ID || 'book_platform';
+        let [{ data: topics }, { data: pages }] = await Promise.all([
+          supabase.from('topics').select('id, slug').eq('workspace_id', workspaceId),
+          supabase.from('pages').select('id, topic_id, slug, title, cover_url').eq('workspace_id', workspaceId),
         ]);
+        if ((!topics || topics.length === 0) && workspaceId !== 'default') {
+          const fallbackRes = await Promise.all([
+            supabase.from('topics').select('id, slug').eq('workspace_id', 'default'),
+            supabase.from('pages').select('id, topic_id, slug, title, cover_url').eq('workspace_id', 'default'),
+          ]);
+          topics = fallbackRes[0].data;
+          pages = fallbackRes[1].data;
+        }
         if (topics && pages) {
           const topicMap = Object.fromEntries(topics.map((t) => [t.id, t.slug]));
           pages.forEach((p) => {

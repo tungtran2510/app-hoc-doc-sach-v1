@@ -1179,10 +1179,20 @@ async function getOrBuildLessonCatalog(): Promise<LessonCatalogItem[]> {
   try {
     const supabase = getSupabaseClient();
     if (supabase) {
-      const [{ data: topics }, { data: pages }] = await Promise.all([
-        supabase.from('topics').select('id, title, slug').order('sort_order'),
-        supabase.from('pages').select('id, title, slug, summary, topic_id').order('sort_order'),
+      const targetWorkspace = process.env.APP_WORKSPACE_ID || 'book_platform';
+      let [{ data: topics }, { data: pages }] = await Promise.all([
+        supabase.from('topics').select('id, title, slug').eq('workspace_id', targetWorkspace).order('sort_order'),
+        supabase.from('pages').select('id, title, slug, summary, topic_id').eq('workspace_id', targetWorkspace).order('sort_order'),
       ]);
+
+      if ((!topics || topics.length === 0) && targetWorkspace !== 'default') {
+        const fbRes = await Promise.all([
+          supabase.from('topics').select('id, title, slug').eq('workspace_id', 'default').order('sort_order'),
+          supabase.from('pages').select('id, title, slug, summary, topic_id').eq('workspace_id', 'default').order('sort_order'),
+        ]);
+        topics = fbRes[0].data;
+        pages = fbRes[1].data;
+      }
 
       if (topics && pages && pages.length > 0) {
         const topicMap = new Map(topics.map((t) => [t.id, t]));
