@@ -118,6 +118,51 @@ function removeVietnameseTones(str: string): string {
     .trim();
 }
 
+const JUNK_PATTERNS = [
+  /cia\s*reading\s*room/i,
+  /president'?s\s*daily\s*brief/i,
+  /khach\s*san/i,
+  /hotel/i,
+  /tour\s*du\s*lich/i,
+  /dat\s*phong/i,
+  /rao\s*vat/i,
+  /nha\s*nghi/i,
+  /so\s*tay\s*dien\s*thoai/i,
+  /tuyen\s*dung/i,
+  /thong\s*tin\s*tuyen\s*sinh/i,
+  /de\s*tai\s*nghien\s*cuu\s*khoa\s*hoc/i,
+];
+
+/**
+ * Kiểm tra nghiêm ngặt: Kết quả tìm kiếm PHẢI KHỚP THEO ĐÚNG TIÊU ĐỀ
+ * Loại bỏ tuyệt đối kết quả rác, kết quả chỉ trùng 1 từ đơn lẻ không liên quan
+ */
+function isTitleRelevantToQuery(title: string, query: string): boolean {
+  if (!title || !query) return false;
+  const rawT = title.toLowerCase();
+  const rawQ = query.toLowerCase().trim();
+  const normT = removeVietnameseTones(title);
+  const normQ = removeVietnameseTones(query);
+
+  // 1. Lọc bỏ tài liệu rác (CIA, báo cáo nội bộ, tin du lịch/khách sạn)
+  if (JUNK_PATTERNS.some((p) => p.test(normT) || p.test(rawT))) {
+    return false;
+  }
+
+  // 2. Khớp chính xác cụm từ nguyên văn trong tiêu đề
+  if (rawT.includes(rawQ) || normT.includes(normQ)) {
+    return true;
+  }
+
+  // 3. Với từ khóa ghép (2 từ trở lên, ví dụ "dinh dưỡng", "chí phèo"): tất cả các từ có nghĩa phải có trong tiêu đề
+  const qTokens = normQ.split(/\s+/).filter((t) => t.length > 1);
+  if (qTokens.length > 1 && qTokens.every((t) => normT.includes(t))) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * API Tìm kiếm sách trực tuyến thời gian thực đa nguồn (Omni Live Book Search Engine)
  * - Nguồn 1: Kho thẩm định trực tiếp (Verified Community Mirrors: Sách PDF/EPUB thật 100%)
@@ -141,38 +186,38 @@ export async function GET(request: NextRequest) {
   // 1. Kiểm tra nguồn thẩm định cộng đồng (Chỉ nạp ở trang đầu tiên page === 1)
   if (page === 1) {
     for (const [key, book] of Object.entries(VERIFIED_COMMUNITY_MIRRORS)) {
-      if (cleanQuery.includes(key) || key.includes(cleanQuery)) {
+      if (cleanQuery.includes(key) || key.includes(cleanQuery) || isTitleRelevantToQuery(book.title, q)) {
         const normTitle = removeVietnameseTones(book.title);
         if (!seenTitles.has(normTitle)) {
-        results.push({
-          id: `verified-${key}`,
-          title: book.title,
-          author: book.author,
-          description: book.description,
-          coverUrl: book.coverUrl,
-          format: book.format,
-          fileSizeFormatted: book.fileSizeFormatted,
-          pagesCount: book.pagesCount,
-          downloadUrl: book.fileUrl.startsWith('http')
-            ? `/api/download-proxy?url=${encodeURIComponent(book.fileUrl)}`
-            : book.fileUrl,
-          badgeTag: book.badgeTag,
-          source: 'Thư Viện Thẩm Định Gốc',
-        });
-        seenTitles.add(normTitle);
+          results.push({
+            id: `verified-${key}`,
+            title: book.title,
+            author: book.author,
+            description: book.description,
+            coverUrl: book.coverUrl,
+            format: book.format,
+            fileSizeFormatted: book.fileSizeFormatted,
+            pagesCount: book.pagesCount,
+            downloadUrl: book.fileUrl.startsWith('http')
+              ? `/api/download-proxy?url=${encodeURIComponent(book.fileUrl)}`
+              : book.fileUrl,
+            badgeTag: book.badgeTag,
+            source: 'Thư Viện Thẩm Định Gốc',
+          });
+          seenTitles.add(normTitle);
         }
       }
     }
   }
 
-  // 2. Tìm kiếm qua Google Books API
+  // 2. Tìm kiếm qua Google Books API (Chỉ lấy sách có TIÊU ĐỀ khớp từ khóa)
   try {
     const gbController = new AbortController();
     const gbTimeout = setTimeout(() => gbController.abort(), 6000); // 6s timeout
     const gbStartIndex = (page - 1) * 10;
 
     const gbRes = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+      `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(
         q
       )}&maxResults=10&startIndex=${gbStartIndex}&printType=books`,
       {
@@ -191,7 +236,7 @@ export async function GET(request: NextRequest) {
         for (const item of gbData.items) {
           const info = item.volumeInfo || {};
           const title = info.title || '';
-          if (!title) continue;
+          if (!title || !isTitleRelevantToQuery(title, q)) continue;
 
           const normTitle = removeVietnameseTones(title);
           if (seenTitles.has(normTitle)) continue;
@@ -254,17 +299,15 @@ export async function GET(request: NextRequest) {
     console.error('Lỗi khi truy vấn Google Books:', err);
   }
 
-  // 3. Tìm kiếm qua Internet Archive API (Các ấn phẩm tiếng Việt và tài liệu y khoa mở)
+  // 3. Tìm kiếm qua Internet Archive API (Chỉ lấy sách có TIÊU ĐỀ khớp, loại bỏ 100% rác CIA/du lịch)
   try {
     const iaController = new AbortController();
     const iaTimeout = setTimeout(() => iaController.abort(), 6000);
 
     const iaRes = await fetch(
-      `https://archive.org/advancedsearch.php?q=(title:(${encodeURIComponent(
+      `https://archive.org/advancedsearch.php?q=title:(${encodeURIComponent(
         q
-      )})+OR+(${encodeURIComponent(
-        q
-      )}))+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=8&page=${page}&output=json`,
+      )})+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=20&page=${page}&output=json`,
       {
         signal: iaController.signal,
         headers: {
@@ -282,6 +325,7 @@ export async function GET(request: NextRequest) {
         for (const doc of docs) {
           const title = doc.title || '';
           if (!title || !doc.identifier) continue;
+          if (!isTitleRelevantToQuery(title, q)) continue;
 
           const normTitle = removeVietnameseTones(title);
           if (seenTitles.has(normTitle)) continue;
@@ -317,13 +361,13 @@ export async function GET(request: NextRequest) {
     console.error('Lỗi khi truy vấn Internet Archive:', err);
   }
 
-  // 4. Tìm kiếm qua Open Library API (Kho sách mở toàn cầu & Ebook Catalog)
+  // 4. Tìm kiếm qua Open Library API (Truy vấn theo TIÊU ĐỀ title=, loại bỏ sách sai)
   try {
     const olController = new AbortController();
     const olTimeout = setTimeout(() => olController.abort(), 6000);
 
     const olRes = await fetch(
-      `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=8&page=${page}`,
+      `https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&limit=15&page=${page}`,
       {
         signal: olController.signal,
         headers: {
@@ -340,7 +384,7 @@ export async function GET(request: NextRequest) {
       if (Array.isArray(docs)) {
         for (const doc of docs) {
           const title = doc.title || '';
-          if (!title) continue;
+          if (!title || !isTitleRelevantToQuery(title, q)) continue;
 
           const normTitle = removeVietnameseTones(title);
           if (seenTitles.has(normTitle)) continue;

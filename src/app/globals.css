@@ -289,3 +289,81 @@ html h1, html h2, html h3, html h4, html h5, html h6 {
   will-change: transform;
 }
 
+/* ============================================================================
+   HIỆU ỨNG CHỮ SỐNG ĐỘNG & BONG BÓNG HỔ PHÁCH NỔI BỒNG BỀNH (LIVING BUBBLES)
+   ============================================================================ */
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(10px) scale(0.5);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.9;
+    transform: translateY(-8px) scale(1.1) translateX(3px);
+  }
+  100% {
+    transform: translateY(-22px) scale(0.3) translateX(-2px);
+    opacity: 0;
+  }
+}
+
+@keyframes living-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+@keyframes golden-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-living-float {
+  animation: living-float 4.2s ease-in-out infinite;
+  display: inline-flex;
+}
+
+.animate-bubble-rise-1 {
+  animation: bubble-rise 3.2s ease-in-out infinite;
+}
+.animate-bubble-rise-2 {
+  animation: bubble-rise 4.1s ease-in-out 0.8s infinite;
+}
+.animate-bubble-rise-3 {
+  animation: bubble-rise 3.7s ease-in-out 1.6s infinite;
+}
+.animate-bubble-rise-4 {
+  animation: bubble-rise 4.5s ease-in-out 2.3s infinite;
+}
+.animate-bubble-rise-5 {
+  animation: bubble-rise 3.9s ease-in-out 0.4s infinite;
+}
+
+.golden-shimmer-text {
+  background: linear-gradient(
+    105deg,
+    #fef08a 0%,
+    #f59e0b 25%,
+    #ffffff 50%,
+    #d97706 75%,
+    #fef08a 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: golden-shimmer 5s linear infinite;
+  filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.35));
+}
+
+

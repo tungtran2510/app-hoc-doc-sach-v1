@@ -32,6 +32,7 @@ import { playTapSound, playSuccessChime } from '../../lib/audioFeedback';
 import { matchSmartKeywords, CURATED_ONLINE_BOOKS, unifyBookMediaItems, ONLINE_CATEGORIES } from '../../lib/onlineLibraryData';
 import { offlineStorage } from '../../lib/offlineStorage';
 import { userShelfStorage } from '../../lib/userShelfStorage';
+import BookCoverArt from '../../components/BookCoverArt';
 
 export const dynamic = 'force-dynamic';
 
@@ -371,7 +372,7 @@ export default function SearchPage() {
   }, [books]);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    // Không tự động focus ô tìm kiếm khi vừa vào để tránh nhảy bàn phím ảo (theo yêu cầu người dùng)
     document.title = 'Tìm kiếm sách · Qbiz Books';
 
     // Nạp lịch sử tìm kiếm gần đây từ localStorage
@@ -394,12 +395,17 @@ export default function SearchPage() {
         const data = await res.json();
         let list: SearchBookItem[] = Array.isArray(data?.books) ? [...data.books] : [];
 
-        // Hợp nhất với các đầu sách đã tải về từ IndexedDB
+        // Hợp nhất với các đầu sách đã tải về từ IndexedDB (tránh trùng lặp ID và tựa đề)
         try {
           const cached = await offlineStorage.getAllCachedBooks();
           const existingIds = new Set(list.map((b) => b.id));
+          const existingKeys = new Set(
+            list.map((b) => `${removeVietnameseTones(b.title)}__${removeVietnameseTones(b.author || '')}`)
+          );
+
           for (const c of cached) {
-            if (!existingIds.has(c.id)) {
+            const key = `${removeVietnameseTones(c.title)}__${removeVietnameseTones(c.author || '')}`;
+            if (!existingIds.has(c.id) && !existingKeys.has(key)) {
               const storedCustomCover =
                 typeof window !== 'undefined'
                   ? localStorage.getItem(`custom_cover_${c.id}`)
@@ -420,9 +426,19 @@ export default function SearchPage() {
                 file_name: c.fileName || c.title,
               });
               existingIds.add(c.id);
+              existingKeys.add(key);
             }
           }
         } catch {}
+
+        // Khử trùng lặp cuối cùng đảm bảo không bao giờ xuất hiện 2 thẻ sách cùng tên
+        const seenKeys = new Set<string>();
+        list = list.filter((b) => {
+          const key = `${removeVietnameseTones(b.title)}__${removeVietnameseTones(b.author || '')}`;
+          if (seenKeys.has(key)) return false;
+          seenKeys.add(key);
+          return true;
+        });
 
         setBooks(list);
       } catch {}
@@ -548,12 +564,32 @@ export default function SearchPage() {
     }
   };
 
-  // 1. Lọc kết quả tìm kiếm theo Sách (áp dụng NLP Smart Keyword Matching cho cả câu tự nhiên)
+  // 1. Lọc kết quả tìm kiếm theo Sách: ƯU TIÊN TUYỆT ĐỐI THEO TIÊU ĐỀ
   const scoredBooks = books.map((b) => {
     if (!debouncedQuery.trim()) return { book: b, matched: true, score: 1 };
-    const fullText = `${b.title} ${b.author} ${b.description} ${b.badge_tag}`;
-    const res = matchSmartKeywords(fullText, debouncedQuery, { title: b.title, author: b.author });
-    return { book: b, matched: res.matched, score: res.score };
+    const normQ = removeVietnameseTones(debouncedQuery).toLowerCase().trim();
+    const qTokens = normQ.split(/\s+/).filter(Boolean);
+    const normTitle = removeVietnameseTones(b.title).toLowerCase();
+    const normAuthor = removeVietnameseTones(b.author || '').toLowerCase();
+
+    // 1.1 Khớp chính xác cả cụm từ trong tiêu đề
+    if (normTitle.includes(normQ)) {
+      return { book: b, matched: true, score: 300 };
+    }
+    // 1.2 Khớp tất cả các từ trong tiêu đề
+    if (qTokens.length > 1 && qTokens.every((t) => normTitle.includes(t))) {
+      return { book: b, matched: true, score: 250 };
+    }
+    // 1.3 Khớp tên tác giả
+    if (normAuthor.includes(normQ) || (qTokens.length > 1 && qTokens.every((t) => normAuthor.includes(t)))) {
+      return { book: b, matched: true, score: 180 };
+    }
+    // 1.4 Khớp ít nhất 1 từ trong tiêu đề nếu cụm từ dài
+    if (qTokens.length > 1 && qTokens.some((t) => normTitle.includes(t))) {
+      return { book: b, matched: true, score: 100 };
+    }
+
+    return { book: b, matched: false, score: 0 };
   });
 
   const matchedBooks = scoredBooks
@@ -561,15 +597,22 @@ export default function SearchPage() {
     .sort((a, b) => b.score - a.score)
     .map((s) => s.book);
 
-  // 1.5. Đếm số lượng sách trực tuyến khớp từ khóa (sau khi gộp Đọc & Nghe song hành)
+  // 1.5. Đếm số lượng sách trực tuyến khớp từ khóa THEO ĐÚNG TIÊU ĐỀ
   const unifiedCuratedOnlineBooks = useMemo(() => unifyBookMediaItems(CURATED_ONLINE_BOOKS), []);
 
   const onlineMatchedCount = useMemo(() => {
     if (!debouncedQuery.trim()) return unifiedCuratedOnlineBooks.length;
+    const normQ = removeVietnameseTones(debouncedQuery).toLowerCase().trim();
+    const qTokens = normQ.split(/\s+/).filter(Boolean);
+
     return unifiedCuratedOnlineBooks.filter((b) => {
-      const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
-      const res = matchSmartKeywords(fullText, debouncedQuery, { title: b.title, author: b.author });
-      return res.matched;
+      const normTitle = removeVietnameseTones(b.title).toLowerCase();
+      const normAuthor = removeVietnameseTones(b.author).toLowerCase();
+      return (
+        normTitle.includes(normQ) ||
+        (qTokens.length > 1 && qTokens.every((t) => normTitle.includes(t))) ||
+        normAuthor.includes(normQ)
+      );
     }).length;
   }, [debouncedQuery, unifiedCuratedOnlineBooks]);
 
@@ -906,7 +949,10 @@ export default function SearchPage() {
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
+          <div
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 whitespace-nowrap scroll-smooth"
+          >
             {recentSearches.map((term, idx) => (
               <div
                 key={idx}
@@ -914,15 +960,14 @@ export default function SearchPage() {
                   playTapSound();
                   setQuery(term);
                   saveToRecentSearches(term);
-                  inputRef.current?.focus();
                 }}
-                className="group pl-2.5 pr-1.5 py-1 rounded-full bg-[#f4ebe1] dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-100 text-[11.5px] font-semibold flex items-center gap-1.5 border border-[#e2d5c5] dark:border-white/10 hover:border-amber-500/40 transition-all cursor-pointer"
+                className="group pl-2.5 pr-1.5 py-1 rounded-full bg-[#f4ebe1] dark:bg-white/5 hover:bg-amber-500/20 text-[#3A1F10] dark:text-amber-100 text-[11.5px] font-semibold flex items-center gap-1.5 border border-[#e2d5c5] dark:border-white/10 hover:border-amber-500/40 transition-all cursor-pointer shrink-0 whitespace-nowrap"
               >
-                <span>{term}</span>
+                <span className="whitespace-nowrap">{term}</span>
                 <button
                   type="button"
                   onClick={(e) => handleRemoveRecentItem(e, term)}
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors"
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors shrink-0"
                   title="Xóa mục này"
                 >
                   <X size={11} />
@@ -984,9 +1029,14 @@ export default function SearchPage() {
                 onClick={() => handleOpenSnippetPage(snip)}
                 className="p-2.5 rounded-xl bg-white dark:bg-[#23170e] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/50 flex items-start gap-2.5 transition-all cursor-pointer group shadow-2xs"
               >
-                {/* Ảnh bìa nhỏ */}
-                <div className="w-10 aspect-[1/1.42] rounded overflow-hidden bg-black/30 border border-white/10 shrink-0 p-0.5 mt-0.5">
-                  <img src={snip.coverUrl} alt={snip.bookTitle} className="w-full h-full object-contain" />
+                {/* Ảnh bìa nhỏ chuẩn BookCoverArt */}
+                <div className="w-10 aspect-[1/1.42] rounded overflow-hidden shadow-xs border border-white/10 shrink-0 mt-0.5">
+                  <BookCoverArt
+                    coverUrl={snip.coverUrl}
+                    title={snip.bookTitle}
+                    format="EPUB"
+                    className="w-full h-full"
+                  />
                 </div>
 
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -1078,17 +1128,18 @@ export default function SearchPage() {
               key={book.id}
               className="p-2.5 sm:p-3 rounded-2xl bg-white dark:bg-[#22150c] border border-[#e6dcce] dark:border-[#553622] hover:border-amber-500/60 text-[#2A160A] dark:text-[#fdf7ee] shadow-sm dark:shadow-md flex items-center gap-3 transition-all group"
             >
-              {/* Bìa sách 3D thu nhỏ */}
+              {/* Bìa sách 3D thu nhỏ chuẩn BookCoverArt chống lỗi ảnh bìa */}
               <div
                 onClick={() => handleOpenBook(book)}
-                className="w-[72px] sm:w-[84px] aspect-[1/1.42] rounded-r-md rounded-l-xs overflow-hidden shadow-md border-l-2 border-amber-900/10 dark:border-white/20 shrink-0 cursor-pointer group-hover:scale-105 transition-transform relative bg-[#F5EFE6] dark:bg-[#1c1109] p-0.5 flex items-center justify-center"
+                className="w-[72px] sm:w-[84px] aspect-[1/1.42] rounded-r-md rounded-l-xs overflow-hidden shadow-md border-l-2 border-amber-900/10 dark:border-white/20 shrink-0 cursor-pointer group-hover:scale-105 transition-transform relative bg-[#F5EFE6] dark:bg-[#1c1109] flex items-center justify-center"
                 title="Bấm để đọc sách 3D"
               >
-                <img
-                  src={book.cover_url}
-                  alt={book.title}
-                  className="w-full h-full object-contain block"
-                  loading="lazy"
+                <BookCoverArt
+                  coverUrl={book.cover_url}
+                  title={book.title}
+                  author={book.author}
+                  format={book.badge_tag}
+                  className="w-full h-full"
                 />
               </div>
 

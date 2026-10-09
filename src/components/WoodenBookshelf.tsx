@@ -136,6 +136,7 @@ export default function WoodenBookshelf({
   // Menu Cài đặt & Tài khoản
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   // Tùy chọn chuyên sâu đọc sách (Đồng bộ với Reader 3D)
   const [readerPaperTheme, setReaderPaperTheme] = useState<'sepia' | 'dark' | 'ivory'>('dark');
@@ -916,16 +917,27 @@ export default function WoodenBookshelf({
             />
           </div>
 
-          {/* Ở GIỮA: Tên thương hiệu + Lời chào "Hi, [tên người dùng]!" */}
-          <div className="flex flex-col flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+          {/* Ở GIỮA: Tên thương hiệu + Lời chào với hiệu ứng Nổi Bong Bóng & Sống Động */}
+          <div className="flex flex-col flex-1 min-w-0 relative">
+            {/* Hạt bong bóng hổ phách nổi bồng bềnh nhẹ nhàng */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden -top-1 -bottom-1">
+              <span className="absolute bottom-0 left-2 w-2 h-2 rounded-full bg-amber-400/50 blur-[0.4px] animate-bubble-rise-1" />
+              <span className="absolute bottom-0 left-10 w-1.5 h-1.5 rounded-full bg-yellow-300/60 blur-[0.3px] animate-bubble-rise-2" />
+              <span className="absolute bottom-0 left-20 w-2.5 h-2.5 rounded-full bg-amber-300/40 blur-[0.5px] animate-bubble-rise-3" />
+              <span className="absolute bottom-0 right-6 w-1.5 h-1.5 rounded-full bg-amber-200/70 blur-[0.2px] animate-bubble-rise-4" />
+            </div>
+
+            {/* Dòng chữ sống động bồng bềnh 3D */}
+            <div className="flex items-center gap-1.5 animate-living-float relative z-10">
               <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-[#24150b] dark:text-[#fdf7ee] uppercase drop-shadow-xs">
                 {firstWord}
               </span>
-              <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-amber-700 dark:text-amber-400 uppercase drop-shadow-xs">
+              <span className="text-[15px] sm:text-[16px] font-black tracking-tight golden-shimmer-text uppercase">
                 {restWords}
               </span>
+              <span className="text-[11px] animate-pulse select-none">✨</span>
             </div>
+
             {/* Lời chào người dùng */}
             <button
               type="button"
@@ -933,7 +945,7 @@ export default function WoodenBookshelf({
                 setNameInput(userName === 'bạn' ? '' : userName);
                 setShowNameModal(true);
               }}
-              className="text-[11.5px] sm:text-[12px] font-bold text-[#78350f] dark:text-amber-200/90 hover:text-[#451a03] dark:hover:text-amber-100 mt-0.5 flex items-center gap-1 cursor-pointer transition-colors text-left group/greet truncate"
+              className="text-[11.5px] sm:text-[12px] font-bold text-[#78350f] dark:text-amber-200/90 hover:text-[#451a03] dark:hover:text-amber-100 mt-0.5 flex items-center gap-1 cursor-pointer transition-colors text-left group/greet truncate relative z-10"
               title="Bấm để đổi tên của bạn"
             >
               <span className="truncate">Hi, {userName || 'bạn'}! 👋</span>
@@ -941,61 +953,31 @@ export default function WoodenBookshelf({
             </button>
           </div>
 
-          {/* BÊN PHẢI: CỤM CÀI ĐẶT & TIỆN ÍCH */}
+          {/* BÊN PHẢI: CỤM CÀI ĐẶT & TIỆN ÍCH DẠNG ICON THU GỌN (ẤN VÀO SỔ RA) */}
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Chuyển chế độ Sáng / Tối */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 border border-[#d8c5aa] dark:border-white/10 flex items-center justify-center text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 transition-all cursor-pointer shadow-xs"
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 border border-[#d8c5aa] dark:border-white/10 flex items-center justify-center text-amber-900 dark:text-amber-300 hover:text-amber-950 dark:hover:text-amber-200 transition-all cursor-pointer shadow-xs active:scale-95"
               title={isDark ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối'}
               aria-label="Sáng / Tối"
             >
               {isDark ? <Sun size={15} strokeWidth={2.4} /> : <Moon size={15} strokeWidth={2.4} />}
             </button>
 
-            {/* Toàn màn hình kệ sách (Immersive Native Fullscreen) */}
-            <button
-              type="button"
-              onClick={toggleBookshelfFullscreen}
-              className={`w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-xs ${
-                isBookshelfFullscreen
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-                  : 'bg-white/70 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 text-amber-900 dark:text-amber-200 hover:text-amber-950 dark:hover:text-white border-[#d8c5aa] dark:border-white/10'
-              }`}
-              title={isBookshelfFullscreen ? 'Thu nhỏ cửa sổ' : 'Toàn màn hình'}
-              aria-label="Toàn màn hình"
-            >
-              {isBookshelfFullscreen ? (
-                <Minimize size={14} strokeWidth={2.4} />
-              ) : (
-                <Maximize size={14} strokeWidth={2.4} />
-              )}
-            </button>
-
-            {/* Nút Cài đặt / Quản trị */}
+            {/* Nút Cài đặt / Menu Tổng (Ấn vào sổ ra toàn bộ menu điều khiển) */}
             <button
               type="button"
               onClick={() => setShowSettingsMenu(!showSettingsMenu)}
               className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 flex items-center justify-center transition-all cursor-pointer shadow-sm relative active:scale-95"
-              title="Cài đặt & Tài khoản"
+              title="Cài đặt & Tiện ích (Ấn để mở menu)"
               aria-label="Cài đặt"
             >
-              <Settings size={15} strokeWidth={2.4} />
+              <Settings size={15} strokeWidth={2.4} className={showSettingsMenu ? 'rotate-90 transition-transform duration-300' : 'transition-transform duration-300'} />
               {isAdmin && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-black" />
               )}
-            </button>
-
-            {/* Nút Đăng Xuất Tài Khoản */}
-            <button
-              type="button"
-              onClick={() => setShowExitConfirm(true)}
-              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-red-500/15 dark:bg-red-500/20 hover:bg-red-500/30 border border-red-300 dark:border-red-500/40 text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
-              title="Đăng xuất tài khoản"
-              aria-label="Đăng xuất tài khoản"
-            >
-              <LogOut size={14} strokeWidth={2.4} />
             </button>
           </div>
         </div>
@@ -1231,7 +1213,7 @@ export default function WoodenBookshelf({
       })()}
 
       {/* TIÊU ĐỀ GIAN TRƯNG BÀY SÁCH & BỘ ĐIỀU KHIỂN DẠNG ICON TINH GỌN */}
-      <div className="relative z-10 flex items-center justify-between mb-3 px-1 sm:px-2 gap-2">
+      <div className={`relative flex items-center justify-between mb-3 px-1 sm:px-2 gap-2 ${showSortMenu ? 'z-40' : 'z-20'}`}>
         <div className="flex items-center gap-1.5 min-w-0">
           <div className="w-1 h-3.5 rounded-full bg-amber-500 shrink-0" />
           <h2 className={`text-[13px] sm:text-[14px] font-black tracking-wider uppercase drop-shadow-xs whitespace-nowrap ${getShelfTitleHeaderColor()}`}>
@@ -1272,33 +1254,104 @@ export default function WoodenBookshelf({
             {isReorderMode ? <Check size={14} strokeWidth={3} /> : <ArrowLeftRight size={13} strokeWidth={2.4} />}
           </button>
 
-          {/* Nút Đổi Sắp Xếp Sách (Icon Sort + Label ngắn) */}
-          <button
-            type="button"
-            onClick={cycleSortOrder}
-            className="h-7 sm:h-7.5 px-2 rounded-xl bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200 flex items-center gap-1 text-[10px] font-bold transition-all cursor-pointer shadow-xs active:scale-90"
-            title={`Sắp xếp: ${
-              sortBy === 'default'
-                ? 'Mặc định'
-                : sortBy === 'recent'
-                ? 'Đọc gần đây'
-                : sortBy === 'az'
-                ? 'Tên A-Z'
-                : 'Chuyên mục'
-            } (Bấm để đổi)`}
-            aria-label="Đổi thứ tự sắp xếp sách"
-          >
-            <ArrowUpDown size={11} strokeWidth={2.4} className="text-amber-500" />
-            <span className="text-[10px]">
-              {sortBy === 'default'
-                ? 'Mặc định'
-                : sortBy === 'recent'
-                ? 'Gần đây'
-                : sortBy === 'az'
-                ? 'A-Z'
-                : 'Mục'}
-            </span>
-          </button>
+          {/* Nút Đổi Sắp Xếp Sách: DẠNG ICON THU GỌN - ẤN VÀO SỔ RA */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 relative ${
+                sortBy !== 'default'
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md'
+                  : 'bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200'
+              }`}
+              title="Sắp xếp sách: Mặc định, Gần đây, A-Z, Chuyên mục (Ấn để chọn)"
+              aria-label="Đổi thứ tự sắp xếp sách"
+            >
+              <ArrowUpDown size={13} strokeWidth={2.4} className={sortBy !== 'default' ? 'text-slate-950' : 'text-amber-500'} />
+              {sortBy !== 'default' && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-black" />
+              )}
+            </button>
+
+            {/* Menu Sổ Ra Chọn Kiểu Sắp Xếp */}
+            {showSortMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setShowSortMenu(false)}
+                />
+                <div className="absolute right-0 top-9 z-40 w-44 rounded-xl bg-[#25150c] border border-amber-500/50 shadow-2xl p-1.5 flex flex-col gap-1 backdrop-blur-md animate-in fade-in slide-in-from-top-1">
+                  <div className="px-2 py-1 text-[10px] font-black uppercase text-amber-400/80 border-b border-white/10 tracking-wider">
+                    Kiểu sắp xếp sách
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy('default');
+                      setShowSortMenu(false);
+                      showToast('✦ Sắp xếp: Kéo thả mặc định');
+                    }}
+                    className={`px-2 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${
+                      sortBy === 'default'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-amber-100 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>✦ Mặc định (kéo thả)</span>
+                    {sortBy === 'default' && <Check size={12} strokeWidth={3} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy('recent');
+                      setShowSortMenu(false);
+                      showToast('🕒 Sắp xếp: Đọc gần đây nhất');
+                    }}
+                    className={`px-2 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${
+                      sortBy === 'recent'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-amber-100 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>🕒 Đọc gần đây nhất</span>
+                    {sortBy === 'recent' && <Check size={12} strokeWidth={3} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy('az');
+                      setShowSortMenu(false);
+                      showToast('🔤 Sắp xếp: Theo tên A - Z');
+                    }}
+                    className={`px-2 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${
+                      sortBy === 'az'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-amber-100 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>🔤 Tên sách (A – Z)</span>
+                    {sortBy === 'az' && <Check size={12} strokeWidth={3} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy('category');
+                      setShowSortMenu(false);
+                      showToast('📂 Sắp xếp: Theo chuyên mục');
+                    }}
+                    className={`px-2 py-1.5 rounded-lg flex items-center justify-between text-[11px] font-bold transition-colors cursor-pointer ${
+                      sortBy === 'category'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'text-amber-100 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>📂 Theo chuyên mục</span>
+                    {sortBy === 'category' && <Check size={12} strokeWidth={3} />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Cụm Kính lúp: Chỉ thu nhỏ (-) và phóng to (+) đầu sách */}
           <div className="flex items-center gap-0.5 bg-white/80 dark:bg-[#25150c]/90 border border-[#d8c5aa] dark:border-amber-900/60 rounded-xl p-0.5 shadow-xs">
@@ -2207,6 +2260,28 @@ export default function WoodenBookshelf({
                   <span className="text-[11px] text-stone-500 dark:text-slate-300">Xem</span>
                 </button>
               )}
+
+              {/* 8b. TOÀN MÀN HÌNH KỆ SÁCH (1 dòng) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsMenu(false);
+                  toggleBookshelfFullscreen();
+                }}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-amber-900/10 dark:hover:bg-white/10 transition-colors text-[#3d2010] dark:text-amber-100 cursor-pointer whitespace-nowrap"
+              >
+                <div className="flex items-center gap-2">
+                  {isBookshelfFullscreen ? (
+                    <Minimize size={16} className="text-amber-700 dark:text-amber-400" />
+                  ) : (
+                    <Maximize size={16} className="text-amber-700 dark:text-amber-400" />
+                  )}
+                  <span>{isBookshelfFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình kệ sách'}</span>
+                </div>
+                <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">
+                  {isBookshelfFullscreen ? 'Thu nhỏ' : 'Phóng to'}
+                </span>
+              </button>
  
               {/* 9. BỘ NHỚ & ĐỒNG BỘ GOOGLE DRIVE (CHỈ BỔ SUNG XUỐNG DƯỚI - APPEND ONLY) */}
               <button

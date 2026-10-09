@@ -28,6 +28,7 @@ import {
   searchOnlineLibriVoxAudiobooks,
   matchSmartKeywords,
   unifyBookMediaItems,
+  removeVietnameseTones,
 } from '../lib/onlineLibraryData';
 import { offlineStorage } from '../lib/offlineStorage';
 import { userShelfStorage } from '../lib/userShelfStorage';
@@ -446,53 +447,24 @@ export default function OnlineLibrarySection({
     }
   };
 
-const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
-  Promise.race([
-    p,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
+  // Khi searchQuery thay đổi: Đặt lại trạng thái tìm kiếm mở rộng (chỉ tìm mở rộng khi người dùng bấm nút)
+  const [isExternalSearchDone, setIsExternalSearchDone] = useState<boolean>(false);
 
-  // Tự động tìm kiếm sách mở rộng trên Internet khi người dùng gõ từ khóa (debounce 450ms)
   useEffect(() => {
-    const q = searchQuery.trim();
+    setExternalBooks([]);
+    setIsExternalSearchDone(false);
     setExternalPage(1);
     setHasMoreExternal(false);
-
-    if (!q || q.length < 2) {
-      setExternalBooks([]);
-      setIsSearchingExternal(false);
-      return;
-    }
-
-    let isCancelled = false;
-    const timer = setTimeout(async () => {
-      setIsSearchingExternal(true);
-      try {
-        const [liveSearchRes, gutenberg, librivox] = await Promise.all([
-          searchLiveOnlineBooks(q, 1),
-          withTimeout(searchOnlineGutenbergBooks(q), 2500, []),
-          withTimeout(searchOnlineLibriVoxAudiobooks(q), 2500, []),
-        ]);
-        if (isCancelled) return;
-        const combined = [...liveSearchRes.results, ...gutenberg, ...librivox];
-        const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
-        const newItems = combined.filter((b) => !existingIds.has(b.id));
-        setExternalBooks(newItems);
-        setHasMoreExternal(liveSearchRes.hasMore);
-      } catch {
-        // ignore
-      } finally {
-        if (!isCancelled) setIsSearchingExternal(false);
-      }
-    }, 450);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
+    setIsSearchingExternal(false);
   }, [searchQuery]);
 
-  // Tìm kiếm sách mở rộng trên Internet (Đa nguồn: Google Books, Internet Archive, Gutenberg & LibriVox)
+  const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
+    Promise.race([
+      p,
+      new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+    ]);
+
+  // Tìm kiếm sách mở rộng trên Internet (Chỉ kích hoạt KHI NGƯỜI DÙNG BẤM NÚT "Tìm thêm mở rộng")
   const handleSearchOnlineSources = async () => {
     const q = searchQuery.trim();
     if (!q || isSearchingExternal) return;
@@ -502,14 +474,18 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
     try {
       const [liveSearchRes, gutenberg, librivox] = await Promise.all([
         searchLiveOnlineBooks(q, 1),
-        withTimeout(searchOnlineGutenbergBooks(q), 2500, []),
-        withTimeout(searchOnlineLibriVoxAudiobooks(q), 2500, []),
+        withTimeout(searchOnlineGutenbergBooks(q), 3000, []),
+        withTimeout(searchOnlineLibriVoxAudiobooks(q), 3000, []),
       ]);
       const combined = [...liveSearchRes.results, ...gutenberg, ...librivox];
       const existingIds = new Set(CURATED_ONLINE_BOOKS.map((b) => b.id));
       const newItems = combined.filter((b) => !existingIds.has(b.id));
       setExternalBooks(newItems);
       setHasMoreExternal(liveSearchRes.hasMore);
+      setIsExternalSearchDone(true);
+      if (newItems.length > 0) {
+        playSuccessChime();
+      }
     } catch {}
     setIsSearchingExternal(false);
   };
@@ -543,44 +519,227 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
     }
   };
 
-  // Tổng hợp kho sách nội bộ + sách tìm kiếm từ Internet, sau đó tự động gộp các cặp Đọc & Nghe
-  const allAvailableBooks = useMemo(
-    () => unifyBookMediaItems([...CURATED_ONLINE_BOOKS, ...externalBooks]),
-    [externalBooks]
+  // 1. Phân loại và lọc kho sách tuyển chọn: ƯU TIÊN TUYỆT ĐỐI THEO TIÊU ĐỀ
+  const curatedUnified = useMemo(() => unifyBookMediaItems(CURATED_ONLINE_BOOKS), []);
+  const externalUnified = useMemo(() => unifyBookMediaItems(externalBooks), [externalBooks]);
+
+  const matchedCuratedBooks = useMemo(() => {
+    if (!searchQuery.trim()) return curatedUnified;
+    const normQ = removeVietnameseTones(searchQuery).toLowerCase().trim();
+    const qTokens = normQ.split(/\s+/).filter(Boolean);
+
+    return curatedUnified.filter((b) => {
+      const normTitle = removeVietnameseTones(b.title).toLowerCase();
+      const normAuthor = removeVietnameseTones(b.author).toLowerCase();
+      // Khớp cụm từ trong tiêu đề
+      if (normTitle.includes(normQ)) return true;
+      // Khớp tất cả các từ trong tiêu đề
+      if (qTokens.length > 1 && qTokens.every((t: string) => normTitle.includes(t))) return true;
+      // Khớp tác giả
+      if (normAuthor.includes(normQ) || (qTokens.length > 1 && qTokens.every((t: string) => normAuthor.includes(t)))) return true;
+      return false;
+    });
+  }, [curatedUnified, searchQuery]);
+
+  // Bộ lọc loại sách (Đọc / Nghe) & Chuyên mục cho Sách tuyển chọn
+  const filteredCuratedBooks = useMemo(() => {
+    return matchedCuratedBooks.filter((b) => {
+      const matchMedium =
+        selectedMedium === 'all' ||
+        b.medium === 'both' ||
+        b.medium === selectedMedium;
+      const matchCategory = activeCategory === 'all' || b.category === activeCategory;
+      return matchMedium && matchCategory;
+    });
+  }, [matchedCuratedBooks, selectedMedium, activeCategory]);
+
+  // Bộ lọc loại sách & Chuyên mục cho Sách mở rộng
+  const filteredExternalBooks = useMemo(() => {
+    return externalUnified.filter((b) => {
+      const matchMedium =
+        selectedMedium === 'all' ||
+        b.medium === 'both' ||
+        b.medium === selectedMedium;
+      const matchCategory = activeCategory === 'all' || b.category === activeCategory;
+      return matchMedium && matchCategory;
+    });
+  }, [externalUnified, selectedMedium, activeCategory]);
+
+  const allDisplayBooks = useMemo(
+    () => [...filteredCuratedBooks, ...filteredExternalBooks],
+    [filteredCuratedBooks, filteredExternalBooks]
   );
 
-  // Lọc theo thuật toán NLP thông minh (khớp cả câu dài tự nhiên)
-  const scoredBooks = allAvailableBooks.map((b) => {
-    if (!searchQuery.trim()) return { book: b, matched: true, score: 1 };
-    // Sách tìm kiếm từ Internet API trả về trực tiếp theo từ khóa này nên luôn hiển thị
-    const isFromExternalSearch =
-      externalBooks.some((eb) => eb.id === b.id) ||
-      (b.readBookItem && externalBooks.some((eb) => eb.id === b.readBookItem?.id)) ||
-      (b.audioBookItem && externalBooks.some((eb) => eb.id === b.audioBookItem?.id));
-    if (isFromExternalSearch) return { book: b, matched: true, score: 95 };
+  const readCount = allDisplayBooks.filter((b) => b.medium === 'read' || b.medium === 'both').length;
+  const audioCount = allDisplayBooks.filter((b) => b.medium === 'audio' || b.medium === 'both').length;
 
-    const fullText = `${b.title} ${b.author} ${b.description} ${b.badgeTag} ${b.categoryName}`;
-    const res = matchSmartKeywords(fullText, searchQuery, { title: b.title, author: b.author });
-    return { book: b, matched: res.matched, score: res.score };
-  });
+  const renderBookCard = (book: OnlineBookItem) => {
+    const isCached =
+      cachedBookIds.has(book.id) ||
+      cachedBookIds.has(offlineStorage.normalizeBookId(book.id)) ||
+      cachedBookIds.has(offlineStorage.normalizeBookId(book.downloadUrl));
+    const progress = downloadProgress[book.id];
+    const isDownloading = progress !== undefined;
+    const displayCover = customCovers[book.id] || book.coverUrl;
 
-  const queryMatchedBooks = scoredBooks
-    .filter((s) => s.matched)
-    .sort((a, b) => b.score - a.score)
-    .map((s) => s.book);
+    return (
+      <div
+        key={book.id}
+        onClick={() => handleOpenDownloaded(book)}
+        className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/50 shadow-xs flex items-center gap-2.5 transition-all cursor-pointer group hover:bg-[#fffcf7] dark:hover:bg-[#25170e]"
+        title={`Bấm để ${book.medium === 'audio' ? 'nghe' : 'đọc'} ngay: ${book.title}`}
+      >
+        {/* Ảnh bìa sách tinh gọn, chuẩn thẩm mỹ xuất bản */}
+        <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+          <BookCoverArt
+            coverUrl={displayCover}
+            title={book.title}
+            author={book.author}
+            format={book.format}
+            medium={book.medium === 'audio' ? 'audio' : 'read'}
+            className="w-full h-full"
+          />
+        </div>
 
-  const readCount = queryMatchedBooks.filter((b) => b.medium === 'read' || b.medium === 'both').length;
-  const audioCount = queryMatchedBooks.filter((b) => b.medium === 'audio' || b.medium === 'both').length;
+        {/* Thông tin sách: Tối ưu chặt chẽ từng dòng */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-full gap-0.5">
+          {/* Hàng 1: Badge loại sách + Tác giả (1 dòng) */}
+          <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+            <span
+              className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase font-mono shrink-0 ${
+                book.medium === 'both'
+                  ? 'bg-gradient-to-r from-amber-500/25 to-purple-500/25 text-amber-950 dark:text-amber-200 border border-amber-500/40'
+                  : book.medium === 'audio'
+                  ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
+                  : 'bg-amber-500/20 text-amber-800 dark:text-amber-300'
+              }`}
+            >
+              {book.badgeTag}
+            </span>
+            <span className="text-[11px] text-[#7A4B27] dark:text-amber-300/80 font-semibold truncate">
+              {book.author}
+            </span>
+          </div>
 
-  // Lọc theo loại sách và chuyên mục được chọn
-  const filteredBooks = queryMatchedBooks.filter((b) => {
-    const matchMedium =
-      selectedMedium === 'all' ||
-      b.medium === 'both' ||
-      b.medium === selectedMedium;
-    const matchCategory = activeCategory === 'all' || b.category === activeCategory;
-    return matchMedium && matchCategory;
-  });
+          {/* Hàng 2: Tựa sách (1 dòng truncate chống phình) */}
+          <h4 className="text-xs font-black text-[#2A160A] dark:text-[#fdf7ee] truncate group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
+            {book.title}
+          </h4>
+
+          {/* Hàng 3: Metadata tinh gọn 1 dòng + Nút hành động 1 dòng */}
+          <div className="flex items-center justify-between gap-1 pt-1 border-t border-amber-900/10 dark:border-white/5 mt-0.5">
+            {/* Metadata 1 dòng: Qbiz • 1.8 MB hoặc Audio • 28 phút */}
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate whitespace-nowrap">
+              {book.source} • {book.medium === 'both' && book.durationFormatted ? `${book.fileSizeFormatted} · 🎧 ${book.durationFormatted}` : (book.durationFormatted || book.fileSizeFormatted)}
+            </span>
+
+            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+              {/* NÚT THÊM VÀO KỆ SÁCH (1 DÒNG TINH GỌN, CHUẨN MOBILE) */}
+              {shelfBookIds.has(book.id) ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleShelf(book);
+                  }}
+                  className="h-6 px-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
+                  title="Sách đã có trên Kệ sách gỗ. Bấm để bỏ"
+                >
+                  <Check size={11} strokeWidth={2.5} />
+                  <span>Đã trên kệ</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleShelf(book);
+                  }}
+                  className="h-6 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
+                  title="Thêm vào Kệ sách gỗ trên trang chủ"
+                >
+                  <BookmarkPlus size={11} />
+                  <span>+ Kệ</span>
+                </button>
+              )}
+
+              {isCached ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownloaded(book)}
+                    className="h-6 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                  >
+                    {book.medium === 'audio' ? <Play size={10} className="fill-current" /> : <BookOpen size={10} />}
+                    <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCached(book);
+                    }}
+                    className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
+                    title="Xóa bản tải ngoại tuyến khỏi máy"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              ) : isDownloading ? (
+                <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
+                  <Loader2 size={11} className="animate-spin" />
+                  <span>{progress}%</span>
+                </div>
+              ) : book.medium === 'both' ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownloaded(book.readBookItem || book)}
+                    className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                    title="Mở đọc sách 3D"
+                  >
+                    <BookOpen size={10} />
+                    <span>Đọc ngay</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownloaded(book.audioBookItem || book)}
+                    className="h-6 px-2 rounded-lg bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                    title="Mở nghe sách nói"
+                  >
+                    <Play size={9} className="fill-current" />
+                    <span>Nghe</span>
+                  </button>
+                </div>
+              ) : book.medium === 'audio' ? (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownloaded(book)}
+                    className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                  >
+                    <Play size={10} className="fill-current" />
+                    <span>Nghe ngay</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownloaded(book)}
+                    className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                  >
+                    <BookOpen size={10} />
+                    <span>Đọc ngay</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-2.5 animate-in fade-in duration-150">
@@ -598,16 +757,15 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
               : 'bg-white/60 dark:bg-white/5 text-[#553218] dark:text-amber-200/80 border-[#d5c3b1] dark:border-white/10'
           }`}
         >
-          Tất cả ({queryMatchedBooks.length})
+          Tất cả ({allDisplayBooks.length})
         </button>
-
         <button
           type="button"
           onClick={() => {
             playTapSound();
             setSelectedMedium('read');
             if (activeCategory !== 'all') {
-              const hasRead = queryMatchedBooks.some((b) => b.category === activeCategory && b.medium !== 'audio');
+              const hasRead = allDisplayBooks.some((b) => b.category === activeCategory && b.medium !== 'audio');
               if (!hasRead) setCategory('all');
             }
           }}
@@ -627,7 +785,7 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
             playTapSound();
             setSelectedMedium('audio');
             if (activeCategory !== 'all') {
-              const hasAudio = queryMatchedBooks.some((b) => b.category === activeCategory && b.medium === 'audio');
+              const hasAudio = allDisplayBooks.some((b) => b.category === activeCategory && b.medium === 'audio');
               if (!hasAudio) setCategory('all');
             }
           }}
@@ -670,232 +828,99 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
         </button>
       </div>
 
-      {/* 2.5 TRẠNG THÁI TÌM KIẾM TRỰC QUAN (LOADING KHI ĐANG TÌM HOẶC BÁO KẾT QUẢ) */}
-      {isSearchingExternal ? (
-        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-bold animate-pulse shadow-2xs">
-          <Loader2 size={14} className="animate-spin text-amber-500 shrink-0" />
-          <span>Đang tìm kiếm sách trực tuyến từ các nguồn Internet thời gian thực...</span>
-        </div>
-      ) : searchQuery.trim().length > 0 ? (
+      {/* 2.5 TRẠNG THÁI TÌM KIẾM TRỰC QUAN */}
+      {searchQuery.trim().length > 0 && (
         <div className="flex items-center justify-between px-1 text-[11px] text-[#7A4B27] dark:text-amber-300 font-bold">
-          <span>Tìm thấy {filteredBooks.length} cuốn sách trực tuyến phù hợp với &ldquo;{searchQuery.trim()}&rdquo;</span>
+          <span>
+            Tìm thấy {filteredCuratedBooks.length} cuốn sách trực tuyến phù hợp với &ldquo;{searchQuery.trim()}&rdquo;
+            {isExternalSearchDone && filteredExternalBooks.length > 0 && ` (+ ${filteredExternalBooks.length} mở rộng)`}
+          </span>
         </div>
-      ) : null}
+      )}
 
       {/* 2. DANH SÁCH SÁCH TRỰC TUYẾN (SÁCH ĐỌC & SÁCH NÓI ĐỒNG BỘ) */}
       <div className="flex flex-col gap-2">
-        {filteredBooks.map((book) => {
-          const isCached =
-            cachedBookIds.has(book.id) ||
-            cachedBookIds.has(offlineStorage.normalizeBookId(book.id)) ||
-            cachedBookIds.has(offlineStorage.normalizeBookId(book.downloadUrl));
-          const progress = downloadProgress[book.id];
-          const isDownloading = progress !== undefined;
-          const displayCover = customCovers[book.id] || book.coverUrl;
+        {filteredCuratedBooks.map((book) => renderBookCard(book))}
 
-          return (
-            <div
-              key={book.id}
-              onClick={() => handleOpenDownloaded(book)}
-              className="p-2.5 rounded-2xl bg-white dark:bg-[#1f130b] border border-[#e8ded1] dark:border-white/10 hover:border-amber-500/50 shadow-xs flex items-center gap-2.5 transition-all cursor-pointer group hover:bg-[#fffcf7] dark:hover:bg-[#25170e]"
-              title={`Bấm để ${book.medium === 'audio' ? 'nghe' : 'đọc'} ngay: ${book.title}`}
-            >
-              {/* Ảnh bìa sách tinh gọn, chuẩn thẩm mỹ xuất bản */}
-              <div className="relative w-14 aspect-[1/1.42] rounded-md overflow-hidden shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                <BookCoverArt
-                  coverUrl={displayCover}
-                  title={book.title}
-                  author={book.author}
-                  format={book.format}
-                  medium={book.medium === 'audio' ? 'audio' : 'read'}
-                  className="w-full h-full"
-                />
-              </div>
-
-              {/* Thông tin sách: Tối ưu chặt chẽ từng dòng */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between h-full gap-0.5">
-                {/* Hàng 1: Badge loại sách + Tác giả (1 dòng) */}
-                <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                  <span
-                    className={`px-1.5 py-0.2 rounded text-[8.5px] font-black uppercase font-mono shrink-0 ${
-                      book.medium === 'both'
-                        ? 'bg-gradient-to-r from-amber-500/25 to-purple-500/25 text-amber-950 dark:text-amber-200 border border-amber-500/40'
-                        : book.medium === 'audio'
-                        ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
-                        : 'bg-amber-500/20 text-amber-800 dark:text-amber-300'
-                    }`}
-                  >
-                    {book.badgeTag}
-                  </span>
-                  <span className="text-[11px] text-[#7A4B27] dark:text-amber-300/80 font-semibold truncate">
-                    {book.author}
-                  </span>
-                </div>
-
-                {/* Hàng 2: Tựa sách (1 dòng truncate chống phình) */}
-                <h4 className="text-xs font-black text-[#2A160A] dark:text-[#fdf7ee] truncate group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                  {book.title}
-                </h4>
-
-                {/* Hàng 3: Metadata tinh gọn 1 dòng + Nút hành động 1 dòng */}
-                <div className="flex items-center justify-between gap-1 pt-1 border-t border-amber-900/10 dark:border-white/5 mt-0.5">
-                  {/* Metadata 1 dòng: Qbiz • 1.8 MB hoặc Audio • 28 phút */}
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate whitespace-nowrap">
-                    {book.source} • {book.medium === 'both' && book.durationFormatted ? `${book.fileSizeFormatted} · 🎧 ${book.durationFormatted}` : (book.durationFormatted || book.fileSizeFormatted)}
-                  </span>
-
-                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {/* NÚT THÊM VÀO KỆ SÁCH (1 DÒNG TINH GỌN, CHUẨN MOBILE) */}
-                    {shelfBookIds.has(book.id) ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleShelf(book);
-                        }}
-                        className="h-6 px-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
-                        title="Sách đã có trên Kệ sách gỗ. Bấm để bỏ"
-                      >
-                        <Check size={11} strokeWidth={2.5} />
-                        <span>Đã trên kệ</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleShelf(book);
-                        }}
-                        className="h-6 px-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer transition-all whitespace-nowrap shrink-0 active:scale-95"
-                        title="Thêm vào Kệ sách gỗ trên trang chủ"
-                      >
-                        <BookmarkPlus size={11} />
-                        <span>+ Kệ</span>
-                      </button>
-                    )}
-
-                    {isCached ? (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDownloaded(book)}
-                          className="h-6 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                        >
-                          {book.medium === 'audio' ? <Play size={10} className="fill-current" /> : <BookOpen size={10} />}
-                          <span>{book.medium === 'audio' ? 'Nghe ngay' : 'Đọc ngay'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCached(book);
-                          }}
-                          className="h-6 w-6 rounded-lg bg-red-500/15 hover:bg-red-500/30 border border-red-500/30 text-red-600 dark:text-red-400 flex items-center justify-center cursor-pointer transition-all shrink-0 active:scale-95"
-                          title="Xóa bản tải ngoại tuyến khỏi máy"
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                    ) : isDownloading ? (
-                      <div className="h-6 px-2 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[10.5px] font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
-                        <Loader2 size={11} className="animate-spin" />
-                        <span>{progress}%</span>
-                      </div>
-                    ) : book.medium === 'both' ? (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDownloaded(book.readBookItem || book)}
-                          className="h-6 px-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                          title="Mở đọc sách 3D"
-                        >
-                          <BookOpen size={10} />
-                          <span>Đọc ngay</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDownloaded(book.audioBookItem || book)}
-                          className="h-6 px-2 rounded-lg bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-[10px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                          title="Mở nghe sách nói"
-                        >
-                          <Play size={9} className="fill-current" />
-                          <span>Nghe</span>
-                        </button>
-                      </div>
-                    ) : book.medium === 'audio' ? (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDownloaded(book)}
-                          className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                        >
-                          <Play size={10} className="fill-current" />
-                          <span>Nghe ngay</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDownloaded(book)}
-                          className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                        >
-                          <BookOpen size={10} />
-                          <span>Đọc ngay</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {filteredBooks.length > 0 && searchQuery.trim() && (hasMoreExternal || isLoadingMore) && (
-          <div className="flex justify-center pt-3 pb-20 relative z-20">
+        {/* Nút "Tìm thêm mở rộng" ở cuối sau khi đã tìm (theo đúng chỉ đạo của người dùng) */}
+        {searchQuery.trim().length >= 2 && !isExternalSearchDone && (
+          <div className="pt-2 pb-2 flex flex-col items-center">
             <button
               type="button"
-              onClick={handleLoadMoreExternal}
-              disabled={isLoadingMore}
-              className="h-9 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-md transition-all disabled:opacity-60 whitespace-nowrap border border-amber-300"
+              onClick={handleSearchOnlineSources}
+              disabled={isSearchingExternal}
+              className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/25 to-amber-500/15 hover:from-amber-500/25 hover:to-amber-500/35 border border-amber-500/40 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm active:scale-98"
             >
-              {isLoadingMore ? (
+              {isSearchingExternal ? (
                 <>
-                  <Loader2 size={13} className="animate-spin text-slate-950" />
-                  <span>Đang tải thêm kết quả...</span>
+                  <Loader2 size={15} className="animate-spin text-amber-600 dark:text-amber-400" />
+                  <span>Đang tìm kiếm mở rộng trên Internet...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles size={13} className="text-slate-950 fill-current" />
-                  <span>Tải thêm sách trực tuyến (Trang {externalPage + 1})</span>
+                  <Globe size={15} className="text-amber-600 dark:text-amber-400" />
+                  <span>Tìm thêm mở rộng sách liên quan trên Internet ↗</span>
                 </>
               )}
             </button>
+            <span className="text-[10.5px] text-[#8B4513]/70 dark:text-amber-300/60 mt-1 text-center">
+              Tra cứu thêm sách và tài liệu liên quan từ Google Books, Internet Archive & Thư viện Mở
+            </span>
           </div>
         )}
 
-        {filteredBooks.length === 0 && (
+        {/* Kết quả tìm kiếm mở rộng từ Internet sau khi ấn nút */}
+        {isExternalSearchDone && (
+          <>
+            <div className="flex items-center justify-between px-1 pt-3 pb-1 border-t border-amber-900/10 dark:border-white/10 mt-1">
+              <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-200">
+                <Globe size={13} className="text-amber-500" />
+                <span>Kết quả mở rộng từ Internet ({filteredExternalBooks.length})</span>
+              </div>
+              <span className="text-[10px] text-amber-700/80 dark:text-amber-400/70 font-semibold">
+                Đã lọc theo đúng tiêu đề
+              </span>
+            </div>
+
+            {filteredExternalBooks.length > 0 ? (
+              filteredExternalBooks.map((book) => renderBookCard(book))
+            ) : (
+              <div className="py-4 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center text-xs text-amber-800 dark:text-amber-200 font-semibold">
+                Không tìm thấy thêm sách mở rộng nào khác trên Internet với tiêu đề &ldquo;{searchQuery.trim()}&rdquo;.
+              </div>
+            )}
+
+            {filteredExternalBooks.length > 0 && (hasMoreExternal || isLoadingMore) && (
+              <div className="flex justify-center pt-2 pb-6 relative z-20">
+                <button
+                  type="button"
+                  onClick={handleLoadMoreExternal}
+                  disabled={isLoadingMore}
+                  className="h-8 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm transition-all disabled:opacity-60 whitespace-nowrap border border-amber-300"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin text-slate-950" />
+                      <span>Đang tải thêm kết quả...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={13} className="text-slate-950 fill-current" />
+                      <span>Tải thêm sách trực tuyến (Trang {externalPage + 1})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {filteredCuratedBooks.length === 0 && (!isExternalSearchDone || filteredExternalBooks.length === 0) && !isSearchingExternal && (
           <div className="py-7 px-3 rounded-2xl bg-white/40 dark:bg-white/5 border border-dashed border-amber-500/20 text-center flex flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
             <BookOpen size={24} className="text-amber-500 opacity-60" />
             <span className="text-xs font-bold text-[#2A160A] dark:text-amber-100">
               Không tìm thấy sách trực tuyến phù hợp
             </span>
-            {searchQuery.trim() && (
-              <button
-                type="button"
-                onClick={handleSearchOnlineSources}
-                disabled={isSearchingExternal}
-                className="h-8 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs transition-all disabled:opacity-50"
-              >
-                {isSearchingExternal ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Globe size={13} />
-                )}
-                <span>Tìm kiếm trên Internet (Google Books, Internet Archive & Thư viện Mở)</span>
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -920,11 +945,11 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
           book={activeAudioBook}
           isDownloaded={cachedBookIds.has(activeAudioBook.id)}
           onDownload={() => {
-            const found = allAvailableBooks.find((b) => b.id === activeAudioBook.id);
+            const found = allDisplayBooks.find((b) => b.id === activeAudioBook.id);
             if (found) handleDownload(found);
           }}
           onDeleteDownload={() => {
-            const found = allAvailableBooks.find((b) => b.id === activeAudioBook.id);
+            const found = allDisplayBooks.find((b) => b.id === activeAudioBook.id);
             if (found) handleDeleteCached(found);
           }}
         />
