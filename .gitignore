@@ -37,6 +37,6 @@ scripts/inspect_*.js
 scripts/build_*.js
 scripts/full_system_*.js
 backup_ebook_db.json
-public/qa_screenshots_v3/
+public/qa_screenshots_*/
 supabase/.temp/
 

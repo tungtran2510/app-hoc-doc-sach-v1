@@ -106,7 +106,185 @@ const VERIFIED_COMMUNITY_MIRRORS: Record<
       'Tác phẩm kinh điển thế giới về nghệ thuật giao tiếp, thấu hiểu lòng người và xây dựng mối quan hệ chân thành.',
     badgeTag: 'KINH ĐIỂN TOÀN CẦU 🌟',
   },
+  'nuoc uong tang kha nang mien dich': {
+    title: 'Nước Uống Tăng Khả Năng Miễn Dịch',
+    author: 'Lý Thừa Du & Giang Văn Toản',
+    coverUrl: '/documents/covers/cover_mien-dich.png',
+    fileUrl: '/documents/nuoc_uong_tang_kha_nang_mien_dich.epub',
+    format: 'epub',
+    pagesCount: 10,
+    fileSizeFormatted: '13.3 KB',
+    description:
+      'Bản toàn văn 10 chương chuyên sâu. Cẩm nang hướng dẫn sử dụng nước uống sinh học, nước điện giải kiềm, trà thảo mộc EGCG, nước ép enzym và thức uống lên men probiotic giúp kích hoạt hệ thống miễn dịch tự thân, chống oxy hóa và phòng ngừa bệnh tật.',
+    badgeTag: 'TOÀN VĂN EPUB 10 CHƯƠNG ☀️',
+  },
+  'mien dich': {
+    title: 'Nước Uống Tăng Khả Năng Miễn Dịch',
+    author: 'Lý Thừa Du & Giang Văn Toản',
+    coverUrl: '/documents/covers/cover_mien-dich.png',
+    fileUrl: '/documents/nuoc_uong_tang_kha_nang_mien_dich.epub',
+    format: 'epub',
+    pagesCount: 10,
+    fileSizeFormatted: '13.3 KB',
+    description:
+      'Bản toàn văn 10 chương chuyên sâu. Cẩm nang hướng dẫn sử dụng nước uống sinh học, nước điện giải kiềm, trà thảo mộc EGCG, nước ép enzym và thức uống lên men probiotic giúp kích hoạt hệ thống miễn dịch tự thân, chống lão hóa và phục hồi tế bào.',
+    badgeTag: 'TOÀN VĂN EPUB 10 CHƯƠNG ☀️',
+  },
+  'cot song': {
+    title: 'Atlas Giải Phẫu Cột Sống Toàn Diện & Sinh Cơ Học',
+    author: 'Tủ Sách Y Khoa & Giải Phẫu Qbiz',
+    coverUrl: '/documents/covers/cover_cot-song.png',
+    fileUrl: '/documents/atlas_giai_phau_cot_song_toan_dien.pdf',
+    format: 'pdf',
+    pagesCount: 48,
+    fileSizeFormatted: '393 KB',
+    description:
+      'Tài liệu nghiên cứu cấu trúc giải phẫu học và sinh lý cơ quan chuyên sâu Y khoa. Phân tích chi tiết 33 đốt sống, đĩa đệm, tủy gai và hệ thống dây chằng cột sống.',
+    badgeTag: 'BẢN GỐC PDF 🌟',
+  },
+  'dot song co': {
+    title: 'Cẩm Nang Bảo Vệ Đốt Sống Cổ Vai Gáy',
+    author: 'Tủ Sách Y Khoa Qbiz',
+    coverUrl: '/documents/covers/cover_cam_nang_dot_song_co.png',
+    fileUrl: '/documents/cam_nang_dot_song_co_vai_gay.epub',
+    format: 'epub',
+    pagesCount: 65,
+    fileSizeFormatted: '10.0 KB',
+    description:
+      'Giải pháp dứt điểm đau mỏi vai gáy cho người làm việc tĩnh tại. Hướng dẫn các bài tập phục hồi đốt sống cổ C1-C7 và chế độ vận động công thái học.',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
+  },
+  'khop': {
+    title: 'Dinh Dưỡng Phục Hồi Khớp & Đĩa Đệm',
+    author: 'Tủ Sách Sức Khỏe Toàn Diện',
+    coverUrl: '/documents/covers/cover_dinh_duong_khang_viem.png',
+    fileUrl: '/documents/dinh_duong_phuc_hoi_khop_va_dia_dem.epub',
+    format: 'epub',
+    pagesCount: 88,
+    fileSizeFormatted: '15.4 KB',
+    description:
+      'Nuôi dưỡng sụn khớp, đặc trị thoái hóa và dập tắt phản ứng viêm mạn tính. Bổ sung collagen tuýp II, glucosamine tự nhiên và vi khoáng tái tạo mô sụn.',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
+  },
+  'dia dem': {
+    title: 'Dinh Dưỡng Phục Hồi Khớp & Đĩa Đệm',
+    author: 'Tủ Sách Sức Khỏe Toàn Diện',
+    coverUrl: '/documents/covers/cover_dinh_duong_khang_viem.png',
+    fileUrl: '/documents/dinh_duong_phuc_hoi_khop_va_dia_dem.epub',
+    format: 'epub',
+    pagesCount: 88,
+    fileSizeFormatted: '15.4 KB',
+    description:
+      'Nuôi dưỡng sụn khớp, đặc trị thoái hóa và dập tắt phản ứng viêm mạn tính. Bổ sung collagen tuýp II, glucosamine tự nhiên và vi khoáng tái tạo mô sụn.',
+    badgeTag: 'TOÀN VĂN EPUB 🌟',
+  },
+  'truyen kieu': {
+    title: 'Truyện Kiều (Toàn Văn 3.254 Câu Thơ)',
+    author: 'Đại thi hào Nguyễn Du',
+    coverUrl: 'style:navy',
+    fileUrl: '/documents/vietnam_truyen_kieu.epub',
+    format: 'epub',
+    pagesCount: 320,
+    fileSizeFormatted: '63.6 KB',
+    description:
+      'Đỉnh cao thi ca dân tộc Việt Nam với trọn vẹn 3.254 câu thơ lục bát bất hủ về số phận mười lăm năm lưu lạc của Thúy Kiều, chữ Tâm và chữ Tài.',
+    badgeTag: '3.254 CÂU THƠ 🇻🇳',
+  },
+  'chi pheo': {
+    title: 'Chí Phèo (Toàn Văn Tuyển Tập)',
+    author: 'Nam Cao',
+    coverUrl: 'style:terracotta',
+    fileUrl: '/documents/vietnam_chi_pheo.epub',
+    format: 'epub',
+    pagesCount: 95,
+    fileSizeFormatted: '34.4 KB',
+    description:
+      'Kiệt tác văn học hiện thực phê phán Việt Nam với bi kịch bị cự tuyệt quyền làm người lương thiện của nhân vật Chí Phèo làng Vũ Đại.',
+    badgeTag: 'TOÀN VĂN EPUB 🇻🇳',
+  },
+  'tat den': {
+    title: 'Tắt Đèn (Toàn Văn)',
+    author: 'Ngô Tất Tố',
+    coverUrl: 'style:ivory',
+    fileUrl: '/documents/vietnam_tat_den.epub',
+    format: 'epub',
+    pagesCount: 110,
+    fileSizeFormatted: '5.6 KB',
+    description:
+      'Bức tranh ngột ngạt về sưu thuế và nông thôn Việt Nam trước cách mạng với tinh thần quật cường phản kháng của nhân vật Chị Dậu.',
+    badgeTag: 'TOÀN VĂN EPUB 🇻🇳',
+  },
+  'hoang tu be': {
+    title: 'Hoàng Tử Bé (Le Petit Prince)',
+    author: 'Antoine de Saint-Exupéry',
+    coverUrl: 'style:navy',
+    fileUrl: '/documents/hoang_tu_be.epub',
+    format: 'epub',
+    pagesCount: 140,
+    fileSizeFormatted: '7.1 KB',
+    description:
+      'Kiệt tác văn học Pháp bất hủ về tình bạn, bông hoa hồng và bài học cảm hóa: Điều cốt lõi nhất thì vô hình đối với đôi mắt.',
+    badgeTag: 'BẢN DỊCH VIỆT 🇻🇳',
+  },
 };
+
+/**
+ * Thẩm định file số hóa thực tế trên Internet Archive trước khi trả về kết quả
+ * Tuyệt đối không đoán mò link gây 404, chỉ trả về khi có file PDF/EPUB thật
+ */
+async function resolveIaFile(
+  id: string
+): Promise<{ fileUrl: string; format: 'pdf' | 'epub'; sizeFormatted: string } | null> {
+  if (!id) return null;
+  try {
+    const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}/files`, {
+      headers: { 'User-Agent': 'QbizBooks/2.0' },
+      signal: AbortSignal.timeout(3500),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data.result)) return null;
+
+    const files = data.result;
+    // Tìm file PDF gốc (loại bỏ các file phái sinh thumbnail/jp2)
+    const pdfFile = files.find(
+      (f: any) =>
+        typeof f.name === 'string' &&
+        f.name.toLowerCase().endsWith('.pdf') &&
+        !f.name.toLowerCase().includes('_thumb') &&
+        !f.name.toLowerCase().includes('_jp2')
+    );
+    const epubFile = files.find(
+      (f: any) => typeof f.name === 'string' && f.name.toLowerCase().endsWith('.epub')
+    );
+
+    if (pdfFile) {
+      const sizeBytes = parseInt(pdfFile.size || '0', 10);
+      const sizeFormatted =
+        sizeBytes > 0 ? (sizeBytes / (1024 * 1024)).toFixed(1) + ' MB' : 'PDF Bản Gốc';
+      return {
+        fileUrl: `https://archive.org/download/${id}/${encodeURIComponent(pdfFile.name)}`,
+        format: 'pdf',
+        sizeFormatted,
+      };
+    }
+
+    if (epubFile) {
+      const sizeBytes = parseInt(epubFile.size || '0', 10);
+      const sizeFormatted =
+        sizeBytes > 0 ? (sizeBytes / (1024 * 1024)).toFixed(1) + ' MB' : 'EPUB Bản Gốc';
+      return {
+        fileUrl: `https://archive.org/download/${id}/${encodeURIComponent(epubFile.name)}`,
+        format: 'epub',
+        sizeFormatted,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 function removeVietnameseTones(str: string): string {
   return str
@@ -269,9 +447,10 @@ export async function GET(request: NextRequest) {
           } else if (hasEpub && accessInfo.epub?.downloadLink) {
             format = 'epub';
             dlUrl = `/api/download-proxy?url=${encodeURIComponent(accessInfo.epub.downloadLink)}`;
-          } else if (info.previewLink) {
-            dlUrl = info.previewLink;
           }
+
+          // Đối với giai đoạn thương mại hóa: Chỉ trả về sách có bản đọc số hóa thật
+          if (!dlUrl) continue;
 
           results.push({
             id: `gb-${item.id}`,
@@ -280,7 +459,7 @@ export async function GET(request: NextRequest) {
             description:
               info.description ||
               `Tác phẩm xuất bản chính thức. ${info.publisher ? `Nhà xuất bản: ${info.publisher}. ` : ''}${pageCount ? `Độ dài: ${pageCount} trang.` : ''}`,
-            coverUrl: cover || '/documents/covers/cover_dinh_duong_hoc_that_truyen.png',
+            coverUrl: cover || '',
             format: format,
             pagesCount: pageCount || undefined,
             fileSizeFormatted: pageCount ? `${pageCount} trang` : 'Sách xuất bản',
@@ -299,7 +478,7 @@ export async function GET(request: NextRequest) {
     console.error('Lỗi khi truy vấn Google Books:', err);
   }
 
-  // 3. Tìm kiếm qua Internet Archive API (Chỉ lấy sách có TIÊU ĐỀ khớp, loại bỏ 100% rác CIA/du lịch)
+  // 3. Tìm kiếm qua Internet Archive API (Chỉ lấy sách có TIÊU ĐỀ khớp VÀ CÓ FILE SỐ HÓA THỰC TẾ)
   try {
     const iaController = new AbortController();
     const iaTimeout = setTimeout(() => iaController.abort(), 6000);
@@ -307,7 +486,7 @@ export async function GET(request: NextRequest) {
     const iaRes = await fetch(
       `https://archive.org/advancedsearch.php?q=title:(${encodeURIComponent(
         q
-      )})+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=20&page=${page}&output=json`,
+      )})+AND+mediatype:(texts)&fl[]=identifier,title,creator,description,year&rows=15&page=${page}&output=json`,
       {
         signal: iaController.signal,
         headers: {
@@ -322,17 +501,25 @@ export async function GET(request: NextRequest) {
       const iaData = await iaRes.json();
       const docs = iaData.response?.docs;
       if (Array.isArray(docs)) {
-        for (const doc of docs) {
+        // Thẩm định song song danh sách file thật để loại bỏ 100% link 404 và sách không có file
+        const candidates = docs.filter((doc) => {
           const title = doc.title || '';
-          if (!title || !doc.identifier) continue;
-          if (!isTitleRelevantToQuery(title, q)) continue;
+          if (!title || !doc.identifier) return false;
+          if (!isTitleRelevantToQuery(title, q)) return false;
+          const normTitle = removeVietnameseTones(title);
+          return !seenTitles.has(normTitle);
+        });
 
+        for (const doc of candidates.slice(0, 8)) {
+          const title = doc.title;
           const normTitle = removeVietnameseTones(title);
           if (seenTitles.has(normTitle)) continue;
 
           const id = doc.identifier;
-          const pdfRawUrl = `https://archive.org/download/${id}/${id}.pdf`;
-          const proxyDlUrl = `/api/download-proxy?url=${encodeURIComponent(pdfRawUrl)}`;
+          const verifiedFile = await resolveIaFile(id);
+          if (!verifiedFile) continue; // Loại bỏ nếu không có file PDF/EPUB thật!
+
+          const proxyDlUrl = `/api/download-proxy?url=${encodeURIComponent(verifiedFile.fileUrl)}`;
 
           results.push({
             id: `ia-${id}`,
@@ -343,13 +530,13 @@ export async function GET(request: NextRequest) {
                 ? doc.description
                 : Array.isArray(doc.description)
                 ? doc.description.join(' ')
-                : '') || 'Bản số hóa tài liệu từ Internet Archive.',
+                : '') || 'Bản số hóa toàn văn từ Internet Archive.',
             coverUrl: `https://archive.org/services/img/${id}`,
-            format: 'pdf',
-            fileSizeFormatted: 'PDF Bản Gốc',
+            format: verifiedFile.format,
+            fileSizeFormatted: verifiedFile.sizeFormatted,
             downloadUrl: proxyDlUrl,
             previewUrl: `https://archive.org/details/${id}`,
-            badgeTag: 'ARCHIVE GỐC 🏛️',
+            badgeTag: 'TOÀN VĂN GỐC 🏛️',
             source: 'Internet Archive',
             year: doc.year ? String(doc.year) : undefined,
           });
@@ -361,7 +548,7 @@ export async function GET(request: NextRequest) {
     console.error('Lỗi khi truy vấn Internet Archive:', err);
   }
 
-  // 4. Tìm kiếm qua Open Library API (Truy vấn theo TIÊU ĐỀ title=, loại bỏ sách sai)
+  // 4. Tìm kiếm qua Open Library API (Chỉ lấy nếu có bản số hóa toàn văn doc.ia)
   try {
     const olController = new AbortController();
     const olTimeout = setTimeout(() => olController.abort(), 6000);
@@ -382,12 +569,24 @@ export async function GET(request: NextRequest) {
       const olData = await olRes.json();
       const docs = olData.docs;
       if (Array.isArray(docs)) {
-        for (const doc of docs) {
+        // Chỉ lấy những tác phẩm có liên kết bản số hóa toàn văn doc.ia
+        const candidates = docs.filter((doc) => {
           const title = doc.title || '';
-          if (!title || !isTitleRelevantToQuery(title, q)) continue;
+          if (!title) return false;
+          if (!doc.ia || !Array.isArray(doc.ia) || doc.ia.length === 0) return false;
+          if (!isTitleRelevantToQuery(title, q)) return false;
+          const normTitle = removeVietnameseTones(title);
+          return !seenTitles.has(normTitle);
+        });
 
+        for (const doc of candidates.slice(0, 5)) {
+          const title = doc.title;
           const normTitle = removeVietnameseTones(title);
           if (seenTitles.has(normTitle)) continue;
+
+          const iaId = doc.ia[0];
+          const verifiedFile = await resolveIaFile(iaId);
+          if (!verifiedFile) continue; // Bỏ qua nếu không có file đọc toàn văn thật
 
           const authors =
             Array.isArray(doc.author_name) && doc.author_name.length > 0
@@ -399,31 +598,24 @@ export async function GET(request: NextRequest) {
             coverUrl = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
           } else if (doc.isbn && doc.isbn[0]) {
             coverUrl = `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-M.jpg`;
+          } else {
+            coverUrl = `https://archive.org/services/img/${iaId}`;
           }
 
-          const pages = doc.number_of_pages_median || undefined;
-          let dlUrl: string | undefined = undefined;
-          let format: 'pdf' | 'epub' = 'pdf';
-
-          if (doc.ia && Array.isArray(doc.ia) && doc.ia.length > 0) {
-            const iaId = doc.ia[0];
-            const pdfUrl = `https://archive.org/download/${iaId}/${iaId}.pdf`;
-            dlUrl = `/api/download-proxy?url=${encodeURIComponent(pdfUrl)}`;
-            format = 'pdf';
-          }
+          const dlUrl = `/api/download-proxy?url=${encodeURIComponent(verifiedFile.fileUrl)}`;
 
           results.push({
             id: `ol-${doc.key?.replace(/\//g, '-') || Math.random().toString(36).substring(7)}`,
             title: title,
             author: authors,
-            description: `Tác phẩm tra cứu từ Thư viện Mở Quốc Tế (Open Library). ${doc.first_publish_year ? `Năm xuất bản đầu: ${doc.first_publish_year}. ` : ''}${pages ? `Độ dài: ${pages} trang.` : ''}`,
-            coverUrl: coverUrl || '/documents/covers/cover_dinh_duong_hoc_that_truyen.png',
-            format: format,
-            pagesCount: pages,
-            fileSizeFormatted: pages ? `${pages} trang` : 'Sách mở',
+            description: `Tác phẩm số hóa toàn văn từ Thư viện Mở Quốc Tế (Open Library). ${doc.first_publish_year ? `Năm xuất bản: ${doc.first_publish_year}. ` : ''}`,
+            coverUrl: coverUrl || '',
+            format: verifiedFile.format,
+            pagesCount: doc.number_of_pages_median || undefined,
+            fileSizeFormatted: verifiedFile.sizeFormatted,
             downloadUrl: dlUrl,
             previewUrl: doc.key ? `https://openlibrary.org${doc.key}` : undefined,
-            badgeTag: dlUrl ? 'BẢN SỐ HÓA 📖' : 'THƯ VIỆN MỞ 🌐',
+            badgeTag: 'BẢN SỐ HÓA 📖',
             source: 'Open Library',
             year: doc.first_publish_year ? String(doc.first_publish_year) : undefined,
           });

@@ -278,6 +278,11 @@ export default function OnlineLibrarySection({
     playTapSound();
     const activeCover = customCovers[book.id] || book.coverUrl;
 
+    if (!book.downloadUrl || !book.downloadUrl.trim() || book.downloadUrl === 'undefined') {
+      alert(`Tác phẩm "${book.title}" là bản ghi danh mục tra cứu, hiện chưa có tệp số hóa toàn văn để mở đọc trực tiếp.`);
+      return;
+    }
+
     if (book.medium === 'audio' || book.format === 'audio') {
       const cached = await offlineStorage.getBookFromOffline(book.id);
       const isOutdatedCache = Boolean(cached && cached.fileUrl && cached.fileUrl !== book.downloadUrl);
@@ -724,14 +729,22 @@ export default function OnlineLibrarySection({
                 </div>
               ) : (
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenDownloaded(book)}
-                    className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
-                  >
-                    <BookOpen size={10} />
-                    <span>Đọc ngay</span>
-                  </button>
+                  {book.downloadUrl &&
+                  book.downloadUrl.trim().length > 0 &&
+                  book.downloadUrl !== 'undefined' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDownloaded(book)}
+                      className="h-6 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 text-[10.5px] font-black flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap shrink-0 shadow-2xs"
+                    >
+                      <BookOpen size={10} />
+                      <span>Đọc ngay</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-amber-700/80 dark:text-amber-400/70 font-semibold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 whitespace-nowrap">
+                      Bản thư mục
+                    </span>
+                  )}
                 </div>
               )}
             </div>

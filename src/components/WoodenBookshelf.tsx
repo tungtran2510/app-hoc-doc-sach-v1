@@ -319,16 +319,31 @@ export default function WoodenBookshelf({
       }
     };
 
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        isDragging ||
+        isReorderMode ||
+        touchStartPosRef.current !== null ||
+        target?.closest?.('[data-book-item-id], .book-cover-container, img')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
     window.addEventListener('pointermove', handleWindowPointerMove, { passive: true });
     window.addEventListener('pointerup', handleWindowPointerUp);
     window.addEventListener('pointercancel', handleWindowPointerUp);
+    window.addEventListener('contextmenu', handleContextMenu, { capture: true });
 
     return () => {
       window.removeEventListener('pointermove', handleWindowPointerMove);
       window.removeEventListener('pointerup', handleWindowPointerUp);
       window.removeEventListener('pointercancel', handleWindowPointerUp);
+      window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
     };
-  }, [isDragging, draggedBookId, internalBooks, onReorderBooks]);
+  }, [isDragging, draggedBookId, internalBooks, onReorderBooks, isReorderMode]);
 
   // Lắng nghe sự kiện cập nhật thông tin sách để cập nhật tức thì
   useEffect(() => {
@@ -1462,6 +1477,15 @@ export default function WoodenBookshelf({
                       }`}
                       style={{
                         touchAction: isReorderMode ? 'none' : 'auto',
+                        WebkitTouchCallout: 'none',
+                        WebkitUserSelect: 'none',
+                        userSelect: 'none',
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                      }}
+                      onDragStart={(e) => {
+                        e.preventDefault();
                       }}
                       onPointerDown={(e) => {
                         // Bỏ qua nếu bấm vào nút con (xóa, xem tóm tắt, điều hướng)
@@ -1549,7 +1573,20 @@ export default function WoodenBookshelf({
                           )}
 
                           {/* KHỐI BÌA SÁCH 3D NỔI NÉT ĐỨNG TRỰC TIẾP TRÊN KỆ GỖ */}
-                          <div className="book-cover-container w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200">
+                          <div 
+                            className="book-cover-container w-full relative aspect-[1/1.42] rounded-l-xs rounded-r-md overflow-hidden border-l-2 border-white/20 shadow-[-4px_2px_8px_rgba(0,0,0,0.5),4px_4px_12px_rgba(0,0,0,0.7),0_8px_14px_rgba(0,0,0,0.85)] group-hover:-translate-y-2 group-hover:scale-[1.03] active:scale-[0.98] transition-all duration-200 select-none"
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                            }}
+                            onDragStart={(e) => {
+                              e.preventDefault();
+                            }}
+                            style={{
+                              WebkitTouchCallout: 'none',
+                              WebkitUserSelect: 'none',
+                              userSelect: 'none',
+                            }}
+                          >
                             {/* NÚT XEM NHANH TÓM TẮT SÁCH (QUICK PEEK MODAL) - ẨN KHI Ở CHẾ ĐỘ SẮP XẾP */}
                             {!isReorderMode && (
                               <button

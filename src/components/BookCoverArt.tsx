@@ -114,13 +114,28 @@ export default function BookCoverArt({
   return (
     <div
       className={`relative rounded-md overflow-hidden shrink-0 select-none shadow-sm ${aspectRatio} ${className}`}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      style={{
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+      }}
     >
       {hasValidRealCoverImage ? (
         <img
           src={coverUrl!}
           alt={title}
-          className="w-full h-full object-cover block"
+          className="w-full h-full object-cover block select-none pointer-events-none"
           loading="lazy"
+          draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+          style={{
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+          }}
           onLoad={(e) => {
             // Phát hiện các ảnh 1x1 pixel rỗng do Open Library trả về khi không có bìa
             const img = e.currentTarget;

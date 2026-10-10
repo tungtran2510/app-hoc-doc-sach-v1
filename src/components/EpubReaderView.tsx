@@ -50,6 +50,7 @@ export interface EpubReaderViewProps {
   onPageProgress?: (currentChapter: number, totalChapters: number) => void;
   onOpenAiCopilot?: (selectedText?: string) => void;
   onOpenNotesModal?: (selectedText?: string) => void;
+  onReachEnd?: () => void;
 }
 
 /** Loại bỏ tiêu đề trùng lặp bên trong nội dung HTML và ngăn tiêu đề quá to */
@@ -98,6 +99,7 @@ export default function EpubReaderView({
   onPageProgress,
   onOpenAiCopilot,
   onOpenNotesModal,
+  onReachEnd,
 }: EpubReaderViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -413,6 +415,10 @@ export default function EpubReaderView({
   };
 
   const nextChapter = () => {
+    if (currentChapterIdx >= totalChapters - 1) {
+      onReachEnd?.();
+      return;
+    }
     if (currentChapterIdx < totalChapters - 1) {
       goToChapter(currentChapterIdx + 1);
     }
@@ -804,11 +810,24 @@ export default function EpubReaderView({
                 <button
                   type="button"
                   onClick={nextChapter}
-                  disabled={currentChapterIdx >= totalChapters - 1}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95 shadow-xs"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-bold ${
+                    currentChapterIdx >= totalChapters - 1
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black ring-2 ring-amber-400/40 shadow-md animate-pulse'
+                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                  }`}
+                  title={currentChapterIdx >= totalChapters - 1 ? 'Đã đọc xong cuốn sách - Nhấn để hoàn tất & về trang 1' : 'Chương tiếp theo'}
                 >
-                  <span>Chương tiếp</span>
-                  <ChevronRight size={15} />
+                  {currentChapterIdx >= totalChapters - 1 ? (
+                    <>
+                      <span>Đọc xong 🎉</span>
+                      <Sparkles size={15} />
+                    </>
+                  ) : (
+                    <>
+                      <span>Chương tiếp</span>
+                      <ChevronRight size={15} />
+                    </>
+                  )}
                 </button>
               </div>
             </article>

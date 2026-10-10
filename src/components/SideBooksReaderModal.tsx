@@ -32,6 +32,9 @@ import {
   MoreVertical,
   List,
   Heart,
+  RotateCcw,
+  Trophy,
+  Award,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
@@ -64,7 +67,7 @@ import {
 } from '../lib/userFavoritesHistory';
 import { BookTocItem, getBookToc } from '../lib/bookTocData';
 import { findRealAudioForBook, OnlineBookItem } from '../lib/onlineLibraryData';
-import { playTapSound } from '../lib/audioFeedback';
+import { playTapSound, playSuccessChime } from '../lib/audioFeedback';
 
 export interface SideBooksReaderModalProps {
   isOpen: boolean;
@@ -99,6 +102,7 @@ export default function SideBooksReaderModal({
   const [showHud, setShowHud] = useState<boolean>(true);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
   const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [showBookFinishedModal, setShowBookFinishedModal] = useState<boolean>(false);
   const [showTocModal, setShowTocModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isPdfAudioOpen, setIsPdfAudioOpen] = useState<boolean>(false);
@@ -411,9 +415,9 @@ export default function SideBooksReaderModal({
           }
         } catch {}
 
-        // Timeout an toàn 12.0 giây để bảo vệ app khi tải thư viện PDF trên mạng di động
+        // Timeout an toàn 60 giây để tải mượt mà tệp PDF dung lượng lớn (10MB - 50MB)
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('PDF loading timeout sau 12.0s')), 12000)
+          setTimeout(() => reject(new Error('PDF loading timeout sau 60s')), 60000)
         );
 
         const provider = await Promise.race([
@@ -889,6 +893,69 @@ export default function SideBooksReaderModal({
     } catch {}
     setShowExitConfirm(false);
 
+    if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
+      try {
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState(null, '', cleanUrl);
+      } catch {}
+    }
+    hasPushedHistoryRef.current = false;
+    onClose();
+  };
+
+  // Xử lý khi kết thúc cuốn sách: Trở về Trang 1 để đọc lại từ đầu
+  const handleRestartBookFromBeginning = () => {
+    try {
+      localStorage.setItem(`last_read_page_${title}`, '0');
+      localStorage.setItem('last_read_book_title', title);
+      addReadingHistory({
+        bookTitle: title,
+        author,
+        coverUrl,
+        fileUrl: activeFileUrl,
+        fileName,
+        format: isEpub ? 'epub' : isPdf ? 'pdf' : isCbz ? 'cbz' : isTxt ? 'txt' : 'flipbook',
+        page: 0,
+        totalPages: Math.max(1, isEpub ? (epubFullChapters.length || totalPages) : totalPages),
+      });
+    } catch {}
+
+    if (isEpub) {
+      setTargetEpubChapterIdx(0);
+      setCurrentEpubChapterIdx(0);
+      setCurrentPage(0);
+    } else {
+      setCurrentPage(0);
+      readerRef.current?.goToPage(0);
+    }
+
+    try {
+      playSuccessChime();
+    } catch {}
+
+    setShowBookFinishedModal(false);
+    setAudioNotice('✦ Đã trở về Trang 1 để bạn bắt đầu lại cuốn sách!');
+    setTimeout(() => setAudioNotice(null), 3500);
+  };
+
+  // Xử lý khi kết thúc cuốn sách: Về Kệ Sách và đặt lại trang 1 cho lần sau
+  const handleFinishAndReturnToShelf = () => {
+    try {
+      localStorage.setItem(`last_read_page_${title}`, '0');
+      localStorage.setItem('last_read_book_title', title);
+      addReadingHistory({
+        bookTitle: title,
+        author,
+        coverUrl,
+        fileUrl: activeFileUrl,
+        fileName,
+        format: isEpub ? 'epub' : isPdf ? 'pdf' : isCbz ? 'cbz' : isTxt ? 'txt' : 'flipbook',
+        page: 0,
+        totalPages: Math.max(1, isEpub ? (epubFullChapters.length || totalPages) : totalPages),
+      });
+    } catch {}
+
+    setShowBookFinishedModal(false);
     if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
       try {
         const cleanUrl = window.location.pathname + window.location.search;
@@ -1802,6 +1869,7 @@ export default function SideBooksReaderModal({
                 totalPages: totalCh || (epubFullChapters.length || 1),
               });
             }}
+            onReachEnd={() => setShowBookFinishedModal(true)}
           />
         ) : pdfLoading && dynamicPdfPages.length === 0 && (!pages || pages.length === 0) ? (
           /* ĐANG TẢI TRANG ĐẦU CỦA FILE PDF KHI KHÔNG CÓ TRANG ẢNH SẴN */
@@ -1829,6 +1897,7 @@ export default function SideBooksReaderModal({
             initialPage={currentPage}
             readingMode={readingMode}
             readingTheme={readingTheme}
+            onReachEnd={() => setShowBookFinishedModal(true)}
             onPageChange={(page) => {
               if (page !== currentPage) {
                 playPaperSound();
@@ -1909,22 +1978,33 @@ export default function SideBooksReaderModal({
               type="button"
               onClick={() => {
                 if (currentPage >= totalPages - 1) {
-                  setShowExitConfirm(true);
+                  setShowBookFinishedModal(true);
                 } else {
                   playPaperSound();
                   readerRef.current?.flipNext();
                 }
               }}
               className={`px-3 py-1 rounded-full ${
-                readingTheme === 'ivory'
+                currentPage >= totalPages - 1
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black border border-amber-300 ring-2 ring-amber-400/40 shadow-lg animate-pulse'
+                  : readingTheme === 'ivory'
                   ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border-[#cdbdab]'
                   : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
               } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
-              title={currentPage >= totalPages - 1 ? 'Hoàn thành & Thoát sách' : 'Mở trang sau'}
-              aria-label="Mở trang"
+              title={currentPage >= totalPages - 1 ? 'Chúc mừng bạn đã đọc xong cuốn sách! Nhấn để hoàn tất & về trang 1' : 'Mở trang sau'}
+              aria-label={currentPage >= totalPages - 1 ? 'Đọc xong cuốn sách' : 'Mở trang'}
             >
-              <span>Mở trang</span>
-              <ChevronRight size={16} />
+              {currentPage >= totalPages - 1 ? (
+                <>
+                  <span className="text-slate-950 font-black">Đọc xong 🎉</span>
+                  <Sparkles size={14} className="text-slate-950" />
+                </>
+              ) : (
+                <>
+                  <span>Mở trang</span>
+                  <ChevronRight size={16} />
+                </>
+              )}
             </button>
           </div>
 
@@ -1959,7 +2039,106 @@ export default function SideBooksReaderModal({
         </footer>
       )}
 
-      {/* ================= 4. MODAL XÁC NHẬN THOÁT SÁCH ================= */}
+      {/* ================= 4. MODAL THÔNG BÁO HOÀN THÀNH CUỐN SÁCH & TRỞ VỀ TRANG 1 ================= */}
+      {showBookFinishedModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowBookFinishedModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#24170e] via-[#1a1008] to-[#120a05] border border-amber-500/50 p-6 text-amber-100 text-center shadow-2xl flex flex-col gap-4 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Hào quang nền ánh sáng vàng vinh danh */}
+            <div className="absolute -top-12 -left-12 w-40 h-40 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-amber-600/15 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Icon Cúp vinh danh / Huy hiệu chúc mừng */}
+            <div className="relative mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-amber-400/20 animate-bounce">
+                <Sparkles size={32} strokeWidth={2.5} />
+              </div>
+              <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-sm">
+                100%
+              </span>
+            </div>
+
+            {/* Tiêu đề & Thông báo chúc mừng */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400/90">
+                ✦ Hoàn thành cuốn sách ✦
+              </span>
+              <h3 className="text-lg font-black text-amber-100 leading-tight">
+                Chúc mừng bạn đã đọc xong!
+              </h3>
+              <p className="text-xs font-bold text-amber-300/90 mt-1 line-clamp-2">
+                {title}
+              </p>
+              {author && (
+                <p className="text-[11px] text-amber-200/60 font-medium">
+                  Tác giả: {author}
+                </p>
+              )}
+            </div>
+
+            {/* Thẻ ghi nhận thành tích */}
+            <div className="bg-black/40 border border-amber-500/20 rounded-2xl p-3 flex items-center justify-around text-xs">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-amber-200/60 uppercase">Nội dung</span>
+                <span className="font-extrabold text-amber-300">
+                  {totalPages}/{totalPages} trang
+                </span>
+              </div>
+              <div className="h-6 w-px bg-amber-500/20" />
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-amber-200/60 uppercase">Tiến độ</span>
+                <span className="font-extrabold text-emerald-400">100% Hoàn tất</span>
+              </div>
+              <div className="h-6 w-px bg-amber-500/20" />
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-amber-200/60 uppercase">Chuỗi đọc</span>
+                <span className="font-extrabold text-amber-400">+1 Ngày</span>
+              </div>
+            </div>
+
+            {/* Các hành động chính: Đúng 100% yêu cầu của người dùng */}
+            <div className="flex flex-col gap-2 pt-1">
+              {/* Nút 1: Trở về trang 1 để đọc lại từ đầu */}
+              <button
+                type="button"
+                onClick={handleRestartBookFromBeginning}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+              >
+                <RotateCcw size={16} strokeWidth={2.6} />
+                <span>Trở về Trang 1 (Đọc lại từ đầu)</span>
+              </button>
+
+              {/* Nút 2: Về kệ sách và đặt lại trang 1 */}
+              <button
+                type="button"
+                onClick={handleFinishAndReturnToShelf}
+                className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-amber-200 font-bold text-xs transition-colors cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+              >
+                <BookOpen size={15} />
+                <span>Về Kệ Sách (Đặt lại trang 1 cho lần sau)</span>
+              </button>
+
+              {/* Nút 3: Ở lại trang cuối */}
+              <button
+                type="button"
+                onClick={() => setShowBookFinishedModal(false)}
+                className="text-[11px] text-amber-200/60 hover:text-amber-200 py-1 transition-colors cursor-pointer"
+              >
+                Ở lại xem trang cuối ({totalPages}/{totalPages})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= 5. MODAL XÁC NHẬN THOÁT SÁCH ================= */}
       {showExitConfirm && (
         <div
           role="dialog"

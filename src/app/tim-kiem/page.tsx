@@ -666,6 +666,10 @@ export default function SearchPage() {
     pages?: string[];
   }) => {
     playTapSound();
+    if (!book.fileUrl || !book.fileUrl.trim() || book.fileUrl === 'undefined') {
+      alert(`Tác phẩm "${book.title}" là bản ghi danh mục tra cứu, hiện chưa có tệp đọc số hóa toàn văn.`);
+      return;
+    }
     saveToRecentSearches(book.title);
     setReaderInitialPage(0);
     setReaderBook({

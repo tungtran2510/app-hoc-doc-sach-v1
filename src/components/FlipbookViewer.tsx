@@ -27,6 +27,7 @@ import {
   Check,
   Type,
   Crop,
+  Sparkles,
 } from 'lucide-react';
 import { checkIsAdminClient } from '../lib/adminAuth';
 import { renderPageToCanvas } from '../lib/atlasCanvasGenerator';
@@ -479,6 +480,7 @@ export default function FlipbookViewer({
 
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [showBookFinishedModal, setShowBookFinishedModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(mode === 'modal-only' ? Boolean(isOpen) : false);
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(propIsAdmin ?? false);
@@ -1000,6 +1002,10 @@ export default function FlipbookViewer({
 
   // Điều khiển lật trang kế tiếp (SideBooks 3D Curl)
   const handleFlipNext = () => {
+    if (currentPage >= totalPages) {
+      setShowBookFinishedModal(true);
+      return;
+    }
     const activeFlip = isFullscreen ? fullscreenFlipRef.current : inlineFlipRef.current;
     if (activeFlip) {
       activeFlip.flipNext();
@@ -1505,11 +1511,24 @@ export default function FlipbookViewer({
           <button
             type="button"
             onClick={handleFlipNext}
-            disabled={currentPage >= totalPages}
-            className="flex items-center gap-1 h-7 px-2.5 rounded-[8px] bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 cursor-pointer shadow-xs font-black"
+            className={`flex items-center gap-1 h-7 px-2.5 rounded-[8px] transition-all active:scale-95 shadow-xs font-black cursor-pointer ${
+              currentPage >= totalPages
+                ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 ring-2 ring-amber-400/40 animate-pulse'
+                : 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 hover:opacity-90'
+            }`}
+            title={currentPage >= totalPages ? 'Đã đọc xong cuốn sách! Nhấn để hoàn tất & về trang 1' : 'Trang tiếp'}
           >
-            <span>Tiếp</span>
-            <ChevronRight size={14} />
+            {currentPage >= totalPages ? (
+              <>
+                <span>Xong 🎉</span>
+                <Sparkles size={13} />
+              </>
+            ) : (
+              <>
+                <span>Tiếp</span>
+                <ChevronRight size={14} />
+              </>
+            )}
           </button>
         </div>
       </section>
@@ -1892,14 +1911,31 @@ export default function FlipbookViewer({
             <button
               type="button"
               onClick={() => {
-                handleFlipNext();
+                if (currentPage >= totalPages) {
+                  setShowBookFinishedModal(true);
+                } else {
+                  handleFlipNext();
+                }
                 resetChromeTimer();
               }}
-              disabled={currentPage >= totalPages}
-              className="flex items-center gap-1.5 h-8 sm:h-9 px-3 sm:px-3.5 rounded-[10px] bg-amber-400 text-slate-950 hover:bg-amber-300 disabled:opacity-30 disabled:cursor-not-allowed font-black text-[12.5px] sm:text-[13px] cursor-pointer shadow-md"
+              className={`flex items-center gap-1.5 h-8 sm:h-9 px-3 sm:px-3.5 rounded-[10px] transition-all active:scale-95 shadow-md font-black text-[12.5px] sm:text-[13px] cursor-pointer ${
+                currentPage >= totalPages
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 ring-2 ring-amber-400/40 animate-pulse'
+                  : 'bg-amber-400 text-slate-950 hover:bg-amber-300'
+              }`}
+              title={currentPage >= totalPages ? 'Đã đọc xong cuốn sách! Nhấn để hoàn tất & về trang 1' : 'Trang tiếp'}
             >
-              <span>Trang tiếp</span>
-              <ChevronRight size={16} />
+              {currentPage >= totalPages ? (
+                <>
+                  <span>Đọc xong 🎉</span>
+                  <Sparkles size={16} />
+                </>
+              ) : (
+                <>
+                  <span>Trang tiếp</span>
+                  <ChevronRight size={16} />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -2243,6 +2279,95 @@ export default function FlipbookViewer({
             setIsCropCoverOpen(false);
           }}
         />
+      )}
+
+      {/* MODAL THÔNG BÁO HOÀN THÀNH CUỐN SÁCH & TRỞ VỀ TRANG 1 */}
+      {showBookFinishedModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[10001] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowBookFinishedModal(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#24170e] via-[#1a1008] to-[#120a05] border border-amber-500/50 p-6 text-amber-100 text-center shadow-2xl flex flex-col gap-4 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-amber-400/20 animate-bounce">
+                <Sparkles size={32} strokeWidth={2.5} />
+              </div>
+              <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-sm">
+                100%
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400/90">
+                ✦ Hoàn thành cuốn sách ✦
+              </span>
+              <h3 className="text-lg font-black text-amber-100 leading-tight">
+                Chúc mừng bạn đã đọc xong!
+              </h3>
+              <p className="text-xs font-bold text-amber-300/90 mt-1 line-clamp-2">
+                {bookTitle}
+              </p>
+            </div>
+
+            <div className="bg-black/40 border border-amber-500/20 rounded-2xl p-3 flex items-center justify-around text-xs">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-amber-200/60 uppercase">Nội dung</span>
+                <span className="font-extrabold text-amber-300">
+                  {totalPages}/{totalPages} trang
+                </span>
+              </div>
+              <div className="h-6 w-px bg-amber-500/20" />
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-amber-200/60 uppercase">Tiến độ</span>
+                <span className="font-extrabold text-emerald-400">100% Hoàn tất</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  handleJumpToPage(1);
+                  setShowBookFinishedModal(false);
+                }}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+              >
+                <RotateCcw size={16} strokeWidth={2.6} />
+                <span>Trở về Trang 1 (Đọc lại từ đầu)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleJumpToPage(1);
+                  setShowBookFinishedModal(false);
+                  if (isFullscreen) {
+                    handleCloseFullscreen();
+                  } else if (onClose) {
+                    onClose();
+                  }
+                }}
+                className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-amber-200 font-bold text-xs transition-colors cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+              >
+                <BookOpen size={15} />
+                <span>Về Kệ Sách (Đặt lại trang 1 cho lần sau)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowBookFinishedModal(false)}
+                className="text-[11px] text-amber-200/60 hover:text-amber-200 py-1 transition-colors cursor-pointer"
+              >
+                Ở lại xem trang cuối ({totalPages}/{totalPages})
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

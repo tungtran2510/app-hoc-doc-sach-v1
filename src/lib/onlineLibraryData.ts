@@ -316,6 +316,24 @@ export const CURATED_ONLINE_BOOKS: OnlineBookItem[] = [
     year: '2018',
     source: 'Thư Viện Trực Tuyến',
   },
+  {
+    id: 'online-read-nuoc-uong-tang-mien-dich',
+    title: 'Nước Uống Tăng Khả Năng Miễn Dịch',
+    author: 'Lý Thừa Du & Giang Văn Toản',
+    medium: 'read',
+    category: 'y-hoc',
+    categoryName: 'Y học & Sức khỏe',
+    format: 'epub',
+    fileSizeFormatted: '13.3 KB (Toàn Văn EPUB)',
+    coverUrl: '/documents/covers/cover_mien-dich.png',
+    downloadUrl: '/documents/nuoc_uong_tang_kha_nang_mien_dich.epub',
+    description:
+      'Bản toàn văn 10 chương chuyên sâu. Cẩm nang hướng dẫn sử dụng nước uống sinh học, nước điện giải kiềm, trà thảo mộc EGCG, nước ép enzym và thức uống lên men probiotic giúp kích hoạt hệ thống miễn dịch tự thân, chống lão hóa và phục hồi tế bào.',
+    badgeTag: 'TOÀN VĂN EPUB 10 CHƯƠNG ☀️',
+    language: 'vi',
+    year: '2024',
+    source: 'Tủ Sách Y Khoa & Dinh Dưỡng Qbiz',
+  },
 
   // ================= 3. SÁCH VĂN HỌC & TRI THỨC THẾ GIỚI KINH ĐIỂN =================
   {

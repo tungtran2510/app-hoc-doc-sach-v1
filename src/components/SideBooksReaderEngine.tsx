@@ -24,6 +24,7 @@ export interface SideBooksReaderEngineProps {
   pageImages: string[];
   initialPage?: number;
   onPageChange?: (pageIdx: number) => void;
+  onReachEnd?: () => void;
   onCenterClick?: () => void;
   readingTheme?: 'dark' | 'sepia' | 'ivory' | 'gray';
   readingMode?: 'curl' | 'roll' | 'scroll';
@@ -48,6 +49,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       pageImages,
       initialPage = 0,
       onPageChange,
+      onReachEnd,
       onCenterClick,
       readingTheme = 'gray',
       readingMode = 'curl',
@@ -76,6 +78,9 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
 
     const onPageChangeRef = useRef(onPageChange);
     onPageChangeRef.current = onPageChange;
+
+    const onReachEndRef = useRef(onReachEnd);
+    onReachEndRef.current = onReachEnd;
 
     const onCenterClickRef = useRef(onCenterClick);
     onCenterClickRef.current = onCenterClick;
@@ -806,7 +811,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     const animateNextCompletion = useCallback(
       (startProgress: number = 0) => {
         const curIdx = curIndexRef.current;
-        if (curIdx >= totalPages - 1 || isAnimatingRef.current) return;
+        if (curIdx >= totalPages - 1) {
+          onReachEndRef.current?.();
+          return;
+        }
+        if (isAnimatingRef.current) return;
 
         if (animReqRef.current) cancelAnimationFrame(animReqRef.current);
         isAnimatingRef.current = true;
@@ -1270,16 +1279,24 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         const absY = Math.abs(dy);
         if (absX > GESTURE_THRESHOLD && absX >= absY * 0.75) {
           state.hasMoved = true;
-          if (dx < -GESTURE_THRESHOLD && curIdx < totalPages - 1) {
-            state.mode = 'drag_next';
+          if (dx < -GESTURE_THRESHOLD) {
+            if (curIdx < totalPages - 1) {
+              state.mode = 'drag_next';
+            } else {
+              onReachEndRef.current?.();
+            }
           } else if (dx > GESTURE_THRESHOLD && curIdx > 0) {
             state.mode = 'drag_prev';
           }
         } else if (absY > GESTURE_THRESHOLD * 2 && absY > absX * 1.25) {
           // Vuốt dọc tự nhiên: Vuốt lên (dy âm) mở trang kế, Vuốt xuống (dy dương) lùi trang trước
           state.hasMoved = true;
-          if (dy < -GESTURE_THRESHOLD * 2 && curIdx < totalPages - 1) {
-            state.mode = 'drag_next';
+          if (dy < -GESTURE_THRESHOLD * 2) {
+            if (curIdx < totalPages - 1) {
+              state.mode = 'drag_next';
+            } else {
+              onReachEndRef.current?.();
+            }
           } else if (dy > GESTURE_THRESHOLD * 2 && curIdx > 0) {
             state.mode = 'drag_prev';
           }
@@ -1379,7 +1396,11 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
         if (state.startX < W * 0.28) {
           flipPrev();
         } else if (state.startX > W * 0.72) {
-          flipNext();
+          if (curIndexRef.current >= totalPages - 1) {
+            onReachEndRef.current?.();
+          } else {
+            flipNext();
+          }
         } else {
           onCenterClickRef.current?.();
         }
