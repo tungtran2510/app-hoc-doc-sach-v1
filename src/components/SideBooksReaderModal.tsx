@@ -1037,7 +1037,7 @@ export default function SideBooksReaderModal({
             {/* 1. NÚT VỀ KỆ SÁCH */}
             <button
               type="button"
-              onClick={handleExitBook}
+              onClick={() => setShowExitConfirm(true)}
               className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                 readingTheme === 'ivory'
                   ? 'bg-[#d8c8b2] hover:bg-[#cbb89e] text-[#2c180c] border border-[#bfae97]'
@@ -2104,41 +2104,60 @@ export default function SideBooksReaderModal({
         </div>
       )}
 
-      {/* ================= 5. MODAL XÁC NHẬN THOÁT SÁCH ================= */}
+      {/* ================= 5. MODAL XÁC NHẬN THOÁT SÁCH (SIÊU TỐI GIẢN) ================= */}
       {showExitConfirm && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
           onClick={() => setShowExitConfirm(false)}
         >
           <div
-            className="w-full max-w-xs rounded-2xl bg-gradient-to-b from-[#25170e] to-[#170e08] border border-amber-900/60 p-5 text-amber-100 text-center shadow-2xl flex flex-col gap-3"
+            className="w-full max-w-[280px] rounded-2xl bg-[#1c120a] border border-amber-500/25 p-4.5 text-amber-100 text-center shadow-2xl flex flex-col gap-3 relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-              <BookOpen size={24} />
+            {/* Nút đóng góc trên */}
+            <button
+              type="button"
+              onClick={() => setShowExitConfirm(false)}
+              className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-amber-200/40 hover:text-amber-200 hover:bg-white/5 transition-colors cursor-pointer"
+              title="Đóng"
+              aria-label="Đóng"
+            >
+              <X size={14} />
+            </button>
+
+            {/* Icon Tối giản */}
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mt-0.5">
+              <BookOpen size={17} strokeWidth={2.4} />
             </div>
-            <h3 className="text-base font-extrabold text-amber-200">
-              Bạn muốn quay về Kệ Sách?
-            </h3>
-            <p className="text-xs text-amber-200/80 leading-relaxed">
-              Trang đọc hiện tại ({currentPage + 1}/{totalPages}) sẽ được tự động ghi nhớ cho lần đọc tiếp theo.
-            </p>
-            <div className="flex items-center gap-2 pt-2">
+
+            {/* Tiêu đề & nội dung siêu gọn */}
+            <div className="flex flex-col gap-1 px-1">
+              <h3 className="text-[14px] font-bold text-amber-100 tracking-tight">
+                Về kệ sách?
+              </h3>
+              <p className="text-[11.5px] text-amber-200/70 font-medium leading-relaxed">
+                Đã ghi nhớ trang {currentPage + 1}/{totalPages} cho lần đọc sau.
+              </p>
+            </div>
+
+            {/* 2 nút hành động tối giản ngang hàng */}
+            <div className="flex items-center gap-2 pt-1 w-full">
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 font-bold text-xs transition-colors cursor-pointer"
+                className="flex-1 h-8.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-200/90 font-medium text-xs transition-colors cursor-pointer active:scale-95"
               >
                 Đọc tiếp
               </button>
+
               <button
                 type="button"
                 onClick={handleExitBook}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition-colors cursor-pointer"
+                className="flex-1 h-8.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-transform active:scale-95 cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
-                Về kệ sách
+                <span>Về kệ sách</span>
               </button>
             </div>
           </div>

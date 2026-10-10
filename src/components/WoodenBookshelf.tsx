@@ -2441,14 +2441,14 @@ export default function WoodenBookshelf({
                   setShowSettingsMenu(false);
                   setShowExitConfirm(true);
                 }}
-                className="flex items-center justify-between p-2 rounded-xl bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-200 transition-all cursor-pointer whitespace-nowrap active:scale-98"
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-red-500/10 dark:hover:bg-red-950/30 transition-colors text-red-600 dark:text-red-400 cursor-pointer whitespace-nowrap active:scale-98"
               >
                 <div className="flex items-center gap-2">
                   <LogOut size={16} className="text-red-500 dark:text-red-400" />
-                  <span className="font-bold text-red-700 dark:text-red-200">Đăng xuất tài khoản</span>
+                  <span className="font-semibold text-xs text-red-700 dark:text-red-300">Thoát ứng dụng</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30 font-bold">
-                  Đăng xuất
+                <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-600 dark:text-red-400 font-bold">
+                  Thoát
                 </span>
               </button>
             </div>
@@ -2456,77 +2456,70 @@ export default function WoodenBookshelf({
         </div>
       )}
 
-      {/* MODAL XÁC NHẬN ĐĂNG XUẤT TÀI KHOẢN & THOÁT KHỎI PHIÊN ĐỌC SÁCH */}
+      {/* MODAL XÁC NHẬN THOÁT ỨNG DỤNG (SIÊU TỐI GIẢN & CHUYÊN NGHIỆP) */}
       {showExitConfirm && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          className="fixed inset-0 z-[150] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
           onClick={() => {
             isExitingRef.current = false;
             setShowExitConfirm(false);
           }}
         >
           <div
-            className="w-full max-w-[340px] rounded-2xl bg-gradient-to-b from-[#FAF6EF] via-[#F4ECE0] to-[#EAE0D0] dark:from-[#25170e] dark:via-[#1f130b] dark:to-[#140b06] border border-amber-800/20 dark:border-amber-600/40 p-5 text-[#2c180c] dark:text-[#fdf7ee] text-center shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.9)] flex flex-col items-center gap-3 animate-in zoom-in-95"
+            className="w-full max-w-[280px] rounded-2xl bg-[#1c120a] border border-amber-500/25 p-4.5 text-amber-100 text-center shadow-2xl flex flex-col gap-3 relative animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icon Đăng xuất nổi bật */}
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-red-500/15 to-amber-500/15 dark:from-red-500/25 dark:to-amber-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 flex items-center justify-center shadow-lg shadow-red-900/10 dark:shadow-red-900/30">
-              <LogOut size={26} strokeWidth={2.4} className="text-red-600 dark:text-red-400" />
+            {/* Nút đóng góc trên */}
+            <button
+              type="button"
+              onClick={() => {
+                isExitingRef.current = false;
+                setShowExitConfirm(false);
+              }}
+              className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-amber-200/40 hover:text-amber-200 hover:bg-white/5 transition-colors cursor-pointer"
+              title="Đóng"
+              aria-label="Đóng"
+            >
+              <X size={14} />
+            </button>
+
+            {/* Icon Tối giản */}
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mt-0.5">
+              <LogOut size={17} strokeWidth={2.4} />
             </div>
 
-            {/* Tiêu đề & Thông điệp */}
-            <div className="flex flex-col gap-1">
-              <h3 className="text-[15px] font-black tracking-wide text-[#2c180c] dark:text-amber-100 uppercase">
-                Xác nhận đăng xuất
+            {/* Nội dung thông báo siêu gọn */}
+            <div className="flex flex-col gap-1 px-1">
+              <h3 className="text-[14px] font-bold text-amber-100 tracking-tight">
+                Thoát ứng dụng?
               </h3>
-              <p className="text-[12px] text-[#6a4224] dark:text-amber-200/85 leading-relaxed px-1">
-                {isAdmin
-                  ? 'Bạn đang đăng nhập quyền Quản trị viên. Bạn có chắc chắn muốn đăng xuất tài khoản?'
-                  : typeof window !== 'undefined' && getUserPhone()
-                  ? `Bạn đang liên kết số ${getUserPhone()}. Bạn có muốn đăng xuất tài khoản khỏi thiết bị này?`
-                  : 'Bạn có chắc chắn muốn đăng xuất tài khoản và thoát khỏi phiên đọc sách?'}
+              <p className="text-[11.5px] text-amber-200/70 font-medium leading-relaxed">
+                Tiến độ đọc và dữ liệu của bạn đã được bảo lưu tự động.
               </p>
             </div>
 
-            {/* Khối thông báo an toàn dữ liệu */}
-            <div className="w-full p-2 rounded-xl bg-emerald-50 dark:bg-black/40 border border-emerald-200/80 dark:border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-emerald-800 dark:text-emerald-300/90 font-medium">
-              <CheckCircle2 size={13} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <span>Tiến độ đọc và sách đã lưu an toàn 100%</span>
-            </div>
-
-            {/* Các nút hành động chuẩn Mobile */}
-            <div className="w-full flex flex-col gap-2 pt-1">
-              {/* Nút 1: ĐĂNG XUẤT TÀI KHOẢN (PRIMARY) */}
-              <button
-                type="button"
-                onClick={handleLogoutAccount}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
-              >
-                <LogOut size={14} strokeWidth={2.4} />
-                <span>Đăng xuất tài khoản</span>
-              </button>
-
-              {/* Nút 2: Ở lại đọc sách */}
+            {/* 2 nút hành động tối giản ngang hàng */}
+            <div className="flex items-center gap-2 pt-1 w-full">
               <button
                 type="button"
                 onClick={() => {
                   isExitingRef.current = false;
                   setShowExitConfirm(false);
                 }}
-                className="w-full py-2 rounded-xl bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/15 border border-[#d8c5aa] dark:border-white/15 text-stone-800 dark:text-stone-200 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                className="flex-1 h-8.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-200/90 font-medium text-xs transition-colors cursor-pointer active:scale-95"
               >
-                Ở lại đọc sách
+                Ở lại
               </button>
 
-              {/* Nút 3: Thoát / Đóng ứng dụng */}
               <button
                 type="button"
                 onClick={handleExitApp}
-                className="text-[11px] text-[#8B4513] dark:text-amber-400/80 hover:underline pt-0.5 cursor-pointer"
+                className="flex-1 h-8.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-transform active:scale-95 cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
-                Đóng / Thoát ứng dụng
+                <LogOut size={13} strokeWidth={2.4} />
+                <span>Thoát</span>
               </button>
             </div>
           </div>
