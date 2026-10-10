@@ -438,6 +438,7 @@ export default function OnlineLibrarySection({
         downloadUrl: r.downloadUrl || r.previewUrl,
         description: r.description,
         badgeTag: r.badgeTag,
+        pagesCount: r.pagesCount,
         language: 'vi' as const,
         source: r.source,
         year: r.year,
@@ -604,6 +605,11 @@ export default function OnlineLibrarySection({
             medium={book.medium === 'audio' ? 'audio' : 'read'}
             className="w-full h-full"
           />
+          {book.pagesCount ? (
+            <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-black/80 text-amber-300 text-[8.5px] font-mono font-bold leading-tight backdrop-blur-xs select-none shadow-xs border border-white/10">
+              {book.pagesCount}{book.format === 'epub' && book.pagesCount <= 20 ? 'ch' : 'tr'}
+            </span>
+          ) : null}
         </div>
 
         {/* Thông tin sách: Tối ưu chặt chẽ từng dòng */}
@@ -633,9 +639,17 @@ export default function OnlineLibrarySection({
 
           {/* Hàng 3: Metadata tinh gọn 1 dòng + Nút hành động 1 dòng */}
           <div className="flex items-center justify-between gap-1 pt-1 border-t border-amber-900/10 dark:border-white/5 mt-0.5">
-            {/* Metadata 1 dòng: Qbiz • 1.8 MB hoặc Audio • 28 phút */}
+            {/* Metadata 1 dòng: Số trang ưu tiên đầu tiên • Dung lượng • Nguồn */}
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate whitespace-nowrap">
-              {book.source} • {book.medium === 'both' && book.durationFormatted ? `${book.fileSizeFormatted} · 🎧 ${book.durationFormatted}` : (book.durationFormatted || book.fileSizeFormatted)}
+              {book.pagesCount ? (
+                <strong className="text-amber-800 dark:text-amber-300 font-bold">
+                  {book.pagesCount} {book.format === 'epub' && book.pagesCount <= 20 ? 'chương' : 'trang'} •{' '}
+                </strong>
+              ) : null}
+              {book.medium === 'both' && book.durationFormatted
+                ? `${book.fileSizeFormatted} · 🎧 ${book.durationFormatted}`
+                : (book.durationFormatted || book.fileSizeFormatted)}
+              {book.source ? ` • ${book.source}` : ''}
             </span>
 
             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>

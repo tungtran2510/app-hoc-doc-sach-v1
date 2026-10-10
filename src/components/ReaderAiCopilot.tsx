@@ -72,7 +72,8 @@ export function extractPageNumbers(text: string, maxPages: number = 9999): numbe
 function renderFormattedCopilotText(
   text: string,
   onJumpToPage?: (p0: number) => void,
-  maxPages: number = 9999
+  maxPages: number = 9999,
+  isDark: boolean = true
 ) {
   const lines = text.split('\n');
   return lines.map((line, idx) => {
@@ -84,7 +85,7 @@ function renderFormattedCopilotText(
     const renderedParts = parts.map((part, pIdx) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
-          <strong key={pIdx} className="font-extrabold text-amber-900 dark:text-amber-200">
+          <strong key={pIdx} className={`font-black ${isDark ? 'text-amber-300' : 'text-amber-900'}`}>
             {part.slice(2, -2)}
           </strong>
         );
@@ -100,11 +101,15 @@ function renderFormattedCopilotText(
               key={pIdx}
               type="button"
               onClick={() => onJumpToPage(pNum - 1)}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/35 text-amber-900 dark:text-amber-200 font-extrabold text-[11px] underline decoration-amber-500 cursor-pointer align-baseline transition-all active:scale-95"
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 rounded-md ${
+                isDark
+                  ? 'bg-amber-500/25 hover:bg-amber-500/40 text-amber-300 border border-amber-500/40'
+                  : 'bg-amber-500/20 hover:bg-amber-500/35 text-amber-900 border border-amber-500/30'
+              } font-extrabold text-[11px] cursor-pointer align-baseline transition-all active:scale-95`}
               title={`Lật tới trang ${pNum}`}
             >
               <span>Trang {pNum}</span>
-              <ChevronRight size={10} className="shrink-0 text-amber-600 dark:text-amber-400" />
+              <ChevronRight size={10} className={`shrink-0 ${isDark ? 'text-amber-300' : 'text-amber-600'}`} />
             </button>
           );
         }
@@ -116,8 +121,8 @@ function renderFormattedCopilotText(
     if (isBullet) {
       return (
         <div key={idx} className="flex items-start gap-1.5 my-1 text-[12.5px] leading-relaxed">
-          <span className="text-amber-600 dark:text-amber-400 font-bold shrink-0 mt-0.5">•</span>
-          <span className="flex-1 min-w-0">{renderedParts}</span>
+          <span className={`${isDark ? 'text-amber-400' : 'text-amber-600'} font-bold shrink-0 mt-0.5`}>•</span>
+          <span className={`flex-1 min-w-0 ${isDark ? 'text-slate-100' : 'text-[#2A160A]'}`}>{renderedParts}</span>
         </div>
       );
     }
@@ -127,7 +132,7 @@ function renderFormattedCopilotText(
     }
 
     return (
-      <p key={idx} className="text-[12.5px] leading-relaxed my-1">
+      <p key={idx} className={`text-[12.5px] leading-relaxed my-1 ${isDark ? 'text-slate-100' : 'text-[#2A160A]'}`}>
         {renderedParts}
       </p>
     );
@@ -148,13 +153,15 @@ export default function ReaderAiCopilot({
   toc,
   onJumpToPage,
 }: ReaderAiCopilotProps) {
+  const isDark = readingTheme !== 'ivory';
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [readingSpeechIdx, setReadingSpeechIdx] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [scope, setScope] = useState<'page' | 'book'>('page');
+  // MẶC ĐỊNH LÀ 'book' (HỎI TOÀN CUỐN SÁCH THEO YÊU CẦU, THANH BÊN CẠNH LÀ TRANG NÀY)
+  const [scope, setScope] = useState<'page' | 'book'>('book');
 
   // Mục lục thực tế (ưu tiên prop toc truyền vào, fallback từ bảng mục lục kinh điển)
   const effectiveToc = useMemo(() => {
@@ -165,6 +172,9 @@ export default function ReaderAiCopilot({
   useEffect(() => {
     if (isOpen) {
       setIsCollapsed(false);
+      if (selectedText) {
+        setScope('page');
+      }
     }
   }, [isOpen, selectedText]);
 
@@ -190,11 +200,11 @@ export default function ReaderAiCopilot({
         {
           id: 'welcome',
           role: 'assistant',
-          text: `Chào bạn! Tôi là **Trợ lý AI Đọc Sách**. Tôi đang đồng hành cùng bạn đọc cuốn **"${bookTitle}"** (Trang ${currentPage + 1}/${totalPages}).\n\nBạn có thể nhấn các gợi ý bên dưới hoặc chuyển đổi giữa chế độ **"Trang này"** và **"Toàn cuốn sách"** để tôi hỗ trợ tối đa!`,
+          text: `Chào bạn! Tôi là **Trợ lý AI Đọc Sách**. Tôi đang đồng hành cùng bạn đọc cuốn **"${bookTitle}"** (Tổng cộng ${totalPages} trang).\n\nTheo mặc định, tôi sẽ giải thích và phân tích theo **Toàn cuốn sách**. Nếu bạn muốn tập trung vào trang đang mở, hãy bấm vào thanh **"Trang này"** bên cạnh!`,
           followUpQuestions: [
-            'Tóm tắt 3 ý cốt lõi của trang này?',
-            'Tóm tắt cấu trúc và thông điệp toàn cuốn sách?',
-            'Giải thích các thuật ngữ chuyên sâu trang này?',
+            'Tóm tắt cấu trúc và thông điệp cốt lõi của cuốn sách này?',
+            'Những bài học thực tiễn lớn nhất của tác giả là gì?',
+            'Giải thích các chương quan trọng nhất nên đọc trước?',
           ],
           timestamp: Date.now(),
         },
@@ -420,7 +430,11 @@ export default function ReaderAiCopilot({
     <aside
       role="complementary"
       aria-label="Trợ lý AI Đọc Sách"
-      className={`fixed bottom-0 inset-x-0 sm:bottom-4 sm:right-4 sm:inset-x-auto sm:w-[440px] max-w-full z-50 flex flex-col bg-[#FAF6F0]/98 dark:bg-[#1C120C]/98 text-[#2A160A] dark:text-[#F5EFE6] rounded-t-3xl sm:rounded-2xl border-t sm:border border-amber-500/40 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom duration-250 select-none transition-all ${
+      className={`fixed bottom-0 inset-x-0 sm:bottom-4 sm:right-4 sm:inset-x-auto sm:w-[440px] max-w-full z-50 flex flex-col ${
+        isDark
+          ? 'bg-[#131722]/98 text-slate-100 border-amber-500/35 shadow-2xl'
+          : 'bg-[#FAF6F0]/98 text-[#2A160A] border-[#DFCFBD] shadow-2xl'
+      } rounded-t-3xl sm:rounded-2xl border-t sm:border backdrop-blur-xl animate-in slide-in-from-bottom duration-250 select-none transition-all ${
         isCollapsed
           ? 'h-12 overflow-hidden cursor-pointer'
           : isExpanded
@@ -432,11 +446,15 @@ export default function ReaderAiCopilot({
       {isCollapsed ? (
         <div
           onClick={() => setIsCollapsed(false)}
-          className="h-12 px-4 flex items-center justify-between gap-2 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent hover:bg-amber-500/25 transition-colors cursor-pointer"
+          className={`h-12 px-4 flex items-center justify-between gap-2 ${
+            isDark
+              ? 'bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent hover:bg-amber-500/25'
+              : 'bg-gradient-to-r from-amber-500/20 via-[#f5ede0] to-transparent hover:bg-amber-500/15'
+          } transition-colors cursor-pointer`}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Sparkles size={16} className="text-amber-500 animate-pulse shrink-0" />
-            <span className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate">
+            <Sparkles size={16} className="text-amber-400 animate-pulse shrink-0" />
+            <span className={`text-xs font-bold ${isDark ? 'text-amber-200' : 'text-amber-900'} truncate`}>
               Trợ lý AI Đang Sẵn Sàng · Bấm để tiếp tục trò chuyện
             </span>
           </div>
@@ -447,7 +465,7 @@ export default function ReaderAiCopilot({
                 e.stopPropagation();
                 setIsCollapsed(false);
               }}
-              className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-amber-600 dark:text-amber-400 cursor-pointer"
+              className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-white/10 text-amber-300' : 'hover:bg-black/5 text-amber-700'} cursor-pointer`}
               title="Mở rộng khung"
               aria-label="Mở rộng"
             >
@@ -468,27 +486,33 @@ export default function ReaderAiCopilot({
           </div>
         </div>
       ) : (
-        <header className="px-3.5 pt-2 pb-2.5 border-b border-amber-900/15 dark:border-amber-500/20 bg-white/70 dark:bg-[#251810]/80 backdrop-blur-md flex flex-col gap-1 shrink-0">
+        <header className={`px-3.5 pt-2 pb-2.5 border-b ${
+          isDark
+            ? 'border-white/10 bg-[#181d28]/95'
+            : 'border-[#DFCFBD] bg-[#F2ECE1]/95'
+        } backdrop-blur-md flex flex-col gap-1 shrink-0`}>
           {/* Thanh kéo nhỏ gọn trên điện thoại */}
           <div
             onClick={() => setIsCollapsed(true)}
-            className="w-10 h-1 bg-amber-500/40 hover:bg-amber-500/70 rounded-full mx-auto mb-1 cursor-pointer transition-colors sm:hidden"
+            className="w-10 h-1 bg-amber-400/50 hover:bg-amber-400/80 rounded-full mx-auto mb-1 cursor-pointer transition-colors sm:hidden"
             title="Kéo hoặc bấm để thu gọn"
           />
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 text-white flex items-center justify-center shadow-xs shrink-0">
-                <Sparkles size={14} className="animate-pulse" />
+              <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center shadow-xs shrink-0 font-bold">
+                <Sparkles size={14} />
               </div>
               <div className="min-w-0">
-                <h2 className="text-xs font-black text-[#2A160A] dark:text-amber-200 uppercase tracking-wide truncate flex items-center gap-1.5">
+                <h2 className={`text-xs font-black ${isDark ? 'text-white' : 'text-[#2A160A]'} uppercase tracking-wide truncate flex items-center gap-1.5`}>
                   <span>Hỏi AI Đồng Hành</span>
-                  <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono text-[9px]">
+                  <span className={`px-1.5 py-0.2 rounded font-mono text-[9px] ${
+                    isDark ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-amber-500/20 text-amber-800'
+                  }`}>
                     Copilot
                   </span>
                 </h2>
-                <p className="text-[10px] text-[#6E4223] dark:text-amber-300/70 truncate">
+                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-[#6E4223]'} truncate`}>
                   Trang {currentPage + 1}/{totalPages} · {bookTitle}
                 </p>
               </div>
@@ -498,7 +522,7 @@ export default function ReaderAiCopilot({
               <button
                 type="button"
                 onClick={handleClearHistory}
-                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                className={`w-7 h-7 rounded-lg ${isDark ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/5 text-slate-500 hover:text-amber-800'} flex items-center justify-center transition-colors cursor-pointer`}
                 title="Xóa lịch sử hội thoại"
                 aria-label="Xóa lịch sử"
               >
@@ -507,7 +531,7 @@ export default function ReaderAiCopilot({
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
-                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                className={`w-7 h-7 rounded-lg ${isDark ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/5 text-slate-500 hover:text-amber-800'} flex items-center justify-center transition-colors cursor-pointer`}
                 title={isExpanded ? 'Thu nhỏ lại' : 'Mở rộng khung'}
                 aria-label={isExpanded ? 'Thu nhỏ' : 'Mở rộng'}
               >
@@ -516,7 +540,7 @@ export default function ReaderAiCopilot({
               <button
                 type="button"
                 onClick={() => setIsCollapsed(true)}
-                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center justify-center transition-colors cursor-pointer"
+                className={`w-7 h-7 rounded-lg ${isDark ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/5 text-slate-500 hover:text-amber-800'} flex items-center justify-center transition-colors cursor-pointer`}
                 title="Thu gọn xuống thanh đáy"
                 aria-label="Thu gọn"
               >
@@ -525,7 +549,7 @@ export default function ReaderAiCopilot({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-red-400 flex items-center justify-center transition-colors cursor-pointer"
                 title="Đóng trợ lý AI"
                 aria-label="Đóng"
               >
@@ -538,34 +562,45 @@ export default function ReaderAiCopilot({
 
       {!isCollapsed && (
         <>
-          {/* THANH CHUYỂN PHẠM VI NGỮ CẢNH: TRANG NÀY vs TOÀN CUỐN SÁCH (CHUẨN TINH GỌN 1 DÒNG MOBILE) */}
-          <div className="px-3 pt-2 pb-1.5 shrink-0 border-b border-amber-900/10 dark:border-amber-500/15 bg-white/40 dark:bg-[#1C120C]/50">
-            <div className="grid grid-cols-2 p-0.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/25 text-xs">
-              <button
-                type="button"
-                onClick={() => setScope('page')}
-                className={`h-7 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap overflow-hidden ${
-                  scope === 'page'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-amber-900/70 dark:text-amber-200/70 hover:text-amber-900 dark:hover:text-amber-100'
-                }`}
-                title="Hỏi và phân tích trang sách đang mở"
-              >
-                <FileText size={12} className="shrink-0" />
-                <span className="truncate">Trang này ({currentPage + 1}/{totalPages})</span>
-              </button>
+          {/* THANH CHUYỂN PHẠM VI NGỮ CẢNH: MẶC ĐỊNH LÀ TOÀN CUỐN SÁCH, THANH BÊN CẠNH LÀ TRANG NÀY */}
+          <div className={`px-3 pt-2 pb-1.5 shrink-0 border-b ${
+            isDark ? 'border-white/10 bg-[#151924]/90' : 'border-[#DFCFBD] bg-[#FAF6F0]'
+          }`}>
+            <div className={`grid grid-cols-2 p-0.5 rounded-xl ${
+              isDark ? 'bg-black/40 border border-white/10' : 'bg-[#EAE1D3] border border-[#DFCFBD]'
+            } text-xs`}>
+              {/* Tab 1 (Bên trái, MẶC ĐỊNH ACTIVE): TOÀN CUỐN SÁCH THEO YÊU CẦU */}
               <button
                 type="button"
                 onClick={() => setScope('book')}
                 className={`h-7 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap overflow-hidden ${
                   scope === 'book'
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'text-amber-900/70 dark:text-amber-200/70 hover:text-amber-900 dark:hover:text-amber-100'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                    : isDark
+                    ? 'text-slate-400 hover:text-slate-200'
+                    : 'text-[#6E4223] hover:text-[#2A160A]'
                 }`}
-                title="Hỏi và phân tích toàn bộ cuốn sách"
+                title="Hỏi và phân tích toàn bộ cuốn sách (Mặc định)"
               >
                 <BookOpen size={12} className="shrink-0" />
-                <span className="truncate">Toàn sách ({effectiveToc.length > 0 ? `${effectiveToc.length} mục` : `${totalPages} trang`})</span>
+                <span className="truncate">Toàn cuốn sách ({effectiveToc.length > 0 ? `${effectiveToc.length} mục` : `${totalPages} trang`})</span>
+              </button>
+
+              {/* Tab 2 (Thanh bên cạnh): HỎI TRANG NÀY THEO YÊU CẦU */}
+              <button
+                type="button"
+                onClick={() => setScope('page')}
+                className={`h-7 px-2 rounded-lg font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap overflow-hidden ${
+                  scope === 'page'
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
+                    : isDark
+                    ? 'text-slate-400 hover:text-slate-200'
+                    : 'text-[#6E4223] hover:text-[#2A160A]'
+                }`}
+                title="Hỏi và phân tích trang sách đang mở"
+              >
+                <FileText size={12} className="shrink-0" />
+                <span className="truncate">Trang này ({currentPage + 1}/{totalPages})</span>
               </button>
             </div>
           </div>
@@ -612,7 +647,9 @@ export default function ReaderAiCopilot({
           )}
 
           {/* 3. VÙNG DANH SÁCH TIN NHẮN (CHAT MESSAGES) */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 flex flex-col gap-3 min-h-0">
+          <div className={`flex-1 overflow-y-auto p-3 sm:p-4 flex flex-col gap-3 min-h-0 ${
+            isDark ? 'bg-[#0f131d]' : 'bg-[#FAF6F0]'
+          }`}>
             {messages.map((msg) => {
               const isUser = msg.role === 'user';
               const jumpPages = !isUser ? extractPageNumbers(msg.text, totalPages) : [];
@@ -622,7 +659,7 @@ export default function ReaderAiCopilot({
                   key={msg.id}
                   className={`flex flex-col gap-1.5 ${isUser ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-medium px-1">
+                  <div className={`flex items-center gap-1 text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium px-1`}>
                     {isUser ? (
                       <>
                         <span>Bạn</span>
@@ -630,8 +667,8 @@ export default function ReaderAiCopilot({
                       </>
                     ) : (
                       <>
-                        <Bot size={11} className="text-amber-600 dark:text-amber-400" />
-                        <span className="font-bold text-amber-700 dark:text-amber-300">AI Copilot</span>
+                        <Bot size={11} className="text-amber-400" />
+                        <span className="font-bold text-amber-400">AI Copilot</span>
                       </>
                     )}
                   </div>
@@ -639,21 +676,27 @@ export default function ReaderAiCopilot({
                   <div
                     className={`p-3 rounded-2xl max-w-[92%] shadow-xs ${
                       isUser
-                        ? 'bg-amber-600 text-white rounded-br-xs'
-                        : 'bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/25 text-[#2A160A] dark:text-amber-100 rounded-bl-xs'
+                        ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-br-xs'
+                        : isDark
+                        ? 'bg-[#191f2c] border border-white/10 text-slate-100 rounded-bl-xs'
+                        : 'bg-white border border-[#DFCFBD] text-[#2A160A] rounded-bl-xs'
                     }`}
                   >
                     {isUser ? (
                       <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                     ) : (
-                      <div>{renderFormattedCopilotText(msg.text, onJumpToPage, totalPages)}</div>
+                      <div className={`${isDark ? 'text-slate-100' : 'text-[#2A160A]'}`}>
+                        {renderFormattedCopilotText(msg.text, onJumpToPage, totalPages, isDark)}
+                      </div>
                     )}
 
                     {/* NÚT BẤM NHẢY TRANG NHANH KHI AI NHẮC ĐẾN SỐ TRANG */}
                     {!isUser && jumpPages.length > 0 && onJumpToPage && (
-                      <div className="flex items-center gap-1.5 pt-2 mt-2 border-t border-amber-900/10 dark:border-amber-500/15 text-[10px] overflow-x-auto no-scrollbar">
-                        <span className="font-extrabold text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1">
-                          <BookOpen size={11} className="text-amber-600" />
+                      <div className={`flex items-center gap-1.5 pt-2 mt-2 border-t ${
+                        isDark ? 'border-white/10' : 'border-amber-900/10'
+                      } text-[10px] overflow-x-auto no-scrollbar`}>
+                        <span className={`font-extrabold ${isDark ? 'text-amber-400' : 'text-amber-800'} shrink-0 flex items-center gap-1`}>
+                          <BookOpen size={11} className="text-amber-400" />
                           Lật tới:
                         </span>
                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
@@ -675,8 +718,10 @@ export default function ReaderAiCopilot({
 
                     {/* Nút nghe đọc câu trả lời AI */}
                     {!isUser && (
-                      <div className="flex items-center justify-between pt-2 mt-2 border-t border-amber-900/10 dark:border-amber-500/15 text-[10px]">
-                        <span className="text-slate-500 dark:text-slate-400">
+                      <div className={`flex items-center justify-between pt-2 mt-2 border-t ${
+                        isDark ? 'border-white/10' : 'border-amber-900/10'
+                      } text-[10px]`}>
+                        <span className={isDark ? 'text-slate-500' : 'text-slate-400'}>
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         <button
@@ -685,7 +730,9 @@ export default function ReaderAiCopilot({
                           className={`px-2 py-0.5 rounded flex items-center gap-1 font-bold transition-colors cursor-pointer ${
                             readingSpeechIdx === msg.id
                               ? 'bg-amber-500 text-slate-950 font-black animate-pulse'
-                              : 'bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:bg-amber-500/20'
+                              : isDark
+                              ? 'bg-white/10 hover:bg-white/20 text-slate-300'
+                              : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-900'
                           }`}
                           title={readingSpeechIdx === msg.id ? 'Dừng đọc' : 'Nghe giọng đọc AI'}
                         >
@@ -696,17 +743,22 @@ export default function ReaderAiCopilot({
                     )}
                   </div>
 
-                  {/* Các câu hỏi gợi ý tiếp theo (Follow-up chips) */}
+                  {/* Các câu hỏi gợi ý tiếp theo (Follow-up chips) - SỬA LỖI MÀU SẮC TRIỆT ĐỂ:
+                      Nền than tối sang trọng, viền vàng hổ phách, chữ trắng sáng siêu sắc nét! */}
                   {!isUser && msg.followUpQuestions && msg.followUpQuestions.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1 max-w-[92%]">
+                    <div className="flex flex-col gap-1.5 mt-1 max-w-[95%]">
                       {msg.followUpQuestions.map((q, qIdx) => (
                         <button
                           key={qIdx}
                           type="button"
                           onClick={() => handleSend(q)}
-                          className="px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 border border-amber-500/25 text-[11px] font-bold text-amber-900 dark:text-amber-200 text-left transition-colors cursor-pointer flex items-center gap-1 active:scale-98"
+                          className={`px-3 py-1.5 rounded-xl border text-[11.5px] font-semibold text-left transition-all cursor-pointer flex items-center gap-1.5 active:scale-98 shadow-xs ${
+                            isDark
+                              ? 'bg-[#1b2230] hover:bg-[#252f42] border-amber-500/35 hover:border-amber-400 text-slate-100 hover:text-white'
+                              : 'bg-[#F2ECE1] hover:bg-[#EAE1D3] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                          }`}
                         >
-                          <ChevronRight size={10} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                          <ChevronRight size={12} className="shrink-0 text-amber-400" />
                           <span className="truncate">{q}</span>
                         </button>
                       ))}
@@ -717,8 +769,12 @@ export default function ReaderAiCopilot({
             })}
 
             {isLoading && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-white/70 dark:bg-[#251810]/70 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs w-fit">
-                <Loader2 size={14} className="animate-spin text-amber-600 dark:text-amber-400" />
+              <div className={`flex items-center gap-2 p-3 rounded-2xl border text-xs w-fit ${
+                isDark
+                  ? 'bg-[#191f2c] border-amber-500/30 text-amber-300'
+                  : 'bg-white border-amber-500/20 text-amber-800'
+              }`}>
+                <Loader2 size={14} className="animate-spin text-amber-400" />
                 <span className="font-medium animate-pulse">Trợ lý AI đang tra cứu & suy luận...</span>
               </div>
             )}
@@ -727,48 +783,22 @@ export default function ReaderAiCopilot({
           </div>
 
           {/* 4. THANH GỢI Ý NHANH (QUICK ACTIONS CHIPS) THÍCH ỨNG THEO PHẠM VI NGỮ CẢNH */}
-          <div className="px-3 pt-2 pb-1 border-t border-amber-900/10 dark:border-amber-500/15 bg-white/40 dark:bg-[#1C120C]/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-            {scope === 'page' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleSend('Tóm tắt ngắn gọn 3 ý chính cốt lõi của trang sách này.')}
-                  disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <FileText size={11} className="text-amber-600" />
-                  <span>Tóm tắt trang</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSend('Giải thích các thuật ngữ chuyên môn và ý nghĩa quan trọng trong trang sách này.')}
-                  disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <Lightbulb size={11} className="text-amber-600" />
-                  <span>Giải thích từ ngữ</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSend('Tạo 2 câu hỏi ôn tập để kiểm tra xem tôi đã hiểu kỹ nội dung trang sách này chưa.')}
-                  disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <BrainCircuit size={11} className="text-amber-600" />
-                  <span>Câu hỏi ôn tập</span>
-                </button>
-              </>
-            ) : (
+          <div className={`px-3 pt-2 pb-1 border-t ${
+            isDark ? 'border-white/10 bg-[#141926]/95' : 'border-[#DFCFBD] bg-[#FAF6F0]'
+          } flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0`}>
+            {scope === 'book' ? (
               <>
                 <button
                   type="button"
                   onClick={() => handleSend('Tóm tắt cấu trúc và thông điệp cốt lõi của toàn bộ cuốn sách này.')}
                   disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
                 >
-                  <BookOpen size={11} className="text-amber-600" />
+                  <BookOpen size={11} className="text-amber-400" />
                   <span>Tóm tắt toàn sách</span>
                 </button>
 
@@ -776,9 +806,13 @@ export default function ReaderAiCopilot({
                   type="button"
                   onClick={() => handleSend('Liệt kê mục lục và nội dung chính của các chương trong cuốn sách này kèm số trang.')}
                   disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
                 >
-                  <FileText size={11} className="text-amber-600" />
+                  <FileText size={11} className="text-amber-400" />
                   <span>Mục lục các chương</span>
                 </button>
 
@@ -786,9 +820,13 @@ export default function ReaderAiCopilot({
                   type="button"
                   onClick={() => handleSend('Những ý tưởng cốt lõi và bài học thực tiễn lớn nhất của tác giả trong cuốn sách này là gì?')}
                   disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
                 >
-                  <Lightbulb size={11} className="text-amber-600" />
+                  <Lightbulb size={11} className="text-amber-400" />
                   <span>Ý tưởng cốt lõi</span>
                 </button>
 
@@ -796,17 +834,67 @@ export default function ReaderAiCopilot({
                   type="button"
                   onClick={() => handleSend('Gợi ý lộ trình đọc cuốn sách này theo thứ tự các chương quan trọng nhất.')}
                   disabled={isLoading}
-                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#251810] border border-amber-900/15 dark:border-amber-500/30 text-[11px] font-bold text-amber-900 dark:text-amber-200 hover:border-amber-500 shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
                 >
-                  <BrainCircuit size={11} className="text-amber-600" />
+                  <BrainCircuit size={11} className="text-amber-400" />
                   <span>Lộ trình đọc</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSend('Tóm tắt ngắn gọn 3 ý chính cốt lõi của trang sách này.')}
+                  disabled={isLoading}
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
+                >
+                  <FileText size={11} className="text-amber-400" />
+                  <span>Tóm tắt trang này</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSend('Giải thích các thuật ngữ chuyên môn và ý nghĩa quan trọng trong trang sách này.')}
+                  disabled={isLoading}
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
+                >
+                  <Lightbulb size={11} className="text-amber-400" />
+                  <span>Giải thích từ ngữ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSend('Tạo 2 câu hỏi ôn tập để kiểm tra xem tôi đã hiểu kỹ nội dung trang sách này chưa.')}
+                  disabled={isLoading}
+                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs whitespace-nowrap flex items-center gap-1 transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
+                    isDark
+                      ? 'bg-[#1e2535] hover:bg-[#283247] border-white/10 hover:border-amber-400 text-slate-200 hover:text-white'
+                      : 'bg-white hover:bg-[#FAF6F0] border-[#DFCFBD] hover:border-amber-500 text-[#2C180C]'
+                  }`}
+                >
+                  <BrainCircuit size={11} className="text-amber-400" />
+                  <span>Câu hỏi ôn tập</span>
                 </button>
               </>
             )}
           </div>
 
           {/* 5. KHUNG NHẬP LIỆU & NÚT MICRO NGHE LIÊN TỤC */}
-          <footer className="p-3 border-t border-amber-900/15 dark:border-amber-500/20 bg-white/80 dark:bg-[#251810]/90 backdrop-blur-md shrink-0">
+          <footer className={`p-3 border-t ${
+            isDark ? 'border-white/10 bg-[#161b2a]/95' : 'border-[#DFCFBD] bg-[#FAF6F0]'
+          } backdrop-blur-md shrink-0`}>
             {speechError && (
               <p className="text-[10px] text-red-500 font-bold mb-1.5 px-1">{speechError}</p>
             )}
@@ -828,15 +916,17 @@ export default function ReaderAiCopilot({
                     isListening
                       ? "Đang lắng nghe..."
                       : scope === 'book'
-                      ? "Hỏi về toàn bộ cuốn sách, tác giả, các chương..."
-                      : "Hỏi AI về trang sách này..."
+                      ? "Hỏi về toàn bộ cuốn sách, ý tưởng cốt lõi, các chương..."
+                      : `Hỏi AI về Trang ${currentPage + 1}...`
                   }
                   disabled={isLoading}
-                  className={`w-full h-11 pl-4 pr-9 rounded-full bg-[#FAF6F0] dark:bg-[#1C120C] border ${
-                    isListening
-                      ? 'border-red-500 ring-2 ring-red-400/40'
-                      : 'border-amber-900/20 dark:border-amber-500/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/40'
-                  } text-[13.5px] text-[#2A160A] dark:text-amber-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-all shadow-inner`}
+                  className={`w-full h-11 pl-4 pr-9 rounded-full ${
+                    isDark
+                      ? 'bg-[#0f1219] text-white border-white/15 placeholder:text-slate-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/40'
+                      : 'bg-white text-[#2C180C] border-[#DFCFBD] placeholder:text-slate-400 focus:border-amber-600 focus:ring-1 focus:ring-amber-600/40'
+                  } border ${
+                    isListening ? 'border-red-500 ring-2 ring-red-400/40' : ''
+                  } text-[13.5px] focus:outline-none transition-all shadow-inner`}
                 />
                 {input && !isListening && (
                   <button

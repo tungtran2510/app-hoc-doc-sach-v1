@@ -466,10 +466,20 @@ export interface PdfOutlineItem {
   pageNumber: number;
 }
 
+export interface PdfTextSpan {
+  str: string;
+  left: number; // percentage (0 - 100)
+  top: number;  // percentage (0 - 100)
+  width: number; // percentage
+  height: number; // percentage
+  fontSize: number; // percentage of page height
+}
+
 export interface PdfPageProvider {
   numPages: number;
   getPageUrl: (pageNum1Based: number) => Promise<string>;
   getPageText: (pageNum1Based: number) => Promise<string>;
+  getPageSpans?: (pageNum1Based: number) => Promise<PdfTextSpan[]>;
   getOutline?: () => Promise<PdfOutlineItem[]>;
   destroy: () => void;
 }
@@ -577,6 +587,42 @@ export async function createPdfPageProvider(pdfUrl: string): Promise<PdfPageProv
       } catch (err) {
         console.warn('Không trích xuất được text trang PDF:', err);
         return '';
+      }
+    },
+    getPageSpans: async (pageNum: number): Promise<PdfTextSpan[]> => {
+      try {
+        const clamped = Math.max(1, Math.min(pageNum, pdf.numPages));
+        const page = await pdf.getPage(clamped);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const content = await page.getTextContent();
+        const spans: PdfTextSpan[] = [];
+
+        for (const item of (content.items as any[])) {
+          const str = item.str || '';
+          if (!str || !str.trim()) continue;
+
+          const fontHeight = Math.abs(item.transform[3]) || item.height || 12;
+          const tx = item.transform[4];
+          const ty = item.transform[5];
+          const itemWidth = item.width || (fontHeight * str.length * 0.55);
+
+          // PDF coordinate space origin is at bottom-left, y points upwards
+          // HTML origin is at top-left, y points downwards
+          const topFromTop = viewport.height - ty - (fontHeight * 0.85);
+
+          spans.push({
+            str,
+            left: Math.max(0, Math.min(99, (tx / viewport.width) * 100)),
+            top: Math.max(0, Math.min(99, (topFromTop / viewport.height) * 100)),
+            width: Math.max(0.5, Math.min(100, (itemWidth / viewport.width) * 100)),
+            height: Math.max(0.5, Math.min(20, (fontHeight / viewport.height) * 100)),
+            fontSize: (fontHeight / viewport.height) * 100,
+          });
+        }
+        return spans;
+      } catch (err) {
+        console.warn('Không trích xuất được text spans PDF:', err);
+        return [];
       }
     },
     getOutline: async (): Promise<PdfOutlineItem[]> => {

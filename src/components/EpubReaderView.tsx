@@ -926,25 +926,7 @@ export default function EpubReaderView({
             <span>Lưu đoạn trích</span>
           </button>
 
-          {/* Nút 2: Hỏi AI về đoạn trích */}
-          {onOpenAiCopilot && (
-            <button
-              type="button"
-              onClick={() => {
-                const text = selectedText;
-                setSelectedText(null);
-                setBubbleCoords(null);
-                onOpenAiCopilot(text);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors active:scale-95 whitespace-nowrap"
-              title="Hỏi Trợ lý AI giải thích hoặc tóm tắt đoạn này"
-            >
-              <Sparkles size={12} className="text-amber-400" />
-              <span>Hỏi AI</span>
-            </button>
-          )}
-
-          {/* Nút 3: Ghi chú thêm suy nghĩ */}
+          {/* Nút 2: Ghi chú thêm suy nghĩ */}
           {onOpenNotesModal && (
             <button
               type="button"

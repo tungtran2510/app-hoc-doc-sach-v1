@@ -8,6 +8,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react';
+import type { PdfPageProvider, PdfTextSpan } from '../lib/ebookEngine';
 
 export interface SideBooksReaderEngineRef {
   flipNext: () => void;
@@ -29,6 +30,7 @@ export interface SideBooksReaderEngineProps {
   readingTheme?: 'dark' | 'sepia' | 'ivory' | 'gray';
   readingMode?: 'curl' | 'roll' | 'scroll';
   className?: string;
+  pdfProvider?: PdfPageProvider | null;
 }
 
 /**
@@ -54,6 +56,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       readingTheme = 'gray',
       readingMode = 'curl',
       className = '',
+      pdfProvider,
     },
     ref
   ) => {
@@ -1432,7 +1435,7 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
       <div
         ref={containerRef}
         style={{ touchAction: readingMode === 'scroll' ? 'pan-y' : 'none' }}
-        className={`relative w-full h-full flex items-center justify-center select-none ${className}`}
+        className={`relative w-full h-full flex items-center justify-center ${className}`}
       >
         {readingMode !== 'scroll' ? (
           <div
@@ -1478,6 +1481,8 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
                 </span>
               </div>
             )}
+            {/* Lớp văn bản chọn chữ cho trang PDF hiện tại (Bôi đen chữ và lưu) */}
+            <PageTextLayer pageNum={currentPage + 1} pdfProvider={pdfProvider} />
           </div>
         ) : (
           <div
@@ -1507,12 +1512,16 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
                     : 'bg-[#12161f] border-white/10 text-slate-100'
                 }`}
               >
-                <img
-                  src={imgUrl}
-                  alt={`Trang ${idx + 1}`}
-                  className="w-full h-auto object-contain block select-none"
-                  loading="lazy"
-                />
+                <div className="relative w-full">
+                  <img
+                    src={imgUrl}
+                    alt={`Trang ${idx + 1}`}
+                    className="w-full h-auto object-contain block"
+                    loading="lazy"
+                  />
+                  {/* Lớp văn bản chọn chữ cho trang PDF */}
+                  <PageTextLayer pageNum={idx + 1} pdfProvider={pdfProvider} />
+                </div>
                 <div
                   className={`py-2 px-3 text-center text-[11px] font-mono font-bold flex items-center justify-between border-t ${
                     readingTheme === 'sepia'
@@ -1534,6 +1543,69 @@ const SideBooksReaderEngine = forwardRef<SideBooksReaderEngineRef, SideBooksRead
     );
   }
 );
+
+function PageTextLayer({
+  pageNum,
+  pdfProvider,
+}: {
+  pageNum: number;
+  pdfProvider?: PdfPageProvider | null;
+}) {
+  const [spans, setSpans] = useState<PdfTextSpan[]>([]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (pdfProvider?.getPageSpans) {
+      pdfProvider
+        .getPageSpans(pageNum)
+        .then((res) => {
+          if (!isCancelled) setSpans(res || []);
+        })
+        .catch(() => {});
+    } else {
+      setSpans([]);
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [pageNum, pdfProvider]);
+
+  if (!spans || spans.length === 0) return null;
+
+  return (
+    <div
+      className="pdf-text-layer absolute inset-0 z-20 overflow-hidden pointer-events-auto select-text leading-none"
+      style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+    >
+      <style jsx>{`
+        .pdf-text-layer ::selection {
+          background-color: rgba(245, 158, 11, 0.45);
+          color: #1a1005;
+        }
+      `}</style>
+      {spans.map((s, idx) => (
+        <span
+          key={idx}
+          style={{
+            position: 'absolute',
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            width: `${s.width}%`,
+            height: `${s.height}%`,
+            fontSize: `clamp(11px, ${s.height * 0.9}cqh, 24px)`,
+            color: 'transparent',
+            whiteSpace: 'pre',
+            cursor: 'text',
+            userSelect: 'text',
+            WebkitUserSelect: 'text',
+          }}
+        >
+          {s.str}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 SideBooksReaderEngine.displayName = 'SideBooksReaderEngine';
 

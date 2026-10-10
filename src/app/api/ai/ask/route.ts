@@ -1235,6 +1235,26 @@ async function getOrBuildLessonCatalog(): Promise<LessonCatalogItem[]> {
   return catalog;
 }
 
+function getSmartChapterSummary(title: string, summary?: string): string | null {
+  if (summary && summary.trim() && !summary.includes('Trọng tâm kiến thức') && !summary.includes('Nội dung cốt lõi và phương pháp')) {
+    return summary.trim();
+  }
+  const t = title.toUpperCase();
+  if (t.includes('BẢN QUYỀN')) return 'Thông tin xuất bản, bản quyền và pháp lý của tác phẩm';
+  if (t.includes('TỪ KHÓA')) return 'Hệ thống thuật ngữ y khoa lối sống và định nghĩa các chỉ số';
+  if (t.includes('LỜI TÁC GIẢ') || t.includes('TÁC GIẢ')) return 'Tâm huyết và sứ mệnh phụng sự sức khỏe cộng đồng của tác giả';
+  if (t.includes('LỜI MỞ ĐẦU') || t.includes('MỞ ĐẦU')) return 'Thực trạng gánh nặng bệnh tật mạn tính trong cuộc sống hiện đại';
+  if (t.includes('THỜI ĐẠI CỦA BỆNH TẬT') || (t.includes('THỜI ĐẠI') && t.includes('BỆNH TẬT'))) return 'Căn nguyên gây ra tiểu đường, huyết áp, tim mạch từ thói quen sinh hoạt sai lệch';
+  if (t.includes('SÁU TRỤ CỘT') || (t.includes('TRỤ CỘT') && t.includes('LỐI SỐNG'))) return '6 trụ cột phục hồi: Dinh dưỡng toàn phần, vận động, giấc ngủ, kiểm soát stress, kết nối xã hội và tránh độc chất';
+  if (t.includes('NHÂN VĂN Y KHOA') || t.includes('LINH HỒN CỦA NGHỀ Y')) return 'Gắn kết nhân bản giữa bác sĩ và bệnh nhân, kết hợp tri thức y học với chữa lành thân tâm';
+  if (t.includes('DINH DƯỠNG')) return 'Nguyên lý ăn uống toàn phần và cân bằng vi chất sinh học';
+  if (t.includes('VẬN ĐỘNG') || t.includes('THỂ CHẤT')) return 'Kế hoạch rèn luyện thể lực bền vững mỗi ngày';
+  if (t.includes('GIẤC NGỦ')) return 'Cơ chế phục hồi tế bào và tái tạo năng lượng ban đêm';
+  if (t.includes('CĂNG THẲNG') || t.includes('STRESS')) return 'Phương pháp giải tỏa áp lực và cân bằng hệ thần kinh thực vật';
+  if (t.includes('KẾT LUẬN') || t.includes('LỜI KẾT')) return 'Thông điệp đúc kết và lời khuyên đồng hành sức khỏe';
+  return null;
+}
+
 /**
  * Trợ lý AI Đồng hành Đọc Sách Chuyên Sâu (Whole-Book & Page Context AI Copilot)
  * Phản hồi tức thì, chính xác theo cấu trúc mục lục, trang sách và các chương
@@ -1263,10 +1283,12 @@ function buildBookContextAnswer(query: string, bookContext: any) {
       lowerQ.includes('tổng quan')
     ) {
       const chapterList = toc
-        .map(
-          (ch) =>
-            `• **[Trang ${ch.pageNumber}]** · **${ch.title}**: ${ch.summary || 'Trọng tâm kiến thức và thông điệp thực tiễn của chương.'}`
-        )
+        .map((ch) => {
+          const smartSummary = getSmartChapterSummary(ch.title, ch.summary);
+          return smartSummary
+            ? `• **[Trang ${ch.pageNumber}]** · **${ch.title}**: ${smartSummary}.`
+            : `• **[Trang ${ch.pageNumber}]** · **${ch.title}**`;
+        })
         .join('\n');
 
       return {
@@ -1294,10 +1316,12 @@ function buildBookContextAnswer(query: string, bookContext: any) {
       lowerQ.includes('danh sách')
     ) {
       const chapterItems = toc
-        .map(
-          (ch) =>
-            `• **[Trang ${ch.pageNumber}]** — **${ch.title}**\n  *Tóm lược: ${ch.summary || 'Nội dung cốt lõi và phương pháp ứng dụng thực tế.'}*`
-        )
+        .map((ch) => {
+          const smartSummary = getSmartChapterSummary(ch.title, ch.summary);
+          return smartSummary
+            ? `• **[Trang ${ch.pageNumber}]** — **${ch.title}**\n  *Tóm lược: ${smartSummary}.*`
+            : `• **[Trang ${ch.pageNumber}]** — **${ch.title}**`;
+        })
         .join('\n\n');
 
       return {
@@ -1621,7 +1645,10 @@ export async function POST(req: NextRequest) {
         : getBookToc(bookContext.title || '', bookContext.totalPages || 100);
 
       const tocList = resolvedToc
-        .map((t) => `  - [Trang ${t.pageNumber}]: ${t.title}${t.summary ? ` (${t.summary})` : ''}`)
+        .map((t) => {
+          const smartSummary = getSmartChapterSummary(t.title, t.summary);
+          return `  - [Trang ${t.pageNumber}]: ${t.title}${smartSummary ? ` (${smartSummary})` : ''}`;
+        })
         .join('\n');
 
       systemPrompt = `Bạn là Trợ lý AI Đồng Hành Đọc Sách Chuyên Sâu (Interactive Reading Copilot) cho tác phẩm: "${bookContext.title || 'Sách'}".
@@ -1637,6 +1664,7 @@ NGUYÊN TẮC BẮT BUỘC:
 1. Bạn là Trợ lý Đồng hành Đọc Sách, hãy trả lời thẳng thắn, mạch lạc, khúc chiết, chuẩn y khoa và đúng với nội dung sách.
 2. CỰC KỲ QUAN TRỌNG: MỖI KHI NHẮC ĐẾN MỘT CHƯƠNG, PHẦN HOẶC LUẬN ĐIỂM, HÃY KÈM THEO SỐ TRANG DẠNG [Trang X] (ví dụ: "[Trang 18]", "[Trang 52]", "[Trang 108]") để hệ thống tự động tạo nút bấm nhảy trực tiếp tới trang đó cho độc giả.
 3. KHÔNG bắt đầu bằng "Sau khi đã hiểu rõ nhu cầu của bạn..." hay gợi ý mua sách khác, vì độc giả đang ở trực tiếp bên trong cuốn sách này.
+4. TUYỆT ĐỐI KHÔNG lặp lại các câu rập khuôn giống hệt nhau cho từng chương. Mỗi chương/phần phải có điểm nhấn và giá trị riêng biệt.
 
 TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
 {
@@ -1755,17 +1783,21 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
             rawText = text;
             usedProvider = 'deepseek';
           }
+        } else {
+          console.warn('[AI] DeepSeek returned status:', deepseekRes.status, '- falling back to Gemini Flash...');
         }
       } catch (err: any) {
         console.warn('[AI] DeepSeek timed out or failed, falling back to Gemini Flash...', err?.message);
       }
     }
 
-    // 6. GỌI SECONDARY (FALLBACK): GOOGLE GEMINI VỚI TIMEOUT 4500ms
+    // 6. GỌI SECONDARY (FALLBACK): GOOGLE GEMINI VỚI TIMEOUT 7000ms
     if (!rawText && geminiKey) {
       const candidateModels = [
-        'gemini-1.5-flash',
-        'gemini-2.0-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-3.1-flash-lite',
+        'gemini-3.8-flash',
       ];
 
       const geminiPrompt = `${systemPrompt}\n\nCÂU HỎI CỦA NGƯỜI HỌC: "${question}"\n\nLỊCH SỬ:\n${history.slice(-2).map((h: any) => `${h.role === 'user' ? 'Người học' : 'Trợ lý'}: ${h.text}`).join('\n')}`;
@@ -1773,7 +1805,7 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
       for (const model of candidateModels) {
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4500);
+          const timeoutId = setTimeout(() => controller.abort(), 7000);
 
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
           const geminiRes = await fetch(geminiUrl, {
@@ -1800,9 +1832,11 @@ BẮT BUỘC TRẢ VỀ DUY NHẤT 1 ĐỐI TƯỢNG JSON:
               usedProvider = model;
               break;
             }
+          } else {
+            console.warn(`[AI] Gemini ${model} returned status:`, geminiRes.status);
           }
-        } catch {
-          // Thử model tiếp theo
+        } catch (err: any) {
+          console.warn(`[AI] Gemini ${model} error:`, err?.message);
         }
       }
     }

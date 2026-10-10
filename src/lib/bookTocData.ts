@@ -72,6 +72,17 @@ export const CURATED_BOOK_TOCS: Record<string, BookTocItem[]> = {
     { title: 'Chương 4: Liệu pháp dưỡng chất tối ưu bảo vệ tim mạch và khớp', pageIndex: 3, pageNumber: 4, summary: 'Xây dựng chế độ dinh dưỡng tối ưu theo tiêu chuẩn y học dự phòng Hoa Kỳ.' },
   ],
 
+  // Y Học Lối Sống (BS Nguyễn Đông Hưng, MD - 89 trang)
+  'yhocloisong': [
+    { title: 'Trang Bản Quyền', pageIndex: 2, pageNumber: 3, summary: 'Thông tin xuất bản, bản quyền và pháp lý của tác phẩm.' },
+    { title: 'Danh Mục Từ Khóa', pageIndex: 8, pageNumber: 9, summary: 'Bảng thuật ngữ y khoa lối sống và định nghĩa các chỉ số sức khỏe định lượng.' },
+    { title: 'Lời Tác Giả', pageIndex: 15, pageNumber: 16, summary: 'Tâm huyết và sứ mệnh phụng sự sức khỏe cộng đồng của BS Nguyễn Đông Hưng.' },
+    { title: 'Lời Mở Đầu', pageIndex: 17, pageNumber: 18, summary: 'Thực trạng gánh nặng bệnh tật mạn tính trong cuộc sống hiện đại và lối thoát từ y học lối sống.' },
+    { title: 'Phần I: Thời Đại Của Bệnh Tật Do Lối Sống', pageIndex: 24, pageNumber: 25, summary: 'Phân tích nguyên nhân gốc rễ gây ra tiểu đường, huyết áp, tim mạch khởi phát từ thói quen sinh hoạt sai lệch.' },
+    { title: 'Phần II: Sáu Trụ Cột Của Y Học Lối Sống', pageIndex: 32, pageNumber: 33, summary: '6 trụ cột phục hồi tự nhiên: Dinh dưỡng toàn phần, vận động thể chất, giấc ngủ phục hồi, quản trị căng thẳng, kết nối xã hội và tránh độc chất.' },
+    { title: 'Phần III: Nhân Văn Y Khoa Linh Hồn Nghề Y', pageIndex: 52, pageNumber: 53, summary: 'Gắn kết nhân bản giữa bác sĩ và bệnh nhân, kết hợp tri thức y học với chữa lành thân tâm.' },
+  ],
+
   // Chí Phèo
   'chipheo': [
     { title: 'Phần 1: Tiếng chửi của Chí Phèo và lò gạch cũ', pageIndex: 0, pageNumber: 1, summary: 'Mở đầu ấn tượng với tiếng chửi say khướt và lai lịch đứa trẻ bị bỏ rơi ở lò gạch cũ.' },

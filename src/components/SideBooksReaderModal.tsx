@@ -392,6 +392,90 @@ export default function SideBooksReaderModal({
     }
   }, [isOpen, title, showNotesModal]);
 
+  // Trạng thái bôi đen chữ và lưu đoạn trích
+  const [selectedText, setSelectedText] = useState<string | null>(null);
+  const [bubbleCoords, setBubbleCoords] = useState<{ x: number; y: number } | null>(null);
+  const [saveQuoteToast, setSaveQuoteToast] = useState<string | null>(null);
+  const [bookmarkToast, setBookmarkToast] = useState<string | null>(null);
+
+  // Theo dõi vùng chọn văn bản người dùng trong sách (Bôi đen chữ và lưu)
+  useEffect(() => {
+    if (!isOpen || isEpub) {
+      setSelectedText(null);
+      setBubbleCoords(null);
+      return;
+    }
+
+    const handleSelectionChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+
+      const text = sel.toString().trim();
+      if (text.length >= 2) {
+        try {
+          const range = sel.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          if (rect.width > 0 || rect.height > 0) {
+            setSelectedText(text);
+            setBubbleCoords({
+              x: Math.max(10, Math.min(window.innerWidth - 200, rect.left + rect.width / 2 - 90)),
+              y: Math.max(54, rect.top - 46),
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    const handleClearSelection = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.closest('.selection-floating-bubble')) return;
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        setSelectedText(null);
+        setBubbleCoords(null);
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('mouseup', handleSelectionChange);
+    document.addEventListener('touchend', handleSelectionChange);
+    document.addEventListener('mousedown', handleClearSelection);
+
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mouseup', handleSelectionChange);
+      document.removeEventListener('touchend', handleSelectionChange);
+      document.removeEventListener('mousedown', handleClearSelection);
+    };
+  }, [isOpen]);
+
+  const handleSaveQuote = (textToSave?: string | null) => {
+    const text = textToSave || selectedText;
+    if (!text || !text.trim()) return;
+
+    try {
+      readingNotesStorage.saveNote({
+        bookTitle: decodeHtmlEntities(title),
+        page: currentPage + 1,
+        selectedText: text.trim(),
+        color: 'amber',
+      });
+      setNotesCount((prev) => prev + 1);
+      setSaveQuoteToast(`✓ Đã lưu đoạn trích trang ${currentPage + 1} vào Sổ tay!`);
+      setTimeout(() => setSaveQuoteToast(null), 2500);
+    } catch (err) {
+      console.warn('Lỗi lưu đoạn trích:', err);
+    }
+
+    setSelectedText(null);
+    setBubbleCoords(null);
+    try {
+      window.getSelection()?.removeAllRanges();
+    } catch {}
+  };
+
   // 1. Xử lý nạp động PDF khi mở sách
   useEffect(() => {
     if (!isOpen || !isPdf || !activeFileUrl) return;
@@ -716,9 +800,12 @@ export default function SideBooksReaderModal({
     try {
       if (nextState) {
         localStorage.setItem(`bookmark_page_${title}`, currentPage.toString());
+        setBookmarkToast(`✓ Đã đánh dấu Trang ${currentPage + 1}!`);
       } else {
         localStorage.removeItem(`bookmark_page_${title}`);
+        setBookmarkToast(`Đã bỏ đánh dấu Trang ${currentPage + 1}`);
       }
+      setTimeout(() => setBookmarkToast(null), 2500);
     } catch {}
   };
 
@@ -1021,26 +1108,31 @@ export default function SideBooksReaderModal({
             : 'bg-black/90 text-slate-100 border-b border-white/10 shadow-xl'
         }`}
       >
-        {/* TẦNG 1: TIÊU ĐỀ CUỐN SÁCH NẰM SÁT MÉP TRÊN CÙNG */}
+        {/* TẦNG 1: TIÊU ĐỀ CUỐN SÁCH NẰM SÁT MÉP TRÊN CÙNG (CÓ SỐ TRANG RẤT NHỎ) */}
         <div className={`w-full px-3 py-1 flex items-center justify-center border-b ${
           readingTheme === 'ivory' ? 'border-[#dfcfbd] bg-[#e6dac7]' : 'border-white/5 bg-black/25'
         }`}>
-          <span className={`text-[11px] sm:text-[12px] font-bold tracking-wide truncate max-w-[360px] sm:max-w-xl text-center ${
+          <span className={`text-[11px] sm:text-[12px] font-bold tracking-wide truncate max-w-[360px] sm:max-w-xl text-center flex items-center justify-center gap-1.5 ${
             readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-200/90'
           }`}>
-            {decodeHtmlEntities(title)} {author ? `· ${decodeHtmlEntities(author)}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
+            <span className="truncate">
+              {decodeHtmlEntities(title)} {author ? `· ${decodeHtmlEntities(author)}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
+            </span>
+            <span className="font-mono text-[9.5px] opacity-75 shrink-0 font-normal">
+              (Trang {currentPage + 1}/{totalPages})
+            </span>
           </span>
         </div>
 
         {/* TẦNG 2: THANH CÔNG CỤ TINH GỌN (MENU XỔ RA CHO CÁC NHÓM CÀI ĐẶT > 2) */}
-        <div className="w-full px-2 sm:px-4 py-1.5 flex items-center justify-between gap-1.5 sm:gap-2 relative reader-dropdown-container">
+        <div className="w-full px-1.5 sm:px-4 py-1.5 flex items-center justify-between gap-1 sm:gap-2 relative reader-dropdown-container">
           {/* Cụm trái: Nút Kệ sách + Nút Ba Thanh (Mục lục xổ ra) + Nút Chế độ đọc (Xổ ra) */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* 1. NÚT VỀ KỆ SÁCH */}
             <button
               type="button"
               onClick={handleExitBook}
-              className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
+              className={`h-8 w-8 sm:w-auto sm:px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                 readingTheme === 'ivory'
                   ? 'bg-[#d8c8b2] hover:bg-[#cbb89e] text-[#2c180c] border border-[#bfae97]'
                   : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/30'
@@ -1049,7 +1141,7 @@ export default function SideBooksReaderModal({
               aria-label="Thoát về kệ sách"
             >
               <ArrowLeft size={16} strokeWidth={2.4} />
-              <span className="hidden xs:inline">Kệ</span>
+              <span className="hidden sm:inline">Kệ</span>
             </button>
 
             {/* 2. NÚT BA THANH [≡] (MỤC LỤC XỔ RA) */}
@@ -1057,7 +1149,7 @@ export default function SideBooksReaderModal({
               <button
                 type="button"
                 onClick={() => setActiveDropdown((prev) => (prev === 'toc' ? 'none' : 'toc'))}
-                className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
+                className={`h-8 px-1.5 sm:px-2.5 rounded-lg flex items-center gap-0.5 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                   activeDropdown === 'toc'
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
                     : readingTheme === 'ivory'
@@ -1279,7 +1371,7 @@ export default function SideBooksReaderModal({
               <button
                 type="button"
                 onClick={() => setActiveDropdown((prev) => (prev === 'mode' ? 'none' : 'mode'))}
-                className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
+                className={`h-8 px-1.5 sm:px-2.5 rounded-lg flex items-center gap-0.5 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                   activeDropdown === 'mode'
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
                     : readingTheme === 'ivory'
@@ -1296,7 +1388,7 @@ export default function SideBooksReaderModal({
                 ) : (
                   <BookOpen size={15} strokeWidth={2.4} />
                 )}
-                <span className="text-[11px] hidden xs:inline">
+                <span className="text-[11px] hidden sm:inline">
                   {readingMode === 'scroll' ? 'Cuộn vô hạn' : readingMode === 'roll' ? 'Trượt 3D' : 'Lật 3D'}
                 </span>
                 <ChevronDown size={11} className={`transition-transform duration-200 ${activeDropdown === 'mode' ? 'rotate-180' : ''}`} />
@@ -1417,13 +1509,13 @@ export default function SideBooksReaderModal({
           </div>
 
           {/* Cụm phải: Nút Tông màu (Xổ ra) + Aa phông chữ + Sách nói (nếu có) + Nút Tiện ích (Xổ ra) */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {/* 4. NÚT CHẾ ĐỘ TỐI / SÁNG (XỔ RA 3 TÔNG MÀU) */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setActiveDropdown((prev) => (prev === 'theme' ? 'none' : 'theme'))}
-                className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
+                className={`h-8 px-1.5 sm:px-2.5 rounded-lg flex items-center gap-0.5 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                   activeDropdown === 'theme'
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
                     : readingTheme === 'ivory'
@@ -1434,7 +1526,7 @@ export default function SideBooksReaderModal({
                 aria-label="Tông màu"
               >
                 <span>{readingTheme === 'ivory' ? '☀️' : readingTheme === 'sepia' ? '☕' : '🌙'}</span>
-                <span className="text-[11px] hidden xs:inline">
+                <span className="text-[11px] hidden sm:inline">
                   {readingTheme === 'ivory' ? 'Sáng' : readingTheme === 'sepia' ? 'Sepia' : 'Tối'}
                 </span>
                 <ChevronDown size={11} className={`transition-transform duration-200 ${activeDropdown === 'theme' ? 'rotate-180' : ''}`} />
@@ -1530,7 +1622,7 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => setShowTypographyModal(true)}
-              className={`h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
+              className={`h-8 px-1.5 sm:px-2.5 rounded-lg border flex items-center gap-0.5 transition-all cursor-pointer active:scale-95 text-xs font-bold relative shrink-0 ${
                 typographySettings.bionicReading
                   ? readingTheme === 'ivory'
                     ? 'bg-[#d8c8b2] text-[#2c180c] border-[#bfae97]'
@@ -1542,8 +1634,8 @@ export default function SideBooksReaderModal({
               title="Cài đặt phông chữ & Đọc siêu tốc Bionic"
               aria-label="Cài đặt phông chữ"
             >
-              <Type size={15} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
-              <span className="font-serif font-bold text-[12.5px]">Aa</span>
+              <Type size={14} className={readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-400'} />
+              <span className="font-serif font-bold text-[12px]">Aa</span>
             </button>
 
             {/* 6. NÚT SÁCH NÓI: CHỈ HIỂN THỊ KHI CÓ BẢN SÁCH NÓI THẬT (STUDIO AUDIOBOOK) */}
@@ -1578,7 +1670,7 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => (isAiCopilotOpen ? setIsAiCopilotOpen(false) : openAiCopilot())}
-              className={`h-8 px-2 sm:px-2.5 rounded-lg border flex items-center gap-1 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+              className={`h-8 px-1.5 sm:px-2.5 rounded-lg border flex items-center gap-0.5 transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
                 isAiCopilotOpen
                   ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50 border-amber-400'
                   : readingTheme === 'ivory'
@@ -1590,6 +1682,34 @@ export default function SideBooksReaderModal({
             >
               <Sparkles size={14} className={isAiCopilotOpen ? 'text-slate-950' : 'text-amber-400 animate-pulse'} />
               <span className="text-[11.5px] font-black">AI</span>
+            </button>
+
+            {/* 6c. NÚT ĐÁNH DẤU TRANG (ĐẶT TRÊN CÙNG THUẬN TAY THEO YÊU CẦU) */}
+            <button
+              type="button"
+              onClick={toggleBookmark}
+              className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0 ${
+                isBookmarked
+                  ? readingTheme === 'ivory'
+                    ? 'bg-[#d8c8b2] text-[#2c180c] border-[#bfae97] shadow-xs'
+                    : 'bg-amber-500/25 text-amber-300 border-amber-500/55 shadow-xs ring-1 ring-amber-400/40'
+                  : readingTheme === 'ivory'
+                  ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border border-[#cdbdab]'
+                  : 'bg-white/10 hover:bg-white/20 text-amber-200 border-white/10'
+              }`}
+              title={isBookmarked ? `Bỏ đánh dấu Trang ${currentPage + 1}` : `Đánh dấu Trang ${currentPage + 1}`}
+              aria-label="Đánh dấu trang"
+            >
+              <Bookmark
+                size={15}
+                className={
+                  isBookmarked
+                    ? 'fill-amber-400 text-amber-400'
+                    : readingTheme === 'ivory'
+                    ? 'text-[#2c180c]'
+                    : 'text-amber-200'
+                }
+              />
             </button>
 
             {/* 7. NÚT TIỆN ÍCH [⋮] (XỔ RA CÁC CÀI ĐẶT & TÍNH NĂNG PHỤ: TÌM KIẾM, HỎI AI, SỔ TAY, BOOKMARK, ÂM THANH, OFFLINE, TOÀN MÀN HÌNH) */}
@@ -1637,19 +1757,6 @@ export default function SideBooksReaderModal({
                     >
                       <Search size={15} className="text-amber-400 shrink-0" />
                       <span>Tìm kiếm từ khóa</span>
-                    </button>
-
-                    {/* Hỏi AI Copilot */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openAiCopilot();
-                        setActiveDropdown('none');
-                      }}
-                      className="w-full text-left px-2.5 py-2 rounded-xl flex items-center gap-2.5 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                    >
-                      <Sparkles size={15} className="text-amber-400 shrink-0" />
-                      <span>Hỏi Trợ lý AI về trang sách</span>
                     </button>
 
                     {/* Sổ tay ghi chú & Flashcard */}
@@ -1897,6 +2004,7 @@ export default function SideBooksReaderModal({
             initialPage={currentPage}
             readingMode={readingMode}
             readingTheme={readingTheme}
+            pdfProvider={pdfProvider}
             onReachEnd={() => setShowBookFinishedModal(true)}
             onPageChange={(page) => {
               if (page !== currentPage) {
@@ -2284,6 +2392,64 @@ export default function SideBooksReaderModal({
           onClose();
         }}
       />
+
+      {/* 11. BỌT NỔI HÀNH ĐỘNG KHI BÔI ĐEN VĂN BẢN (LƯU ĐOẠN TRÍCH / HỎI AI / GHI CHÚ) */}
+      {!isEpub && selectedText && bubbleCoords && (
+        <div
+          className="selection-floating-bubble fixed z-50 flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-900/95 text-white border border-amber-500/40 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 pointer-events-auto select-none"
+          style={{
+            left: `${bubbleCoords.x}px`,
+            top: `${bubbleCoords.y}px`,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => handleSaveQuote()}
+            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center gap-1 active:scale-95 transition-all shadow-xs cursor-pointer whitespace-nowrap"
+            title="Lưu đoạn trích này vào Sổ tay đọc sách"
+          >
+            <BookMarked size={13} />
+            <span>Lưu đoạn trích</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const text = selectedText;
+              setSelectedText(null);
+              setBubbleCoords(null);
+              setNotesModalInitialText(text);
+              setShowNotesModal(true);
+            }}
+            className="px-2 py-1 text-xs font-medium rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 flex items-center gap-1 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+            title="Mở Sổ tay ghi chép"
+          >
+            <span>Ghi chú</span>
+          </button>
+        </div>
+      )}
+
+      {/* 12. THÔNG BÁO TOAST KHI LƯU ĐOẠN TRÍCH */}
+      {saveQuoteToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-xl border border-amber-300 animate-in fade-in slide-in-from-top-2 flex items-center gap-1.5 pointer-events-none">
+          <CheckCircle2 size={14} className="text-slate-950 shrink-0" />
+          <span>{saveQuoteToast}</span>
+        </div>
+      )}
+
+      {/* 13. THÔNG BÁO TOAST KHI ĐÁNH DẤU TRANG */}
+      {bookmarkToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-xl border border-amber-300 animate-in fade-in slide-in-from-top-2 flex items-center gap-1.5 pointer-events-none">
+          <Bookmark size={14} className="fill-slate-950 text-slate-950 shrink-0" />
+          <span>{bookmarkToast}</span>
+        </div>
+      )}
+
+      {/* 14. HUY HIỆU SỐ TRANG RẤT NHỎ TRONG CHẾ ĐỘ TOÀN CẢNH KHI ẨN THANH ĐIỀU HƯỚNG */}
+      {!showHud && (
+        <div className="fixed bottom-3 right-4 z-30 pointer-events-none px-2 py-0.5 rounded-md bg-black/60 text-white/80 text-[10px] font-mono backdrop-blur-xs select-none shadow-sm">
+          {currentPage + 1} / {totalPages}
+        </div>
+      )}
     </div>
   );
 }
