@@ -1020,6 +1020,20 @@ export default function WoodenBookshelf({
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-black" />
               )}
             </button>
+
+            {/* Nút Thoát Ứng Dụng Siêu Tối Giản */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowSettingsMenu(false);
+                setShowExitConfirm(true);
+              }}
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full bg-white/70 dark:bg-white/10 hover:bg-red-500/15 dark:hover:bg-red-950/30 border border-[#d8c5aa] dark:border-white/10 flex items-center justify-center text-red-600/80 dark:text-red-400/80 hover:text-red-600 dark:hover:text-red-400 transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Thoát ứng dụng"
+              aria-label="Thoát ứng dụng"
+            >
+              <LogOut size={15} strokeWidth={2.4} />
+            </button>
           </div>
         </div>
 

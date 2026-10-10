@@ -101,7 +101,6 @@ export default function SideBooksReaderModal({
   const [readingMode, setReadingMode] = useState<'curl' | 'roll' | 'scroll'>('curl');
   const [showHud, setShowHud] = useState<boolean>(true);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
-  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
   const [showBookFinishedModal, setShowBookFinishedModal] = useState<boolean>(false);
   const [showTocModal, setShowTocModal] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -200,8 +199,6 @@ export default function SideBooksReaderModal({
 
   // Refs theo dõi trạng thái đồng bộ cho Browser History & PopState
   const hasPushedHistoryRef = useRef<boolean>(false);
-  const showExitConfirmRef = useRef<boolean>(showExitConfirm);
-  showExitConfirmRef.current = showExitConfirm;
   const isAiCopilotOpenRef = useRef<boolean>(isAiCopilotOpen);
   isAiCopilotOpenRef.current = isAiCopilotOpen;
   const showNotesModalRef = useRef<boolean>(showNotesModal);
@@ -269,12 +266,6 @@ export default function SideBooksReaderModal({
       // A. Nếu đang mở bất kỳ dropdown hoặc modal con nào -> đóng trước và giữ sách!
       if (activeDropdownRef.current !== 'none') {
         setActiveDropdown('none');
-        repushHistory();
-        return;
-      }
-
-      if (showExitConfirmRef.current) {
-        setShowExitConfirm(false);
         repushHistory();
         return;
       }
@@ -628,9 +619,7 @@ export default function SideBooksReaderModal({
         readerRef.current?.flipNext();
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault();
-        if (currentPage <= 0) {
-          setShowExitConfirm(true);
-        } else {
+        if (currentPage > 0) {
           readerRef.current?.flipPrev();
         }
       } else if (e.key === 'Escape') {
@@ -638,7 +627,7 @@ export default function SideBooksReaderModal({
         if (activeDropdownRef.current !== 'none') {
           setActiveDropdown('none');
         } else {
-          setShowExitConfirm(true);
+          handleExitBook();
         }
       } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
@@ -891,7 +880,6 @@ export default function SideBooksReaderModal({
         totalPages: Math.max(1, isEpub ? (epubFullChapters.length || totalPages) : totalPages),
       });
     } catch {}
-    setShowExitConfirm(false);
 
     if (typeof window !== 'undefined' && window.location.hash.includes('doc-sach')) {
       try {
@@ -1037,7 +1025,7 @@ export default function SideBooksReaderModal({
             {/* 1. NÚT VỀ KỆ SÁCH */}
             <button
               type="button"
-              onClick={() => setShowExitConfirm(true)}
+              onClick={handleExitBook}
               className={`h-8 px-2 sm:px-2.5 rounded-lg flex items-center gap-1 text-[11.5px] font-bold cursor-pointer transition-all active:scale-95 shadow-xs shrink-0 ${
                 readingTheme === 'ivory'
                   ? 'bg-[#d8c8b2] hover:bg-[#cbb89e] text-[#2c180c] border border-[#bfae97]'
@@ -1799,9 +1787,7 @@ export default function SideBooksReaderModal({
             const w = window.innerWidth;
             const x = e.clientX;
             if (x < w * 0.18) {
-              if (currentPage <= 0) {
-                setShowExitConfirm(true);
-              } else {
+              if (currentPage > 0) {
                 playPaperSound();
                 readerRef.current?.flipPrev();
               }
@@ -1945,9 +1931,7 @@ export default function SideBooksReaderModal({
             <button
               type="button"
               onClick={() => {
-                if (currentPage <= 0) {
-                  setShowExitConfirm(true);
-                } else {
+                if (currentPage > 0) {
                   playPaperSound();
                   readerRef.current?.flipPrev();
                 }
@@ -1957,7 +1941,7 @@ export default function SideBooksReaderModal({
                   ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border-[#cdbdab]'
                   : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
               } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
-              title={currentPage <= 0 ? 'Thoát về kệ sách' : 'Về trang trước'}
+              title="Về trang trước"
               aria-label="Về trang"
             >
               <ChevronLeft size={16} />
@@ -2097,66 +2081,6 @@ export default function SideBooksReaderModal({
                 className="w-full h-8 rounded-xl bg-white/5 hover:bg-white/10 text-amber-200/90 font-medium text-xs transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
               >
                 <BookOpen size={13} />
-                <span>Về kệ sách</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= 5. MODAL XÁC NHẬN THOÁT SÁCH (SIÊU TỐI GIẢN) ================= */}
-      {showExitConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
-          onClick={() => setShowExitConfirm(false)}
-        >
-          <div
-            className="w-full max-w-[280px] rounded-2xl bg-[#1c120a] border border-amber-500/25 p-4.5 text-amber-100 text-center shadow-2xl flex flex-col gap-3 relative animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Nút đóng góc trên */}
-            <button
-              type="button"
-              onClick={() => setShowExitConfirm(false)}
-              className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-amber-200/40 hover:text-amber-200 hover:bg-white/5 transition-colors cursor-pointer"
-              title="Đóng"
-              aria-label="Đóng"
-            >
-              <X size={14} />
-            </button>
-
-            {/* Icon Tối giản */}
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mt-0.5">
-              <BookOpen size={17} strokeWidth={2.4} />
-            </div>
-
-            {/* Tiêu đề & nội dung siêu gọn */}
-            <div className="flex flex-col gap-1 px-1">
-              <h3 className="text-[14px] font-bold text-amber-100 tracking-tight">
-                Về kệ sách?
-              </h3>
-              <p className="text-[11.5px] text-amber-200/70 font-medium leading-relaxed">
-                Đã ghi nhớ trang {currentPage + 1}/{totalPages} cho lần đọc sau.
-              </p>
-            </div>
-
-            {/* 2 nút hành động tối giản ngang hàng */}
-            <div className="flex items-center gap-2 pt-1 w-full">
-              <button
-                type="button"
-                onClick={() => setShowExitConfirm(false)}
-                className="flex-1 h-8.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-200/90 font-medium text-xs transition-colors cursor-pointer active:scale-95"
-              >
-                Đọc tiếp
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExitBook}
-                className="flex-1 h-8.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-transform active:scale-95 cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-              >
                 <span>Về kệ sách</span>
               </button>
             </div>
