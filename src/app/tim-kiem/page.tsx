@@ -96,6 +96,7 @@ interface BookSnippetItem {
   pageNumber: number;
   pageIndex: number;
   snippet: string;
+  isRealPageExcerpt?: boolean;
 }
 
 const POPULAR_SEARCHES = [
@@ -169,8 +170,8 @@ const BOOK_PAGE_SNIPPETS: BookSnippetItem[] = [
   },
   {
     id: 'snip-6',
-    bookId: 'book-dinh-duong-phuc-hoi',
-    bookTitle: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    bookId: 'book-dinh-duong-khang-viem',
+    bookTitle: 'Dinh Dưỡng Phục Hồi Khớp & Đĩa Đệm',
     coverUrl: '/documents/covers/cover_dinh_duong_khang_viem.png',
     chapter: 'Chương 1: Cơ Chế Kháng Viêm Sinh Học Tế Bào',
     pageNumber: 2,
@@ -180,8 +181,8 @@ const BOOK_PAGE_SNIPPETS: BookSnippetItem[] = [
   },
   {
     id: 'snip-7',
-    bookId: 'book-dinh-duong-phuc-hoi',
-    bookTitle: 'Dinh Dưỡng Nền Tảng & Phục Hồi Khớp',
+    bookId: 'book-dinh-duong-khang-viem',
+    bookTitle: 'Dinh Dưỡng Phục Hồi Khớp & Đĩa Đệm',
     coverUrl: '/documents/covers/cover_dinh_duong_khang_viem.png',
     chapter: 'Chương 2: Tái Lập Mật Độ Xương & Đàn Hồi Sụn Khớp',
     pageNumber: 3,
@@ -225,7 +226,7 @@ const BOOK_PAGE_SNIPPETS: BookSnippetItem[] = [
   {
     id: 'snip-11',
     bookId: 'book-tu-chua-lanh-lung-co',
-    bookTitle: 'Tự Chữa Lành Lưng & Cổ',
+    bookTitle: 'Tự Chữa Lành Lưng & Cổ Tại Nhà',
     coverUrl: '/documents/covers/cover_tu_chua_lanh_lung_co.png',
     chapter: 'Chương 1: Phục Hồi Đường Cong Sinh Lý Tự Nhiên',
     pageNumber: 2,
@@ -266,6 +267,7 @@ export default function SearchPage() {
   const [readerBook, setReaderBook] = useState<SearchBookItem | null>(null);
   const [readerInitialPage, setReaderInitialPage] = useState<number>(0);
   const [detailBook, setDetailBook] = useState<UnifiedBookItem | null>(null);
+  const [searchToast, setSearchToast] = useState<string | null>(null);
 
   // Tab chuyển đổi: Tủ sách hiện có ('local') hoặc Kho sách trực tuyến ('online')
   const [activeTab, setActiveTab] = useState<'local' | 'online'>('local');
@@ -636,16 +638,69 @@ export default function SearchPage() {
     playTapSound();
     saveToRecentSearches(debouncedQuery);
 
-    // Tìm cuốn sách tương ứng trong danh sách books
-    const targetBook =
-      books.find((b) => b.id === snippet.bookId) ||
-      books.find((b) => removeVietnameseTones(b.title).includes(removeVietnameseTones(snippet.bookTitle))) ||
-      books[0];
+    const normSnippetTitle = removeVietnameseTones(snippet.bookTitle).toLowerCase().trim();
 
-    if (targetBook) {
-      setReaderInitialPage(snippet.pageIndex);
-      setReaderBook(targetBook);
+    const cleanId = (id: string) => id.replace(/-co$/, '').replace(/-tai-nha$/, '').trim();
+    const normSnippetId = cleanId(snippet.bookId);
+
+    // Ưu tiên 1: Khớp chính xác ID hoặc biến thể ID
+    let targetBook =
+      books.find((b) => b.id === snippet.bookId) ||
+      books.find((b) => cleanId(b.id) === normSnippetId) ||
+      books.find((b) => b.id.includes(normSnippetId) || normSnippetId.includes(cleanId(b.id)));
+
+    // Ưu tiên 2: Khớp chính xác hoặc chuỗi con tiêu đề
+    if (!targetBook) {
+      targetBook = books.find((b) => {
+        const normB = removeVietnameseTones(b.title).toLowerCase().trim();
+        return normB === normSnippetTitle || normB.includes(normSnippetTitle) || normSnippetTitle.includes(normB);
+      });
     }
+
+    // Ưu tiên 3: Tính điểm từ khóa có ý nghĩa cao nhất (loại bỏ từ nối, ký tự đặc biệt)
+    if (!targetBook) {
+      const stopWords = new Set(['va', 've', 'cho', 'cac', 'cua', 'tai', 'nhung', '&', '-', '+', 'dr', 'tung']);
+      const sTokens = normSnippetTitle
+        .split(/\s+/)
+        .map((t) => t.replace(/[^a-z0-9]/g, ''))
+        .filter((t) => t.length >= 3 && !stopWords.has(t));
+
+      let bestBook: SearchBookItem | null = null;
+      let maxScore = 0;
+
+      for (const b of books) {
+        const bTokens = new Set(
+          removeVietnameseTones(b.title)
+            .toLowerCase()
+            .split(/\s+/)
+            .map((t) => t.replace(/[^a-z0-9]/g, ''))
+            .filter((t) => t.length >= 3 && !stopWords.has(t))
+        );
+        let score = 0;
+        for (const token of sTokens) {
+          if (bTokens.has(token)) score++;
+        }
+        if (score > maxScore && score >= 2) {
+          maxScore = score;
+          bestBook = b;
+        }
+      }
+      targetBook = bestBook || undefined;
+    }
+
+    if (!targetBook) {
+      console.warn('[tim-kiem] Không tìm thấy cuốn sách trên kệ cho snippet:', {
+        snippetId: snippet.id,
+        bookId: snippet.bookId,
+        bookTitle: snippet.bookTitle,
+      });
+      setSearchToast(`Chưa có cuốn "${snippet.bookTitle}" trên kệ sách.`);
+      setTimeout(() => setSearchToast(null), 3500);
+      return;
+    }
+
+    setReaderInitialPage(snippet.pageIndex);
+    setReaderBook(targetBook);
   };
 
   // Mở sách từ đầu
@@ -978,16 +1033,16 @@ export default function SearchPage() {
       )}
 
 
-      {/* 6. KẾT QUẢ TÌM KIẾM NỘI DUNG SÂU (DEEP IN-BOOK SNIPPETS) */}
+      {/* 6. KẾT QUẢ TÌM KIẾM NỘI DUNG SÂU (MỤC LỤC & TÓM TẮT CHƯƠNG) */}
       {isSearching && matchedSnippets.length > 0 && (
         <section className="flex flex-col gap-2 p-3 rounded-2xl bg-[#fdf9f4] dark:bg-[#1a110a] border border-amber-500/25 shadow-xs">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#8B4513] dark:text-amber-300">
-              <FileText size={14} className="text-amber-500" />
-              <span>Trích đoạn trong trang sách ({matchedSnippets.length})</span>
+            <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#8B4513] dark:text-amber-300 min-w-0">
+              <FileText size={14} className="text-amber-500 shrink-0" />
+              <span className="truncate">Mục lục & tóm tắt chương ({matchedSnippets.length})</span>
             </div>
-            <span className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-semibold">
-              Bấm vào để mở đúng trang
+            <span className="text-[10px] text-amber-700/80 dark:text-amber-300/70 font-semibold truncate ml-2 shrink-0">
+              Tra cứu nội dung theo chương
             </span>
           </div>
 
@@ -1014,7 +1069,7 @@ export default function SearchPage() {
                       {snip.bookTitle}
                     </span>
                     <span className="px-1.5 py-0.5 rounded text-[9.5px] font-extrabold bg-amber-500/20 text-amber-800 dark:text-amber-300 shrink-0 font-mono">
-                      Trang {snip.pageNumber}
+                      {snip.isRealPageExcerpt ? `Trang ${snip.pageNumber}` : 'Mục lục'}
                     </span>
                   </div>
 
@@ -1027,9 +1082,11 @@ export default function SearchPage() {
                   </p>
 
                   <div className="flex items-center justify-between mt-1 pt-1.5 border-t border-amber-900/10 dark:border-white/5">
-                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1">
-                      <Compass size={11} />
-                      <span>Nhảy thẳng đến trang {snip.pageNumber}</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1 truncate min-w-0">
+                      <Compass size={11} className="shrink-0" />
+                      <span className="truncate">
+                        {snip.isRealPageExcerpt ? `Nhảy thẳng đến trang ${snip.pageNumber}` : 'Tóm tắt nội dung chương'}
+                      </span>
                     </span>
                     <button
                       type="button"
@@ -1038,10 +1095,10 @@ export default function SearchPage() {
                         e.stopPropagation();
                         handleOpenSnippetPage(snip);
                       }}
-                      className="px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10.5px] font-black flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
+                      className="px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10.5px] font-black flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95 shrink-0 whitespace-nowrap ml-2"
                     >
                       <BookOpen size={11} />
-                      <span>Đọc trang này ↗</span>
+                      <span>{snip.isRealPageExcerpt ? 'Đọc trang này ↗' : 'Xem sách ↗'}</span>
                     </button>
                   </div>
                 </div>
@@ -1265,6 +1322,13 @@ export default function SearchPage() {
       {shelfToast && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-[#2A160A] text-amber-300 border border-amber-500/40 text-xs font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150 whitespace-nowrap">
           {shelfToast}
+        </div>
+      )}
+
+      {/* THÔNG BÁO TOAST KHI TÌM KIẾM KHÔNG THẤY SÁCH */}
+      {searchToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 rounded-xl bg-[#2A160A] text-amber-300 border border-amber-500/40 text-xs font-bold shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150 whitespace-nowrap max-w-[90vw] truncate">
+          {searchToast}
         </div>
       )}
 

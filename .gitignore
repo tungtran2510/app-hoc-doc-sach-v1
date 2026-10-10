@@ -19,6 +19,11 @@ yarn-error.log*
 .DS_Store
 
 public/*.png
+!public/logo.png
+!public/app_logo.png
+!public/apple-icon.png
+!public/icon-*.png
+!public/spine_hero_clean.png
 public/*.html
 public/screenshots/
 screenshots_*/

@@ -35,11 +35,14 @@ import {
   RotateCcw,
   Trophy,
   Award,
+  Upload,
 } from 'lucide-react';
 import SideBooksReaderEngine, {
   SideBooksReaderEngineRef,
 } from './SideBooksReaderEngine';
 import EpubReaderView from './EpubReaderView';
+import ImportBookModal from './ImportBookModal';
+import BookCoverArt from './BookCoverArt';
 import ReaderAiCopilot from './ReaderAiCopilot';
 import ReaderNotesModal from './ReaderNotesModal';
 import ReaderSearchModal from './ReaderSearchModal';
@@ -124,6 +127,7 @@ export default function SideBooksReaderModal({
     durationFormatted?: string;
   } | null>(null);
   const [showRealAudioModal, setShowRealAudioModal] = useState<boolean>(false);
+  const [showImportBookModal, setShowImportBookModal] = useState<boolean>(false);
 
   // Quản lý menu xổ ra Dropdowns (TOC Mục Lục, Reading Mode Chế Độ Đọc, Theme Tông Màu, Tools Tiện Ích)
   const [activeDropdown, setActiveDropdown] = useState<'none' | 'toc' | 'mode' | 'theme' | 'tools'>('none');
@@ -534,6 +538,17 @@ export default function SideBooksReaderModal({
     };
   }, [isOpen, isCbz, activeFileUrl]);
 
+  // Kiểm tra chính xác sách có nguồn nội dung thật hay không (EPUB, PDF, CBZ, TXT, hoặc mảng ảnh trang thật)
+  const hasRealContent = Boolean(
+    isEpub ||
+    isPdf ||
+    isCbz ||
+    isTxt ||
+    (pages && pages.length > 0) ||
+    (dynamicPdfPages && dynamicPdfPages.length > 0) ||
+    (cbzPages && cbzPages.length > 0)
+  );
+
   // Danh sách trang thực tế được đưa vào Engine 3D
   const effectivePages = isCbz
     ? cbzPages
@@ -541,9 +556,7 @@ export default function SideBooksReaderModal({
     ? dynamicPdfPages
     : pages && pages.length > 0
     ? pages
-    : coverUrl
-    ? [coverUrl]
-    : ['/documents/covers/cover_hieu_dung_ve_cot_song.png'];
+    : [];
 
   const totalPages = Math.max(1, effectivePages.length);
 
@@ -1875,7 +1888,7 @@ export default function SideBooksReaderModal({
               Mở trang ngay lập tức
             </button>
           </div>
-        ) : (
+        ) : hasRealContent ? (
           /* TRÌNH ĐỌC LẬT TRANG 3D SIDEBOOKS ENGINE */
           <SideBooksReaderEngine
             ref={readerRef}
@@ -1910,11 +1923,91 @@ export default function SideBooksReaderModal({
             onCenterClick={toggleHud}
             className="w-full h-full"
           />
+        ) : (
+          /* MÀN HÌNH MINH BẠCH KHI SÁCH CHƯA CÓ NỘI DUNG SỐ HÓA (KIND: EMPTY) */
+          <div className="w-full h-full overflow-y-auto px-4 py-6 flex flex-col items-center justify-start text-center max-w-md mx-auto pt-16 pb-20 select-none">
+            {/* Bìa thật của sách */}
+            <div className="w-32 aspect-[1/1.42] rounded-xl overflow-hidden shadow-2xl border border-white/20 mb-4 shrink-0">
+              <BookCoverArt
+                coverUrl={coverUrl}
+                title={title}
+                author={author || ''}
+                className="w-full h-full"
+              />
+            </div>
+
+            {/* Tiêu đề & tác giả */}
+            <h3 className="text-base font-black text-amber-100 drop-shadow-xs truncate max-w-full">
+              {title}
+            </h3>
+            {author && (
+              <p className="text-xs text-amber-300/80 font-medium mt-0.5 truncate max-w-full">
+                {author}
+              </p>
+            )}
+
+            {/* Thông báo trung thực đúng 1 dòng */}
+            <div className="mt-4 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs font-semibold w-full">
+              <p className="truncate">Cuốn sách này hiện chưa có nội dung đọc số hóa.</p>
+            </div>
+
+            {/* Mục lục tham khảo (nếu có trong dữ liệu) - Gắn nhãn đúng và KHÔNG BẤM ĐƯỢC */}
+            {computedToc && computedToc.length > 0 && (
+              <div className="mt-4 w-full text-left">
+                <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-amber-400 mb-2 px-1">
+                  <List size={13} className="shrink-0" />
+                  <span className="truncate">Mục lục tham khảo ({computedToc.length} chương)</span>
+                </div>
+                <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 rounded-xl bg-black/30 border border-white/10 p-2">
+                  {computedToc.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="p-2 rounded-lg bg-white/5 border border-white/5 flex flex-col gap-0.5 pointer-events-none opacity-85"
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-200">
+                        <span className="truncate">{item.title}</span>
+                        <span className="text-[10px] text-amber-400/60 font-mono shrink-0 ml-1">Chương {idx + 1}</span>
+                      </div>
+                      {item.summary && (
+                        <p className="text-[11px] text-stone-400 line-clamp-1">
+                          {item.summary}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Các nút hành động: Tái sử dụng ImportBookModal và điều hướng Kho trực tuyến */}
+            <div className="mt-5 w-full flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setShowImportBookModal(true)}
+                className="w-full h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-98 transition-all"
+              >
+                <Upload size={14} strokeWidth={2.5} />
+                <span className="truncate">Nạp tệp sách cá nhân (.epub, .pdf, .cbz)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  window.location.href = '/tim-kiem?tab=online';
+                }}
+                className="w-full h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-amber-200 border border-white/15 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+              >
+                <Search size={14} />
+                <span className="truncate">Tìm bản đọc trong Kho Trực Tuyến</span>
+              </button>
+            </div>
+          </div>
         )}
       </main>
 
       {/* ================= 3. THANH ĐIỀU HƯỚNG ĐÁY (FIXED BOTTOM HUD) ================= */}
-      {!isEpub && (
+      {!isEpub && hasRealContent && (
         <footer
           className={`fixed bottom-0 inset-x-0 z-40 backdrop-blur-md px-3 py-2 flex flex-col items-center gap-1.5 transition-all duration-300 transform select-none ${
             showHud ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
@@ -2179,6 +2272,16 @@ export default function SideBooksReaderModal({
         isOpen={showSoundModal}
         onClose={() => setShowSoundModal(false)}
         readingTheme={readingTheme}
+      />
+
+      {/* 10. MODAL NẠP SÁCH CÁ NHÂN KHI SÁCH CHƯA CÓ NỘI DUNG SỐ HÓA */}
+      <ImportBookModal
+        isOpen={showImportBookModal}
+        onClose={() => setShowImportBookModal(false)}
+        onImportSuccess={() => {
+          setShowImportBookModal(false);
+          onClose();
+        }}
       />
     </div>
   );

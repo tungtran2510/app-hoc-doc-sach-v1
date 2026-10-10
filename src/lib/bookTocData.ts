@@ -156,6 +156,12 @@ export function getBookToc(
   const normalizedTitle = normalizeKey(bookTitle);
   for (const [key, items] of Object.entries(CURATED_BOOK_TOCS)) {
     if (normalizedTitle.includes(key) || key.includes(normalizedTitle)) {
+      if (process.env.NODE_ENV !== 'production' && totalPages > 1) {
+        const maxPage = Math.max(...items.map((it) => it.pageNumber));
+        if (maxPage > totalPages) {
+          console.warn(`[bookTocData] Cảnh báo số trang: Mục lục sách "${bookTitle}" trỏ đến trang ${maxPage} nhưng sách chỉ có ${totalPages} trang.`);
+        }
+      }
       return items;
     }
   }

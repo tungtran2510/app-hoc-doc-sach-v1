@@ -296,16 +296,16 @@ def generate_cover(cfg):
 
     # 8. CON DẤU CHỨNG NHẬN CHUYÊN SÂU
     seal_cy = sub_y + 70
-    draw.ellipse((W // 2 - 46, seal_cy - 46, W // 2 + 46, seal_cy + 46), outline=gold_sh, width=1)
-    draw.ellipse((W // 2 - 42, seal_cy - 42, W // 2 + 42, seal_cy + 42), outline=gold, width=2)
-    font_seal1 = ImageFont.truetype(FONT_SANS_B, 11)
-    font_seal2 = ImageFont.truetype(FONT_SANS_B, 10)
+    draw.ellipse((W // 2 - 56, seal_cy - 56, W // 2 + 56, seal_cy + 56), outline=gold_sh, width=1)
+    draw.ellipse((W // 2 - 52, seal_cy - 52, W // 2 + 52, seal_cy + 52), outline=gold, width=2)
+    font_seal1 = ImageFont.truetype(FONT_SANS_B, 10)
+    font_seal2 = ImageFont.truetype(FONT_SANS_B, 9)
     s1 = "CHUẨN Y KHOA"
     s2 = "★ CHUYÊN SÂU ★"
     w1 = draw.textbbox((0, 0), s1, font=font_seal1)[2]
     w2 = draw.textbbox((0, 0), s2, font=font_seal2)[2]
-    draw.text(((W - w1) // 2, seal_cy - 14), s1, font=font_seal1, fill=gold_hi)
-    draw.text(((W - w2) // 2, seal_cy + 4), s2, font=font_seal2, fill=(255, 255, 255))
+    draw.text(((W - w1) // 2, seal_cy - 13), s1, font=font_seal1, fill=gold_hi)
+    draw.text(((W - w2) // 2, seal_cy + 3), s2, font=font_seal2, fill=(255, 255, 255))
 
     # 9. CHÂN BÌA: TÁC GIẢ & NHÀ XUẤT BẢN
     font_auth = ImageFont.truetype(FONT_SANS_B, 22)

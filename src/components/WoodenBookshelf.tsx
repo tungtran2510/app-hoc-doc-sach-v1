@@ -1293,7 +1293,7 @@ export default function WoodenBookshelf({
           <button
             type="button"
             onClick={() => setShowImportBookModal(true)}
-            className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90"
+            className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/40 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 after:content-[''] after:absolute after:-top-2 after:-bottom-2 after:-left-4 after:right-0"
             title="Đưa sách từ máy (.epub, .pdf, .cbz) vào kệ sách"
             aria-label="Đưa sách vào kệ"
           >
@@ -1305,7 +1305,7 @@ export default function WoodenBookshelf({
             <button
               type="button"
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className={`w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 relative ${
+              className={`relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-90 after:content-[''] after:absolute after:-top-2 after:-bottom-2 after:left-0 after:-right-4 ${
                 sortBy !== 'default'
                   ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-md'
                   : 'bg-white/80 dark:bg-[#25150c]/90 hover:bg-white dark:hover:bg-[#351e11] border-[#d8c5aa] dark:border-amber-900/60 text-[#4a250e] dark:text-amber-200'
@@ -1402,7 +1402,7 @@ export default function WoodenBookshelf({
               type="button"
               onClick={zoomOutBooks}
               disabled={bookCols === 5}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              className="relative w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer after:content-[''] after:absolute after:-top-2.5 after:-bottom-2.5 after:-left-5 after:right-0"
               title="Thu nhỏ đầu sách"
               aria-label="Thu nhỏ sách"
             >
@@ -1412,7 +1412,7 @@ export default function WoodenBookshelf({
               type="button"
               onClick={zoomInBooks}
               disabled={bookCols === 2}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+              className="relative w-6 h-6 rounded-lg flex items-center justify-center text-[#4a250e] dark:text-amber-200 hover:text-amber-950 dark:hover:text-white hover:bg-amber-900/10 dark:hover:bg-white/10 active:scale-90 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer after:content-[''] after:absolute after:-top-2.5 after:-bottom-2.5 after:left-0 after:-right-5"
               title="Phóng to đầu sách"
               aria-label="Phóng to sách"
             >
@@ -1609,7 +1609,7 @@ export default function WoodenBookshelf({
                                   e.stopPropagation();
                                   setQuickPeekBook(book);
                                 }}
-                                className="absolute top-1.5 left-1.5 z-30 w-5.5 h-5.5 rounded-full bg-black/75 hover:bg-black/95 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-90"
+                                className="absolute top-1.5 left-1.5 z-30 w-5.5 h-5.5 rounded-full bg-black/75 hover:bg-black/95 text-amber-200 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-90 after:content-[''] after:absolute after:-top-2.5 after:-left-2.5 after:-bottom-6 after:-right-6"
                                 title="Xem tóm tắt sách"
                                 aria-label={`Xem tóm tắt sách ${book.title}`}
                               >

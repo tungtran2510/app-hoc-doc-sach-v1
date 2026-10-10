@@ -1,21 +1,13 @@
 /**
- * Helper trích xuất danh sách URL ảnh trang (string[]) cho SideBooksReaderEngine
- * Hỗ trợ cả sách nạp ảnh trang tùy biến (PDF/Word/Gallery) lẫn sách y khoa chuyên sâu
+ * Trích xuất nguồn nội dung đọc sách thật (BookContent) và URL ảnh trang thật cho đầu đọc SideBooks
+ * TUYỆT ĐỐI KHÔNG DỰNG NỘI DUNG GIẢ, KHÔNG LẤY BÌA SÁCH NÀY LÀM TRANG SÁCH KIA
  */
 import { RecommendedBook, AuthorBook } from './types';
 
-// Danh sách các trang giải phẫu atlas y khoa sắc nét làm trang nội dung chuẩn
-const DEFAULT_ATLAS_PAGES = [
-  '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
-  '/documents/covers/cover_cot-song.png',
-  '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-  '/documents/covers/cover_dinh-duong.png',
-  '/documents/covers/cover_tieu-hoa.png',
-  '/documents/covers/cover_nuoc.png',
-  '/documents/covers/cover_tu_chua_lanh_lung_co.png',
-  '/documents/covers/cover_cam_nang_dot_song_co.png',
-  '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
-];
+export type BookContent =
+  | { kind: 'pages'; urls: string[] }
+  | { kind: 'file'; url: string; format: 'epub' | 'pdf' | 'cbz' | 'txt' | 'docx' }
+  | { kind: 'empty'; reason: 'no-content' };
 
 function deduplicatePages(pages: string[]): string[] {
   const result: string[] = [];
@@ -24,154 +16,81 @@ function deduplicatePages(pages: string[]): string[] {
       result.push(p);
     }
   }
-  return result.length > 0 ? result : DEFAULT_ATLAS_PAGES;
+  return result;
 }
 
+/**
+ * Trả về danh sách URL ảnh trang THẬT của sách (pages, flipbook_pages, gallery_images).
+ * Nếu không có trang ảnh thật, trả về mảng rỗng [] - TUYỆT ĐỐI KHÔNG BỊA NỘI DUNG GIẢ!
+ */
 export function getBookReaderPageUrls(book?: RecommendedBook | AuthorBook | null): string[] {
-  if (!book) return DEFAULT_ATLAS_PAGES;
+  if (!book) return [];
 
-  // 0. Nếu sách có thuộc tính pages (danh sách trang ảnh từ cơ sở dữ liệu Supabase)
+  // 1. Nếu sách có thuộc tính pages (danh sách trang ảnh từ cơ sở dữ liệu Supabase)
   const bookPages = (book as any)?.pages;
   if (Array.isArray(bookPages) && bookPages.length > 0) {
     const valid = bookPages.filter((u: any) => typeof u === 'string' && u.trim().length > 0);
     if (valid.length > 0) {
-      return deduplicatePages([book.cover_url || '', ...valid]);
+      return deduplicatePages(valid);
     }
   }
 
-  // 1. Nếu admin đã tải lên danh sách ảnh trang flipbook_pages
+  // 2. Nếu admin đã tải lên danh sách ảnh trang flipbook_pages
   if (Array.isArray(book.flipbook_pages) && book.flipbook_pages.length > 0) {
     const valid = book.flipbook_pages.filter((u) => typeof u === 'string' && u.trim().length > 0);
     if (valid.length > 0) {
-      return deduplicatePages([book.cover_url || '', ...valid]);
+      return deduplicatePages(valid);
     }
   }
 
-  // 2. Nếu có bộ sưu tập ảnh bên trong gallery_images
+  // 3. Nếu có bộ sưu tập ảnh bên trong gallery_images
   if (Array.isArray(book.gallery_images) && book.gallery_images.length > 0) {
     const valid = book.gallery_images.filter((u) => typeof u === 'string' && u.trim().length > 0);
     if (valid.length > 0) {
-      return deduplicatePages([book.cover_url || '', ...valid]);
+      return deduplicatePages(valid);
     }
   }
 
-  const title = (book.title || '').toLowerCase();
-  const cover = book.cover_url || '/documents/covers/cover_hieu_dung_ve_cot_song.png';
+  // Không có ảnh trang thật -> trả về mảng rỗng []
+  return [];
+}
 
-  // 3. Sách chuyên đề: Hiểu đúng về cột sống
-  if (title.includes('cột sống') && (title.includes('hiểu đúng') || title.includes('thoát vị'))) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
-      '/documents/covers/cover_tu_chua_lanh_lung_co.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_cam_nang_dot_song_co.png',
-      '/documents/covers/cover_giai_ma_cot_song.png',
-      '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
-    ]);
+/**
+ * Phân loại chính xác nguồn nội dung THẬT của sách:
+ * 1. Có ảnh trang thật (pages, flipbook_pages, gallery_images) -> kind: 'pages'
+ * 2. Có tệp sách thật (file_url / pdf_url: epub, pdf, cbz, txt, docx) -> kind: 'file'
+ * 3. Không có nội dung số hóa -> kind: 'empty'
+ */
+export function getBookContent(book?: RecommendedBook | AuthorBook | null): BookContent {
+  if (!book) return { kind: 'empty', reason: 'no-content' };
+
+  // Ưu tiên 1: Trang ảnh thật
+  const pages = getBookReaderPageUrls(book);
+  if (pages.length > 0) {
+    return { kind: 'pages', urls: pages };
   }
 
-  // 4. Sách chuyên đề: Tự chữa lành lưng & cổ
-  if (title.includes('tự chữa lành') || title.includes('đau lưng')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_cot-song.png',
-      '/documents/covers/cover_cam_nang_dot_song_co.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_nuoc.png',
-      '/documents/covers/back_cover_tu_chua_lanh_lung_co.png',
-    ]);
+  // Ưu tiên 2: Tệp sách thật
+  const rawFileUrl =
+    (book as any).file_url ||
+    (book as any).fileUrl ||
+    (book as any).pdf_url ||
+    (book as any).pdfUrl;
+  const fileName = (book as any).file_name || (book as any).fileName || '';
+
+  if (rawFileUrl && typeof rawFileUrl === 'string' && rawFileUrl.trim().length > 0) {
+    const url = rawFileUrl.trim();
+    const lower = `${url} ${fileName}`.toLowerCase();
+    let format: 'epub' | 'pdf' | 'cbz' | 'txt' | 'docx' = 'pdf';
+    if (lower.includes('.epub')) format = 'epub';
+    else if (lower.includes('.cbz') || lower.includes('.cbr')) format = 'cbz';
+    else if (lower.includes('.txt')) format = 'txt';
+    else if (lower.includes('.docx')) format = 'docx';
+    else if (lower.includes('.pdf')) format = 'pdf';
+
+    return { kind: 'file', url, format };
   }
 
-  // 5. Sách chuyên đề: Dinh dưỡng kháng viêm
-  if (title.includes('dinh dưỡng') || title.includes('kháng viêm')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_dinh-duong.png',
-      '/documents/covers/cover_tieu-hoa.png',
-      '/documents/covers/cover_nuoc.png',
-      '/documents/covers/cover_gan-mat-tuy.png',
-      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
-    ]);
-  }
-
-  // 6. Sách chuyên đề: Cẩm nang đốt sống cổ & vai gáy
-  if (title.includes('đốt sống cổ') || title.includes('vai gáy')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_cam_nang_dot_song_co.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_cot-song.png',
-      '/documents/covers/back_cover_cam_nang_dot_song_co.png',
-    ]);
-  }
-
-  // 7. Sách chuyên đề: Giải mã cột sống
-  if (title.includes('giải mã')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_giai_ma_cot_song.png',
-      '/documents/covers/cover_cot-song.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/back_cover_giai_ma_cot_song.png',
-    ]);
-  }
-
-  // 8. Sách chuyên đề: Tiêu hóa & đường ruột
-  if (title.includes('tiêu hóa') || title.includes('đường ruột')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_tieu-hoa.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_dinh-duong.png',
-      '/documents/covers/cover_gan-mat-tuy.png',
-      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
-    ]);
-  }
-
-  // 9. Sách chuyên đề: Nước & khoáng chất tế bào
-  if (title.includes('nước') || title.includes('khoáng chất') || title.includes('hydro')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_nuoc.png',
-      '/documents/covers/cover_co-the-nguoi.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_dinh-duong.png',
-      '/documents/covers/back_cover_lang_nghe_co_the.png',
-    ]);
-  }
-
-  // 10. Sách chuyên đề: Lợi khuẩn & vi sinh vật
-  if (title.includes('lợi khuẩn') || title.includes('vi sinh')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_loi_khuan_duong_ruot.png',
-      '/documents/covers/cover_tieu-hoa.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_mien-dich.png',
-      '/documents/covers/back_cover_dinh_duong_khang_viem.png',
-    ]);
-  }
-
-  // 11. Sách chuyên đề: Hệ miễn dịch tự nhiên
-  if (title.includes('miễn dịch') || title.includes('đề kháng')) {
-    return deduplicatePages([
-      cover,
-      '/documents/covers/cover_mien-dich.png',
-      '/documents/covers/cover_co-the-nguoi.png',
-      '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-      '/documents/covers/cover_loi_khuan_duong_ruot.png',
-      '/documents/covers/back_cover_lang_nghe_co_the.png',
-    ]);
-  }
-
-  // 12. Sách chung: Đưa bìa sách lên đầu, tiếp đến các trang atlas và trang bìa sau
-  return deduplicatePages([
-    cover,
-    '/documents/covers/cover_atlas_y_khoa_toan_dien.png',
-    '/documents/covers/cover_co-the-nguoi.png',
-    '/documents/bang_tra_cuu_re_than_kinh_cot_song.png',
-    '/documents/covers/cover_cot-song.png',
-    '/documents/covers/back_cover_hieu_dung_ve_cot_song.png',
-  ]);
+  // Không có nội dung thật
+  return { kind: 'empty', reason: 'no-content' };
 }
