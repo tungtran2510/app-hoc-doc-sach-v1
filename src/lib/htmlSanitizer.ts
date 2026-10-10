@@ -8,6 +8,42 @@ export const SAFE_TAGS = [
 ];
 
 /**
+ * Giải mã toàn diện các thực thể HTML/XML (tránh lỗi hiển thị ký tự mã hóa như &amp;, &lt;, &gt;,...)
+ */
+export function decodeHtmlEntities(str?: string | null): string {
+  if (!str) return '';
+  let result = str;
+  for (let i = 0; i < 3; i++) {
+    const prev = result;
+    result = result
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&#039;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&#(\d+);/g, (_, dec) => {
+        try {
+          return String.fromCharCode(parseInt(dec, 10));
+        } catch {
+          return _;
+        }
+      })
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+        try {
+          return String.fromCharCode(parseInt(hex, 16));
+        } catch {
+          return _;
+        }
+      });
+    if (result === prev) break;
+  }
+  return result;
+}
+
+/**
  * Bộ lọc HTML cho khối nội dung TextBlock (giữ nguyên 100% cấu hình và hành vi hiện tại)
  */
 export function sanitizeHtml(raw: string): string {

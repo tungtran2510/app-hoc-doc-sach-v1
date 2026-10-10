@@ -62,6 +62,7 @@ import {
   extractCbzImages,
   PdfPageProvider,
   EpubChapter,
+  decodeHtmlEntities,
 } from '../lib/ebookEngine';
 import {
   isBookFavorite,
@@ -1027,7 +1028,7 @@ export default function SideBooksReaderModal({
           <span className={`text-[11px] sm:text-[12px] font-bold tracking-wide truncate max-w-[360px] sm:max-w-xl text-center ${
             readingTheme === 'ivory' ? 'text-[#2c180c]' : 'text-amber-200/90'
           }`}>
-            {title} {author ? `· ${author}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
+            {decodeHtmlEntities(title)} {author ? `· ${decodeHtmlEntities(author)}` : ''} {isEpub ? '· EPUB' : isPdf ? '· PDF' : isCbz ? '· CBZ' : ''}
           </span>
         </div>
 
@@ -1938,11 +1939,11 @@ export default function SideBooksReaderModal({
 
             {/* Tiêu đề & tác giả */}
             <h3 className="text-base font-black text-amber-100 drop-shadow-xs truncate max-w-full">
-              {title}
+              {decodeHtmlEntities(title)}
             </h3>
             {author && (
               <p className="text-xs text-amber-300/80 font-medium mt-0.5 truncate max-w-full">
-                {author}
+                {decodeHtmlEntities(author)}
               </p>
             )}
 
@@ -2150,7 +2151,7 @@ export default function SideBooksReaderModal({
                 Đã hoàn thành cuốn sách
               </h3>
               <p className="text-[11.5px] text-amber-200/80 font-medium truncate">
-                {title}
+                {decodeHtmlEntities(title)}
               </p>
               <span className="text-[10px] text-amber-400/80 font-mono font-medium">
                 100% · {totalPages} trang

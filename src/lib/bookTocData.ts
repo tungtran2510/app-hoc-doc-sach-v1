@@ -1,3 +1,5 @@
+import { decodeHtmlEntities } from './htmlSanitizer';
+
 export interface BookTocItem {
   id?: string;
   title: string;
@@ -146,7 +148,7 @@ export function getBookToc(
   if (Array.isArray(epubChapters) && epubChapters.length > 0) {
     return epubChapters.map((ch, idx) => ({
       id: ch.id || `epub-ch-${idx}`,
-      title: ch.title || `Chương ${idx + 1}`,
+      title: decodeHtmlEntities(ch.title) || `Chương ${idx + 1}`,
       pageIndex: idx,
       pageNumber: idx + 1,
     }));

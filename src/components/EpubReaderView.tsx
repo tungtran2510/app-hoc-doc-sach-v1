@@ -16,7 +16,7 @@ import {
   Check,
   Bookmark,
 } from 'lucide-react';
-import { parseEpub, ParsedEpubBook, EpubChapter } from '../lib/ebookEngine';
+import { parseEpub, ParsedEpubBook, EpubChapter, decodeHtmlEntities } from '../lib/ebookEngine';
 import { bookAudioPlayer, extractParagraphsFromHtml } from '../lib/audioSpeech';
 import { offlineStorage } from '../lib/offlineStorage';
 import { readingNotesStorage } from '../lib/readingNotes';
@@ -58,7 +58,7 @@ function cleanChapterHtml(html: string, title?: string): string {
   if (!html) return '';
   let clean = html;
   if (title) {
-    const raw = title.trim();
+    const raw = decodeHtmlEntities(title).trim();
     const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const escapedEntity = raw.replace(/&/g, '&amp;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -114,7 +114,7 @@ export default function EpubReaderView({
   const activeTypography = typographySettings || localTypography;
 
   // Phát hiện sách nói thật
-  const effectiveTitle = bookTitle || parsedBook?.title || '';
+  const effectiveTitle = decodeHtmlEntities(bookTitle || parsedBook?.title || '');
   const realAudioBook = useMemo(() => {
     return findRealAudioForBook(effectiveTitle, author || undefined);
   }, [effectiveTitle, author]);
@@ -139,7 +139,7 @@ export default function EpubReaderView({
     if (!text || !text.trim()) return;
     try {
       readingNotesStorage.saveNote({
-        bookTitle: bookTitle || parsedBook?.title || 'Sách',
+        bookTitle: decodeHtmlEntities(bookTitle || parsedBook?.title || 'Sách'),
         page: currentChapterIdx + 1,
         selectedText: text.trim(),
         color: 'amber',
@@ -326,14 +326,14 @@ export default function EpubReaderView({
 
   const startChapterAudio = (startIdx: number = 0) => {
     if (!currentChapter) return;
-    const effectiveTitle = bookTitle || parsedBook?.title || 'Sách Nói';
-    const effectiveAuthor = author || parsedBook?.author || 'Giọng đọc AI';
+    const effectiveTitle = decodeHtmlEntities(bookTitle || parsedBook?.title || 'Sách Nói');
+    const effectiveAuthor = decodeHtmlEntities(author || parsedBook?.author || 'Giọng đọc AI');
     const effectiveCover = coverUrl || parsedBook?.coverUrl || undefined;
     bookAudioPlayer.setBookContext(
       effectiveTitle,
       effectiveAuthor,
       effectiveCover,
-      currentChapter.title || `Chương ${currentChapterIdx + 1}`
+      decodeHtmlEntities(currentChapter.title) || `Chương ${currentChapterIdx + 1}`
     );
     const cleaned = cleanChapterHtml(currentChapter.htmlContent, currentChapter.title);
     const paras = extractParagraphsFromHtml(cleaned);
@@ -397,14 +397,14 @@ export default function EpubReaderView({
       setTimeout(() => {
         const nextCh = parsedBook.chapters[idx];
         if (nextCh) {
-          const effectiveTitle = bookTitle || parsedBook?.title || 'Sách Nói';
-          const effectiveAuthor = author || parsedBook?.author || 'Giọng đọc AI';
+          const effectiveTitle = decodeHtmlEntities(bookTitle || parsedBook?.title || 'Sách Nói');
+          const effectiveAuthor = decodeHtmlEntities(author || parsedBook?.author || 'Giọng đọc AI');
           const effectiveCover = coverUrl || parsedBook?.coverUrl || undefined;
           bookAudioPlayer.setBookContext(
             effectiveTitle,
             effectiveAuthor,
             effectiveCover,
-            nextCh.title || `Chương ${idx + 1}`
+            decodeHtmlEntities(nextCh.title) || `Chương ${idx + 1}`
           );
           const paras = extractParagraphsFromHtml(cleanChapterHtml(nextCh.htmlContent, nextCh.title));
           bookAudioPlayer.setQueue(paras, 0);
@@ -724,7 +724,7 @@ export default function EpubReaderView({
                       Chương {idx + 1} / {totalChapters}
                     </span>
                     <span className="text-[11px] opacity-60 truncate">
-                      {parsedBook.title}
+                      {decodeHtmlEntities(parsedBook.title)}
                     </span>
                   </div>
 
@@ -735,7 +735,7 @@ export default function EpubReaderView({
                       color: localTheme === 'sepia' ? '#5a3e1b' : localTheme === 'ivory' ? '#1a1a1a' : '#f59e0b',
                     }}
                   >
-                    {chap.title}
+                    {decodeHtmlEntities(chap.title)}
                   </h2>
 
                   {/* NỘI DUNG VĂN BẢN CHƯƠNG */}
@@ -771,7 +771,7 @@ export default function EpubReaderView({
                   Chương {currentChapterIdx + 1} / {totalChapters}
                 </span>
                 <span className="text-[11px] opacity-60 truncate">
-                  {parsedBook.title}
+                  {decodeHtmlEntities(parsedBook.title)}
                 </span>
               </div>
 
@@ -782,7 +782,7 @@ export default function EpubReaderView({
                   color: localTheme === 'sepia' ? '#5a3e1b' : localTheme === 'ivory' ? '#1a1a1a' : '#f59e0b',
                 }}
               >
-                {currentChapter.title}
+                {decodeHtmlEntities(currentChapter.title)}
               </h2>
 
               {/* Nội dung chương HTML */}
@@ -876,7 +876,7 @@ export default function EpubReaderView({
                         : 'hover:bg-surface-2 text-ink/80'
                     }`}
                   >
-                    <span className="truncate pr-2">{chap.title}</span>
+                    <span className="truncate pr-2">{decodeHtmlEntities(chap.title)}</span>
                     <span className="text-[10px] opacity-60 font-mono shrink-0">
                       {idx + 1}
                     </span>
@@ -904,7 +904,7 @@ export default function EpubReaderView({
             setIsAudioOpen(false);
             clearParagraphHighlight();
           }}
-          chapterTitle={currentChapter?.title || `Chương ${currentChapterIdx + 1}`}
+          chapterTitle={decodeHtmlEntities(currentChapter?.title) || `Chương ${currentChapterIdx + 1}`}
           onAutoNextChapter={nextChapter}
         />
       )}
