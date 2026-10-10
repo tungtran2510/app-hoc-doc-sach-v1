@@ -810,17 +810,13 @@ export default function EpubReaderView({
                 <button
                   type="button"
                   onClick={nextChapter}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-bold ${
-                    currentChapterIdx >= totalChapters - 1
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black ring-2 ring-amber-400/40 shadow-md animate-pulse'
-                      : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                  }`}
-                  title={currentChapterIdx >= totalChapters - 1 ? 'Đã đọc xong cuốn sách - Nhấn để hoàn tất & về trang 1' : 'Chương tiếp theo'}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all active:scale-95 shadow-xs cursor-pointer font-bold bg-amber-500 hover:bg-amber-400 text-slate-950"
+                  title={currentChapterIdx >= totalChapters - 1 ? 'Đã hoàn thành cuốn sách' : 'Chương tiếp theo'}
                 >
                   {currentChapterIdx >= totalChapters - 1 ? (
                     <>
-                      <span>Đọc xong 🎉</span>
-                      <Sparkles size={15} />
+                      <span>Đọc xong</span>
+                      <Check size={14} strokeWidth={2.4} />
                     </>
                   ) : (
                     <>

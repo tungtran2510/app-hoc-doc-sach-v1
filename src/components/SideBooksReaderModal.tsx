@@ -1986,18 +1986,18 @@ export default function SideBooksReaderModal({
               }}
               className={`px-3 py-1 rounded-full ${
                 currentPage >= totalPages - 1
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black border border-amber-300 ring-2 ring-amber-400/40 shadow-lg animate-pulse'
+                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border border-amber-400/50 shadow-sm'
                   : readingTheme === 'ivory'
                   ? 'bg-[#e2d5c3] hover:bg-[#d8c8b2] text-[#2c180c] border-[#cdbdab]'
                   : 'bg-black/45 hover:bg-black/75 text-amber-300/90 hover:text-amber-200 border-white/15'
               } backdrop-blur-md border active:scale-95 transition-all flex items-center gap-1 text-[11.5px] font-bold shadow-md cursor-pointer select-none`}
-              title={currentPage >= totalPages - 1 ? 'Chúc mừng bạn đã đọc xong cuốn sách! Nhấn để hoàn tất & về trang 1' : 'Mở trang sau'}
+              title={currentPage >= totalPages - 1 ? 'Đã hoàn thành cuốn sách' : 'Mở trang sau'}
               aria-label={currentPage >= totalPages - 1 ? 'Đọc xong cuốn sách' : 'Mở trang'}
             >
               {currentPage >= totalPages - 1 ? (
                 <>
-                  <span className="text-slate-950 font-black">Đọc xong 🎉</span>
-                  <Sparkles size={14} className="text-slate-950" />
+                  <span className="text-slate-950 font-bold">Đọc xong</span>
+                  <Check size={13} strokeWidth={2.5} className="text-slate-950" />
                 </>
               ) : (
                 <>
@@ -2039,99 +2039,65 @@ export default function SideBooksReaderModal({
         </footer>
       )}
 
-      {/* ================= 4. MODAL THÔNG BÁO HOÀN THÀNH CUỐN SÁCH & TRỞ VỀ TRANG 1 ================= */}
+      {/* ================= 4. MODAL THÔNG BÁO HOÀN THÀNH CUỐN SÁCH (SIÊU TINH TẾ & GỌN GÀNG) ================= */}
       {showBookFinishedModal && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150 select-none"
           onClick={() => setShowBookFinishedModal(false)}
         >
           <div
-            className="w-full max-w-sm rounded-3xl bg-gradient-to-b from-[#24170e] via-[#1a1008] to-[#120a05] border border-amber-500/50 p-6 text-amber-100 text-center shadow-2xl flex flex-col gap-4 relative overflow-hidden"
+            className="w-full max-w-[280px] rounded-2xl bg-[#1c120a] border border-amber-500/25 p-4.5 text-amber-100 text-center shadow-2xl flex flex-col gap-3 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Hào quang nền ánh sáng vàng vinh danh */}
-            <div className="absolute -top-12 -left-12 w-40 h-40 bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-12 -right-12 w-40 h-40 bg-amber-600/15 rounded-full blur-2xl pointer-events-none" />
+            {/* Nút đóng nhỏ ở góc trên */}
+            <button
+              type="button"
+              onClick={() => setShowBookFinishedModal(false)}
+              className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center text-amber-200/40 hover:text-amber-200 hover:bg-white/5 transition-colors cursor-pointer"
+              title="Đóng"
+              aria-label="Đóng thông báo"
+            >
+              <X size={14} />
+            </button>
 
-            {/* Icon Cúp vinh danh / Huy hiệu chúc mừng */}
-            <div className="relative mx-auto">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-600 to-amber-400 text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/30 ring-4 ring-amber-400/20 animate-bounce">
-                <Sparkles size={32} strokeWidth={2.5} />
-              </div>
-              <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] uppercase tracking-wider shadow-sm">
-                100%
-              </span>
+            {/* Biểu tượng tinh tế: Vòng tròn tối giản với dấu tích */}
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mt-0.5">
+              <Check size={18} strokeWidth={2.6} />
             </div>
 
-            {/* Tiêu đề & Thông báo chúc mừng */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-400/90">
-                ✦ Hoàn thành cuốn sách ✦
-              </span>
-              <h3 className="text-lg font-black text-amber-100 leading-tight">
-                Chúc mừng bạn đã đọc xong!
+            {/* Tiêu đề & Thông tin tác phẩm tinh gọn */}
+            <div className="flex flex-col gap-0.5 px-1">
+              <h3 className="text-[13.5px] font-bold text-amber-100 tracking-tight">
+                Đã hoàn thành cuốn sách
               </h3>
-              <p className="text-xs font-bold text-amber-300/90 mt-1 line-clamp-2">
+              <p className="text-[11.5px] text-amber-200/80 font-medium truncate">
                 {title}
               </p>
-              {author && (
-                <p className="text-[11px] text-amber-200/60 font-medium">
-                  Tác giả: {author}
-                </p>
-              )}
+              <span className="text-[10px] text-amber-400/80 font-mono font-medium">
+                100% · {totalPages} trang
+              </span>
             </div>
 
-            {/* Thẻ ghi nhận thành tích */}
-            <div className="bg-black/40 border border-amber-500/20 rounded-2xl p-3 flex items-center justify-around text-xs">
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] text-amber-200/60 uppercase">Nội dung</span>
-                <span className="font-extrabold text-amber-300">
-                  {totalPages}/{totalPages} trang
-                </span>
-              </div>
-              <div className="h-6 w-px bg-amber-500/20" />
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] text-amber-200/60 uppercase">Tiến độ</span>
-                <span className="font-extrabold text-emerald-400">100% Hoàn tất</span>
-              </div>
-              <div className="h-6 w-px bg-amber-500/20" />
-              <div className="flex flex-col items-center">
-                <span className="text-[10px] text-amber-200/60 uppercase">Chuỗi đọc</span>
-                <span className="font-extrabold text-amber-400">+1 Ngày</span>
-              </div>
-            </div>
-
-            {/* Các hành động chính: Đúng 100% yêu cầu của người dùng */}
-            <div className="flex flex-col gap-2 pt-1">
-              {/* Nút 1: Trở về trang 1 để đọc lại từ đầu */}
+            {/* Các nút hành động tinh gọn & chuẩn mực */}
+            <div className="flex flex-col gap-1.5 pt-1">
               <button
                 type="button"
                 onClick={handleRestartBookFromBeginning}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+                className="w-full h-8.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-transform active:scale-95 cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
-                <RotateCcw size={16} strokeWidth={2.6} />
-                <span>Trở về Trang 1 (Đọc lại từ đầu)</span>
+                <RotateCcw size={13} strokeWidth={2.4} />
+                <span>Đọc lại từ đầu</span>
               </button>
 
-              {/* Nút 2: Về kệ sách và đặt lại trang 1 */}
               <button
                 type="button"
                 onClick={handleFinishAndReturnToShelf}
-                className="w-full py-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-amber-200 font-bold text-xs transition-colors cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+                className="w-full h-8 rounded-xl bg-white/5 hover:bg-white/10 text-amber-200/90 font-medium text-xs transition-colors cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
               >
-                <BookOpen size={15} />
-                <span>Về Kệ Sách (Đặt lại trang 1 cho lần sau)</span>
-              </button>
-
-              {/* Nút 3: Ở lại trang cuối */}
-              <button
-                type="button"
-                onClick={() => setShowBookFinishedModal(false)}
-                className="text-[11px] text-amber-200/60 hover:text-amber-200 py-1 transition-colors cursor-pointer"
-              >
-                Ở lại xem trang cuối ({totalPages}/{totalPages})
+                <BookOpen size={13} />
+                <span>Về kệ sách</span>
               </button>
             </div>
           </div>
